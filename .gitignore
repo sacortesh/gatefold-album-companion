@@ -1,0 +1,17 @@
+node_modules/
+dist/
+*.tsbuildinfo
+
+# secrets / local auth
+.env
+.env.local
+data/.auth.json
+
+# derived caches (not source of truth)
+data/cache/
+
+# editor / OS
+.DS_Store
+*.log
+.vscode/
+.idea/

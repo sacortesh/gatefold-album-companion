@@ -1,0 +1,30 @@
+{
+  "name": "spotify-companion",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A companion app on top of Spotify for deliberate album listening",
+  "workspaces": [
+    "packages/shared",
+    "packages/server",
+    "packages/web"
+  ],
+  "scripts": {
+    "dev": "concurrently -n server,web -c blue,magenta \"npm:dev:server\" \"npm:dev:web\"",
+    "dev:server": "npm run dev -w @spotify-companion/server",
+    "dev:web": "npm run dev -w @spotify-companion/web",
+    "build": "npm run build -w @spotify-companion/web",
+    "start": "NODE_ENV=production npm run start -w @spotify-companion/server",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "vitest run --passWithNoTests",
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "concurrently": "^9.1.2",
+    "typescript": "^5.7.3",
+    "vitest": "^4.1.11"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
