@@ -46,7 +46,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 const post = (path: string, body?: unknown) =>
   request<{ ok: true }>(path, {
     method: "POST",
-    body: body === undefined ? undefined : JSON.stringify(body),
+    // Always send a JSON body — Fastify rejects an empty body when the
+    // content-type is application/json.
+    body: JSON.stringify(body ?? {}),
   });
 
 interface ConfigMap {

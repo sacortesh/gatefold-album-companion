@@ -62,23 +62,33 @@ export function usePlayback(): PlaybackView {
 
   const [controlError, setControlError] = useState<string | null>(null);
 
-  const refetchSoon = () =>
-    window.setTimeout(() => {
-      void qc.invalidateQueries({ queryKey: PLAYBACK_KEY });
-    }, 600);
+  // Spotify's player state is eventually-consistent after a command — poke it
+  // twice so the optimistic value doesn't visibly snap back.
+  const refetchSoon = () => {
+    for (const delay of [500, 1600]) {
+      window.setTimeout(() => {
+        void qc.invalidateQueries({ queryKey: PLAYBACK_KEY });
+      }, delay);
+    }
+  };
 
   const patch = (fn: (prev: PlaybackState) => PlaybackState) =>
     qc.setQueryData<PlaybackState>(PLAYBACK_KEY, (prev) =>
       prev ? fn(prev) : prev,
     );
 
-  const onError = (err: unknown) =>
-    setControlError(
-      err instanceof Error ? err.message : "Playback command failed",
-    );
+  const onError = (err: unknown) => {
+    const msg = err instanceof Error ? err.message : "Playback command failed";
+    // "Restriction violated" during a toggle just means Spotify was already in
+    // the target state — the next refetch reconciles it; no need to alarm.
+    if (/restriction violated/i.test(msg)) return;
+    setControlError(msg);
+  };
 
   const toggle = useMutation({
-    mutationFn: () => (state?.isPlaying ? api.pause() : api.play()),
+    // `wasPlaying` is read from the cache at click time, before onMutate flips it.
+    mutationFn: (wasPlaying: boolean) =>
+      wasPlaying ? api.pause() : api.play(),
     onMutate: () => {
       setControlError(null);
       patch((p) => ({ ...p, isPlaying: !p.isPlaying }));
@@ -121,7 +131,10 @@ export function usePlayback(): PlaybackView {
     displayMs,
     notConnected,
     controls: {
-      toggle: () => toggle.mutate(),
+      toggle: () =>
+        toggle.mutate(
+          Boolean(qc.getQueryData<PlaybackState>(PLAYBACK_KEY)?.isPlaying),
+        ),
       next: () => skipNext.mutate(),
       previous: () => skipPrev.mutate(),
       seek: (positionMs) => doSeek.mutate(positionMs),

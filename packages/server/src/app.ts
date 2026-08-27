@@ -9,6 +9,28 @@ export async function buildApp(): Promise<FastifyInstance> {
     logger: env.NODE_ENV !== "test" && { level: "info" },
   });
 
+  // Treat an empty application/json body as `{}` (browsers send bodyless POSTs).
+  app.addContentTypeParser(
+    "application/json",
+    { parseAs: "string" },
+    (_req, body, done) => {
+      const text = typeof body === "string" ? body.trim() : "";
+      if (!text) {
+        done(null, {});
+        return;
+      }
+      try {
+        done(null, JSON.parse(text));
+      } catch (err) {
+        Object.assign(err as object, {
+          statusCode: 400,
+          code: "invalid_json",
+        });
+        done(err as Error, undefined);
+      }
+    },
+  );
+
   app.setErrorHandler((err: FastifyError, req, reply) => {
     const status = err.statusCode ?? 500;
     if (status >= 500) req.log.error(err);
