@@ -97,7 +97,13 @@ async function attempt<T>(
     );
   }
 
-  return (text ? JSON.parse(text) : null) as T;
+  if (!text) return null as T;
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    // Some player-control endpoints reply 2xx with a short opaque body.
+    return null as T;
+  }
 }
 
 // --- Typed helpers (grown per phase) ----------------------------------

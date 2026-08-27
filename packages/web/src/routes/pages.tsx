@@ -14,9 +14,6 @@ function Stub({ title, phase }: StubProps) {
   );
 }
 
-export const NowPlayingPage = () => (
-  <Stub title="Now Playing" phase="Phase 2 (playback) + Phase 3 (Like / Banger)" />
-);
 export const BacklogPage = () => <Stub title="Backlog" phase="Phase 4" />;
 export const AlbumPage = () => <Stub title="Album" phase="Phase 5" />;
 export const RevisitPage = () => <Stub title="Revisit" phase="Phase 6" />;

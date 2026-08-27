@@ -86,12 +86,12 @@ and clear it from the backlog.
 - Architecture: [docs/architecture.md](docs/architecture.md) (proposal)
 - Implementation plan: [docs/implementation-plan.md](docs/implementation-plan.md) (8 phases, MVP1)
 
-**Build status:** Phase 0 (scaffold) ✅ · Phase 1 (Spotify auth) 🟡 code
-done, one manual Connect pending. git `main`, no remote yet.
+**Build status:** Phase 0 ✅ · Phase 1 (auth) ✅ · Phase 2 (now playing +
+playback control) ✅. git `main`, no remote yet.
 
 Run: `npm install && npm run dev` → app on :5173, API on :8888.
-To finish Phase 1: open http://127.0.0.1:5173/settings → **Connect
-Spotify** → approve.
+Now Playing page + playback controls + device picker in Settings all live.
+Next: Phase 3 — Like + Banger.
 
 Stack: pnpm monorepo — `packages/{shared,server,web}` + `data/` (config +
 reviews) in git. React + Vite + TanStack Query (polling) frontend;

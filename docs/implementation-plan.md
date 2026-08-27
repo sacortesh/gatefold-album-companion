@@ -76,24 +76,34 @@ error callbacks land on `/settings?auth=…`. ✅ typecheck + build clean.
 
 ---
 
-## Phase 2 — Now playing + playback control
+## Phase 2 — Now playing + playback control  ✅ done (2026-08-27)
 
 Goal: see what's playing and drive it from the app.
 
-- [ ] `server/spotify` helpers: `getPlayback`, `getDevices`, `play`,
-      `pause`, `next`, `previous`, `seek`
-- [ ] routes: `GET /api/playback`, `GET /api/devices`,
-      `POST /api/playback/{play,pause,next,previous,seek}`
-- [ ] `web/features/now-playing` — art, track/artist/album, progress bar,
-      transport buttons, position-in-album
-- [ ] `web/features/settings` — device picker → writes
-      `settings.preferredDeviceId` via `PUT /api/config/settings`
-- [ ] TanStack Query `refetchInterval` ~3 s on `/api/playback`;
-      optimistic transport updates
+- [x] `spotify/player.ts`: `getPlayback`, `getDevices`, `play`, `pause`,
+      `next`, `previous`, `seek`, `transferPlayback` (+ raw→DTO mapping,
+      mid-size album art picker)
+- [x] routes: `GET /api/playback`, `GET /api/devices`,
+      `POST /api/playback/{play,pause,next,previous,seek,transfer}`;
+      play falls back to the preferred device when nothing is active
+- [x] `GET|PUT /api/config/:name` generic config route + `store/config.ts`
+      (Zod-validated read/write)
+- [x] `web/features/now-playing` — album art, title/artists/album,
+      "track N of M" when the context is that album, click-to-seek
+      progress bar with local extrapolation, prev/play-pause/next,
+      device line, control-error toast
+- [x] `web/features/settings/DevicePicker` — radio list → saves
+      `settings.preferredDeviceId`; "Play here" transfers
+- [x] `usePlayback` hook: `refetchInterval` 3 s, optimistic
+      play/pause/seek, refetch-after-600 ms reconcile
 
-**AC:** the now-playing panel tracks reality within a few seconds;
-play/pause/next/prev/seek work against the selected device; picking a
-device persists.
+**AC:** ✅ verified live against the user's account — `/api/playback`
+reflects the real track/device/progress; pause / play / next / previous /
+seek / transfer all return `{ok:true}` and take effect; `preferredDeviceId`
+persists to `data/config/settings.json`; bad config name → 404.
+(One JSON-parse bug fixed: player-control 2xx replies carry a short opaque
+body, not JSON.)
+⏳ browser eyeball on the UI still worthwhile but not blocking.
 
 ---
 

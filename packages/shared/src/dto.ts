@@ -38,4 +38,79 @@ export const authStatusSchema = z.object({
 });
 export type AuthStatus = z.infer<typeof authStatusSchema>;
 
-// Playback, recent, album, etc. DTOs are added in their respective phases.
+// --- Phase 2: playback ------------------------------------------------
+
+export const deviceSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  type: z.string(),
+  isActive: z.boolean(),
+  isRestricted: z.boolean(),
+  volumePercent: z.number().nullable(),
+});
+export type Device = z.infer<typeof deviceSchema>;
+
+export const devicesResponseSchema = z.object({
+  devices: z.array(deviceSchema),
+});
+export type DevicesResponse = z.infer<typeof devicesResponseSchema>;
+
+export const nowPlayingTrackSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  uri: z.string(),
+  durationMs: z.number(),
+  artists: z.array(z.string()),
+  album: z.object({
+    id: z.string(),
+    name: z.string(),
+    image: z.string().nullable(),
+    totalTracks: z.number().nullable(),
+  }),
+  trackNumber: z.number().nullable(),
+  discNumber: z.number().nullable(),
+});
+export type NowPlayingTrack = z.infer<typeof nowPlayingTrackSchema>;
+
+export const repeatModeSchema = z.enum(["off", "track", "context"]);
+
+export const playbackStateSchema = z.object({
+  isPlaying: z.boolean(),
+  device: deviceSchema.nullable(),
+  track: nowPlayingTrackSchema.nullable(),
+  progressMs: z.number(),
+  /** Playing context, e.g. `spotify:album:…` or `spotify:playlist:…`. */
+  contextUri: z.string().nullable(),
+  contextType: z.string().nullable(),
+  shuffle: z.boolean(),
+  repeat: repeatModeSchema,
+  /** Server timestamp of this snapshot — the client extrapolates progress from it. */
+  fetchedAt: z.string(),
+});
+export type PlaybackState = z.infer<typeof playbackStateSchema>;
+
+export const playRequestSchema = z.object({
+  contextUri: z.string().optional(),
+  uris: z.array(z.string()).optional(),
+  offset: z
+    .object({ position: z.number().optional(), uri: z.string().optional() })
+    .optional(),
+  positionMs: z.number().optional(),
+  deviceId: z.string().optional(),
+});
+export type PlayRequest = z.infer<typeof playRequestSchema>;
+
+export const seekRequestSchema = z.object({
+  positionMs: z.number().int().min(0),
+  deviceId: z.string().optional(),
+});
+export type SeekRequest = z.infer<typeof seekRequestSchema>;
+
+export const transferRequestSchema = z.object({
+  deviceId: z.string().min(1),
+  play: z.boolean().optional(),
+});
+export type TransferRequest = z.infer<typeof transferRequestSchema>;
+
+export const okSchema = z.object({ ok: z.literal(true) });
+export type Ok = z.infer<typeof okSchema>;
