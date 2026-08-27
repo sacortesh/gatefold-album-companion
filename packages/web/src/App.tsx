@@ -1,12 +1,12 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { Layout } from "./components/Layout";
+import { SettingsPage } from "./features/settings/SettingsPage";
 import {
   AlbumPage,
   BacklogPage,
   NotFoundPage,
   NowPlayingPage,
   RevisitPage,
-  SettingsPage,
 } from "./routes/pages";
 
 const router = createBrowserRouter([

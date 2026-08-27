@@ -86,9 +86,10 @@ and clear it from the backlog.
 - Architecture: [docs/architecture.md](docs/architecture.md) (proposal)
 - Implementation plan: [docs/implementation-plan.md](docs/implementation-plan.md) (8 phases, MVP1)
 
-**Build status: Phase 0 (scaffold) done.** `npm install && npm run dev`
-→ app shell on :5173, API on :3000. Next: Phase 1 (Spotify auth) — needs
-a Spotify app registered + `.env` filled from `.env.example`.
+**Build status: Phase 0 (scaffold) done + committed** (git `main`, no
+remote yet). `npm install && npm run dev` → app shell on :5173, API on
+:8888. `.env` is filled with real Spotify creds (gitignored). Redirect
+URI: `http://127.0.0.1:8888/callback`. Next: Phase 1 (Spotify auth).
 
 Stack: pnpm monorepo — `packages/{shared,server,web}` + `data/` (config +
 reviews) in git. React + Vite + TanStack Query (polling) frontend;

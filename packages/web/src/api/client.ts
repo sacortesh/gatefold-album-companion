@@ -1,4 +1,8 @@
-import type { ApiError, HealthResponse } from "@spotify-companion/shared";
+import type {
+  ApiError,
+  AuthStatus,
+  HealthResponse,
+} from "@spotify-companion/shared";
 
 export class ApiRequestError extends Error {
   constructor(
@@ -33,4 +37,19 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const api = {
   health: () => request<HealthResponse>("/health"),
+
+  authStatus: () => request<AuthStatus>("/auth/status"),
+  authDisconnect: () =>
+    request<{ connected: false }>("/auth", { method: "DELETE" }),
+  /** Dev-only: force a token refresh / 401 on the next Spotify call. */
+  authDebug: (action: "expire" | "corrupt") =>
+    request<{ ok: true; action: string }>("/auth/debug", {
+      method: "POST",
+      body: JSON.stringify({ action }),
+    }),
+};
+
+/** Full-page redirect into the Spotify consent screen. */
+export const startSpotifyLogin = (): void => {
+  window.location.href = "/auth/login";
 };

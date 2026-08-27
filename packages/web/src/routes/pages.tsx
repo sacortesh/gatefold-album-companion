@@ -20,9 +20,6 @@ export const NowPlayingPage = () => (
 export const BacklogPage = () => <Stub title="Backlog" phase="Phase 4" />;
 export const AlbumPage = () => <Stub title="Album" phase="Phase 5" />;
 export const RevisitPage = () => <Stub title="Revisit" phase="Phase 6" />;
-export const SettingsPage = () => (
-  <Stub title="Settings" phase="Phase 1 (auth) onward" />
-);
 
 export const NotFoundPage = () => (
   <section className="space-y-2">

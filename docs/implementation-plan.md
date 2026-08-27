@@ -47,26 +47,32 @@ Notes / deviations from the plan:
 
 ---
 
-## Phase 1 — Spotify auth
+## Phase 1 — Spotify auth  🟡 code done, awaiting one manual connect
 
 Goal: connect a Spotify account; the connection survives a restart.
 
-- [ ] **(you)** register an app in the Spotify dashboard; add redirect
-      URI `http://127.0.0.1:8888/callback`; put client id + secret
-      in `.env`
-- [ ] `server/auth/` — `GET /auth/login` (→ authorize URL, `state`,
-      scopes from spec FR-1), `GET /callback` (code→token exchange),
-      refresh-token persistence to `data/.auth.json`
-- [ ] `server/spotify/` — authed `fetch` wrapper: bearer injection,
-      refresh-on-401 (once), 429 `Retry-After` backoff, concurrency cap,
-      on-disk GET cache scaffold
-- [ ] `GET /api/auth/status` → `{ connected, scopes, expiresAt }`
-- [ ] `web/features/settings` — connection status + "Connect Spotify" /
-      "Disconnect" buttons
+- [x] **(you)** register an app; redirect URI `http://127.0.0.1:8888/callback`;
+      client id + secret in `.env` — done 2026-08-27
+- [x] `server/auth/` — `GET /auth/login` (authorize URL + CSRF `state`,
+      10 scopes), `GET /callback` (code→token exchange, all failure paths
+      redirect to `/settings?auth=…`), refresh-token persistence to
+      `data/.auth.json` (`oauth.ts` + `tokenStore.ts`)
+- [x] `server/spotify/` — `client.ts` authed fetch wrapper: bearer
+      inject, refresh+retry once on 401, `Retry-After` on 429,
+      concurrency semaphore (4); `cache.ts` on-disk GET cache scaffold
+- [x] `GET /api/auth/status` → `{ connected, scopes, expiresAt, user,
+      configured }` (probes `/me`); `DELETE /api/auth` to disconnect;
+      `POST /api/auth/debug` (dev only) to expire / corrupt the token
+- [x] `web/features/settings/SettingsPage` — connection status, user
+      name, scope count, token expiry, Connect / Disconnect, `?auth=`
+      banner, dev token-refresh test buttons
 
-**AC:** click Connect → Spotify consent → back to the app as connected;
-restart the server → still connected; force-expire the token → next call
-refreshes transparently.
+**AC:** ✅ `/auth/login` 302s to Spotify with the right client id + scopes
++ redirect URI (verified via curl + Vite proxy). ✅ bad-state / denied /
+error callbacks land on `/settings?auth=…`. ✅ typecheck + build clean.
+⏳ **needs the user once:** open `/settings` → Connect → approve → confirm
+"Connected as …", restart server (still connected), hit the dev "Expire" /
+"Corrupt" buttons and confirm status recovers.
 
 ---
 
