@@ -103,9 +103,14 @@ Flow: add albums to the Backlog → open one → listen, Like/Banger tracks,
 read synced lyrics → "Finish album" → Keep / Revisit / Pass / Delete +
 notes → it clears from the backlog and writes `data/reviews/<year>/*.md`.
 Revisit page lists the "come back to it" albums.
-Next: browser-verify Phase 8 Rev-1..4, then Phase 7 polish (error/empty
-states, README, Vitest, keyboard help). `.env` now also holds
-DISCOGS_CONSUMER_KEY / DISCOGS_CONSUMER_SECRET.
+Phase 9 (self-hosting) in progress: repo hygiene (README, AGPL LICENSE,
+CI), 9.1 runtime config store + 9.4 PKCE auth done — Spotify client id +
+Discogs keys now settable in Settings (data/app.json), no client secret.
+Existing Spotify connection needs one reconnect (PKCE). Next: 9.2 API-key
+guard, 9.3 /config volume, 9.5 Dockerfile.
+
+Next: browser-verify Phase 8 + the new Settings setup flow, then Phase 7
+polish (error/empty states, Vitest, keyboard help).
 
 Stack: pnpm monorepo — `packages/{shared,server,web}` + `data/` (config +
 reviews) in git. React + Vite + TanStack Query (polling) frontend;
