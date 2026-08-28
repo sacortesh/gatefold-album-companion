@@ -170,3 +170,49 @@ export const playlistsResponseSchema = z.object({
   playlists: z.array(playlistLiteSchema),
 });
 export type PlaylistsResponse = z.infer<typeof playlistsResponseSchema>;
+
+// --- Phase 4: backlog + search -------------------------------------
+
+export const albumSummarySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  uri: z.string(),
+  artists: z.array(z.string()),
+  image: z.string().nullable(),
+  year: z.string().nullable(),
+  totalTracks: z.number(),
+  /** Sum of known track durations; null when not available (search results). */
+  durationMs: z.number().nullable(),
+});
+export type AlbumSummary = z.infer<typeof albumSummarySchema>;
+
+export const backlogEntrySchema = z.object({
+  albumId: z.string(),
+  uri: z.string(),
+  addedAt: z.string(),
+  priority: z.number().int(),
+  /** null when Spotify no longer returns the album. */
+  album: albumSummarySchema.nullable(),
+});
+export type BacklogEntry = z.infer<typeof backlogEntrySchema>;
+
+export const backlogResponseSchema = z.object({
+  items: z.array(backlogEntrySchema),
+});
+export type BacklogResponse = z.infer<typeof backlogResponseSchema>;
+
+export const addBacklogRequestSchema = z.object({
+  /** Album id or any open.spotify.com / spotify:album: URL — resolved server-side. */
+  album: z.string().min(1),
+});
+export type AddBacklogRequest = z.infer<typeof addBacklogRequestSchema>;
+
+export const reorderBacklogRequestSchema = z.object({
+  albumIds: z.array(z.string()),
+});
+export type ReorderBacklogRequest = z.infer<typeof reorderBacklogRequestSchema>;
+
+export const searchResponseSchema = z.object({
+  albums: z.array(albumSummarySchema),
+});
+export type SearchResponse = z.infer<typeof searchResponseSchema>;

@@ -116,13 +116,18 @@ export async function triageRoutes(app: FastifyInstance): Promise<void> {
       );
     }
 
-    const existing = await getPlaylistTrackIds(playlistId).catch(() => {
-      throw new AppError(
-        "banger_playlist_error",
-        "Couldn't read the Banger playlist. Check it still exists in Settings.",
-        409,
-      );
-    });
+    const existing = await getPlaylistTrackIds(playlistId).catch(
+      (err: unknown) => {
+        if (err instanceof AppError && err.statusCode === 404) {
+          throw new AppError(
+            "banger_playlist_error",
+            "The Banger playlist no longer exists — pick another in Settings.",
+            409,
+          );
+        }
+        throw err;
+      },
+    );
 
     let addedToPlaylist = false;
     if (!existing.has(trackId)) {

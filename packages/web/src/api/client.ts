@@ -2,6 +2,8 @@ import type {
   ApiError,
   AuthStatus,
   Backlog,
+  BacklogEntry,
+  BacklogResponse,
   BangerResponse,
   Buttons,
   ConfigName,
@@ -12,6 +14,7 @@ import type {
   PlayRequest,
   RecentResponse,
   Revisit,
+  SearchResponse,
   Settings,
 } from "@spotify-companion/shared";
 
@@ -105,6 +108,22 @@ export const api = {
       body: JSON.stringify({ trackId }),
     }),
   playlists: () => request<PlaylistsResponse>("/playlists"),
+
+  backlog: () => request<BacklogResponse>("/backlog"),
+  addToBacklog: (album: string) =>
+    request<BacklogEntry>("/backlog", {
+      method: "POST",
+      body: JSON.stringify({ album }),
+    }),
+  removeFromBacklog: (albumId: string) =>
+    request<{ ok: true }>(`/backlog/${albumId}`, { method: "DELETE" }),
+  reorderBacklog: (albumIds: string[]) =>
+    request<{ ok: true }>("/backlog", {
+      method: "PUT",
+      body: JSON.stringify({ albumIds }),
+    }),
+  search: (q: string) =>
+    request<SearchResponse>(`/search?q=${encodeURIComponent(q)}`),
 };
 
 /** Full-page redirect into the Spotify consent screen. */

@@ -139,22 +139,32 @@ snapshot check — Spotify's playlist `snapshot_id` lags external edits.
 
 ---
 
-## Phase 4 — Backlog
+## Phase 4 — Backlog  ✅ done (2026-08-28)
 
 Goal: put albums in a queue and start them.
 
-- [ ] `shared` — backlog schema (already stubbed in Phase 0; finalize)
-- [ ] routes: `GET/POST/DELETE /api/backlog`; `GET /api/search?q=` (album
-      search passthrough); `POST /api/playback/play` accepts an album
-      context uri
-- [ ] `server` — enrich backlog entries with album metadata on read
-      (cover, artist, year, track count, length) via cached `getAlbum`
-- [ ] `web/features/backlog` — album cards; add-by-search; remove;
-      "Play album" (from the top); reorder (drag) — reorder is **(S)**
-- [ ] "Play this album" also available from the now-playing / album view
+- [x] `spotify/albums.ts` — `getAlbum`/`getAlbums` (7-day on-disk cache,
+      `/albums?ids=` batching), `searchAlbums`, `toAlbumSummary`
+      (year, track count, summed duration), `parseAlbumId` (id / URI /
+      URL)
+- [x] routes: `GET /api/backlog` (enriched, priority-sorted),
+      `POST /api/backlog` (id or link, dedup, real 404 kept distinct
+      from transient errors), `DELETE /api/backlog/:albumId`,
+      `PUT /api/backlog` (reorder), `GET /api/search?q=`
+- [x] play-album reuses Phase 2 `POST /api/playback/play {contextUri}`
+      (device fallback included)
+- [x] `web/features/backlog` — `useBacklog` (optimistic remove/reorder),
+      `AlbumSearch` (debounced, paste-a-link shortcut), `BacklogPage`
+      cards with cover→`/album/:id`, meta line, Play / ▲▼ / Remove
+- [ ] "Play this album" from now-playing/album view — deferred to Phase 5
+      (album view)
 
-**AC:** search an album → add to backlog → it shows with full metadata →
-"Play album" starts it from track 1 on the active device → remove works.
+**AC:** ✅ verified live — search "deafheaven sunbather" → add by id and by
+link → cards show year · N tracks · duration → reorder + remove work →
+"Play album" with no active device falls back to the preferred device and
+starts at **track 1** ("Dream House"). Test backlog cleared afterward.
+Fix: routes no longer mask transient Spotify errors as "album not found"
+(only a real 404 does).
 
 ---
 

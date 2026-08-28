@@ -14,7 +14,6 @@ function Stub({ title, phase }: StubProps) {
   );
 }
 
-export const BacklogPage = () => <Stub title="Backlog" phase="Phase 4" />;
 export const AlbumPage = () => <Stub title="Album" phase="Phase 5" />;
 export const RevisitPage = () => <Stub title="Revisit" phase="Phase 6" />;
 
