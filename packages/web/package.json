@@ -1,5 +1,5 @@
 {
-  "name": "@spotify-companion/web",
+  "name": "@gatefold/web",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -10,7 +10,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@spotify-companion/shared": "*",
+    "@gatefold/shared": "*",
     "@tanstack/react-query": "^5.62.7",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

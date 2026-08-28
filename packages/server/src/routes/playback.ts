@@ -5,7 +5,7 @@ import {
   transferRequestSchema,
   type DevicesResponse,
   type PlaybackState,
-} from "@spotify-companion/shared";
+} from "@gatefold/shared";
 import { AppError } from "../errors.js";
 import {
   getDevices,

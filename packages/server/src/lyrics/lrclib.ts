@@ -1,10 +1,10 @@
-import type { LyricLine, TrackLyrics } from "@spotify-companion/shared";
+import type { LyricLine, TrackLyrics } from "@gatefold/shared";
 import { makeCache } from "../cache.js";
 
 const cache = makeCache("lyrics");
 const LYRICS_TTL_MS = 30 * 24 * 3600_000; // 30 days; also caches misses
 const BASE = "https://lrclib.net/api";
-const UA = "spotify-companion (local listening app)";
+const UA = "gatefold (self-hosted album listening app)";
 
 const EMPTY: TrackLyrics = {
   source: null,

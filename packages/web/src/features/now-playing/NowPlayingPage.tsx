@@ -1,6 +1,6 @@
 import { type MouseEvent } from "react";
 import { Link } from "react-router-dom";
-import type { Device } from "@spotify-companion/shared";
+import type { Device } from "@gatefold/shared";
 import { formatDuration } from "../../lib/format";
 import { RecentPage } from "../recent/RecentPage";
 import { BangerButton, LikeButton } from "../recent/TriageControls";

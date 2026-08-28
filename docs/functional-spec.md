@@ -1,4 +1,4 @@
-# Album Listening Companion — Functional Spec
+# Gatefold — Functional Spec
 
 Status: **v0.6 draft — MVP1 scoped; no app-side listening log (use Spotify's 50)**
 Date: 2026-08-27

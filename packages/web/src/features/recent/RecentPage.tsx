@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import type { RecentRow } from "@spotify-companion/shared";
+import type { RecentRow } from "@gatefold/shared";
 import { formatRelative } from "../../lib/format";
 import { BangerButton, LikeButton } from "./TriageControls";
 import { useRecent } from "./useRecent";

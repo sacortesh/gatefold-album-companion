@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { BacklogResponse } from "@spotify-companion/shared";
+import type { BacklogResponse } from "@gatefold/shared";
 import { api, ApiRequestError } from "../../api/client";
 
 export const BACKLOG_KEY = ["backlog"] as const;

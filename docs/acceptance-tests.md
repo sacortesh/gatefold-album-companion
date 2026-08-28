@@ -1,4 +1,4 @@
-# Acceptance Tests — MVP1
+# Gatefold — Acceptance Tests (MVP1)
 
 Manual BDD suite for validating the UI and the end-to-end journeys before
 taking ownership of the code. Written 2026-08-28, covers Phases 0–6.

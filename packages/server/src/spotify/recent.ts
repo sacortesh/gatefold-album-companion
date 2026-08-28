@@ -1,4 +1,4 @@
-import type { TrackRef } from "@spotify-companion/shared";
+import type { TrackRef } from "@gatefold/shared";
 import { spotifyRequest } from "./client.js";
 
 interface RawTrack {

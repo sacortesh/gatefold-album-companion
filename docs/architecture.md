@@ -1,4 +1,4 @@
-# Architecture
+# Gatefold — Architecture
 
 Status: **proposal** — pairs with `functional-spec.md` v0.6
 Date: 2026-08-27

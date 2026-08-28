@@ -1,4 +1,4 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { Link, NavLink, Outlet } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../api/client";
 import { NowPlayingCard } from "./NowPlayingCard";
@@ -32,8 +32,17 @@ function HealthDot() {
 export function Layout() {
   return (
     <div className="mx-auto flex min-h-screen max-w-5xl flex-col px-6">
-      <header className="flex items-center justify-between border-b border-neutral-800 py-4">
-        <nav className="flex gap-1">
+      <header className="border-b border-neutral-800 py-4">
+        <div className="flex items-center justify-between">
+          <Link
+            to="/"
+            className="text-sm font-semibold tracking-tight text-neutral-100"
+          >
+            <span className="text-emerald-500">▸</span> Gatefold
+          </Link>
+          <HealthDot />
+        </div>
+        <nav className="mt-3 flex flex-wrap gap-1">
           {navItems.map((item) => (
             <NavLink
               key={item.to}
@@ -51,7 +60,6 @@ export function Layout() {
             </NavLink>
           ))}
         </nav>
-        <HealthDot />
       </header>
 
       <main className="flex-1 py-8 pb-28">

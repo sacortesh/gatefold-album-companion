@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import { configSchemas, type ConfigName } from "@spotify-companion/shared";
+import { configSchemas, type ConfigName } from "@gatefold/shared";
 import { AppError } from "../errors.js";
 import { readConfig, writeConfig } from "../store/config.js";
 

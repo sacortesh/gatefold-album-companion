@@ -4,7 +4,7 @@ import { reviewSchema } from "./review.js";
 /** `GET /api/health` */
 export const healthResponseSchema = z.object({
   ok: z.literal(true),
-  service: z.literal("spotify-companion"),
+  service: z.literal("gatefold"),
   version: z.string(),
   time: z.string(),
 });

@@ -2,7 +2,7 @@ import type {
   Device,
   NowPlayingTrack,
   PlaybackState,
-} from "@spotify-companion/shared";
+} from "@gatefold/shared";
 import { spotifyRequest } from "./client.js";
 
 // --- Raw Spotify shapes (partial) ------------------------------------

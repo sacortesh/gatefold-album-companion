@@ -1,4 +1,4 @@
-# Implementation Plan — MVP1
+# Gatefold — Implementation Plan
 
 Status: **proposal** — pairs with `functional-spec.md` v0.6 and
 `architecture.md`

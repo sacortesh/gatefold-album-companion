@@ -1,6 +1,6 @@
 /** A polite identifier for the third-party metadata APIs (MusicBrainz asks for one). */
 export const USER_AGENT =
-  "spotify-companion/0.1.0 (personal album listening companion)";
+  "gatefold/0.1.0 (+https://github.com/sacortesh/album-companion)";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 

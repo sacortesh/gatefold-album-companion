@@ -1,4 +1,4 @@
-# Album Companion
+# Gatefold
 
 A companion app on top of Spotify for **deliberate album listening** — work
 through a backlog of albums one at a time, read the whole-album lyrics and

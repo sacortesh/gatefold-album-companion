@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import type { SearchResponse } from "@spotify-companion/shared";
+import type { SearchResponse } from "@gatefold/shared";
 import { searchAlbums } from "../spotify/albums.js";
 
 export async function searchRoutes(app: FastifyInstance): Promise<void> {

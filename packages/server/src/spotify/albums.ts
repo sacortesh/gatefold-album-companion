@@ -1,4 +1,4 @@
-import type { AlbumSummary } from "@spotify-companion/shared";
+import type { AlbumSummary } from "@gatefold/shared";
 import { makeCache } from "../cache.js";
 import { spotifyRequest } from "./client.js";
 

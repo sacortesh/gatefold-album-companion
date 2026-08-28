@@ -5,7 +5,7 @@ import {
   reviewFrontmatterSchema,
   type Review,
   type ReviewFrontmatter,
-} from "@spotify-companion/shared";
+} from "@gatefold/shared";
 import { CONFIG_DIR, REVIEWS_DIR, ROOT } from "../paths.js";
 
 /** Fallback when `data/config/review-template.md` is missing. */

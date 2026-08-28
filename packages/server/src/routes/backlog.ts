@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import type { BacklogItem } from "@spotify-companion/shared";
+import type { BacklogItem } from "@gatefold/shared";
 import {
   addBacklogRequestSchema,
   bulkAddBacklogRequestSchema,
@@ -7,7 +7,7 @@ import {
   type BacklogEntry,
   type BacklogResponse,
   type PlaylistAlbumsResponse,
-} from "@spotify-companion/shared";
+} from "@gatefold/shared";
 import { AppError } from "../errors.js";
 import {
   getAlbum,

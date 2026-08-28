@@ -1,7 +1,7 @@
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
-import { configSchemas, type ConfigName } from "@spotify-companion/shared";
+import { configSchemas, type ConfigName } from "@gatefold/shared";
 import { CONFIG_DIR } from "../paths.js";
 
 type ConfigValue<N extends ConfigName> = z.infer<(typeof configSchemas)[N]>;

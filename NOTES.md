@@ -1,4 +1,7 @@
-# Spotify Focus Playlist — Notes
+# Gatefold — Notes
+
+(This file started as notes for a different idea — a focus playlist / download
+tool — and pivoted; see "Pivot" below for the real project.)
 
 Session date: 2026-08-27
 

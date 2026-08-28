@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import type { RevisitEntry } from "@spotify-companion/shared";
+import type { RevisitEntry } from "@gatefold/shared";
 import { api, ApiRequestError } from "../../api/client";
 
 function Row({ entry }: { entry: RevisitEntry }) {

@@ -6,7 +6,7 @@ import {
   type RecentResponse,
   type TrackRef,
   type TrackStatesResponse,
-} from "@spotify-companion/shared";
+} from "@gatefold/shared";
 import { AppError } from "../errors.js";
 import {
   areTracksSaved,

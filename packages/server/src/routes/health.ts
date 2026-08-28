@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import type { FastifyInstance } from "fastify";
-import type { HealthResponse } from "@spotify-companion/shared";
+import type { HealthResponse } from "@gatefold/shared";
 import { ROOT } from "../paths.js";
 
 async function readVersion(): Promise<string> {
@@ -20,7 +20,7 @@ export async function healthRoutes(app: FastifyInstance): Promise<void> {
 
   app.get("/health", async (): Promise<HealthResponse> => ({
     ok: true,
-    service: "spotify-companion",
+    service: "gatefold",
     version,
     time: new Date().toISOString(),
   }));

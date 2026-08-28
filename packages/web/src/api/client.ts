@@ -28,7 +28,7 @@ import type {
   TrackStatesResponse,
   VerdictRequest,
   VerdictResponse,
-} from "@spotify-companion/shared";
+} from "@gatefold/shared";
 
 export class ApiRequestError extends Error {
   constructor(

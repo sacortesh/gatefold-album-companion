@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import type { TrackStatesResponse } from "@spotify-companion/shared";
+import type { TrackStatesResponse } from "@gatefold/shared";
 import { api } from "../../api/client";
 import { useTriage } from "../triage/useTriage";
 

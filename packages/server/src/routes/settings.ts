@@ -2,7 +2,7 @@ import type { FastifyInstance } from "fastify";
 import {
   appSettingsUpdateSchema,
   type AppSettings,
-} from "@spotify-companion/shared";
+} from "@gatefold/shared";
 import {
   getAppConfig,
   updateAppConfig,

@@ -1,5 +1,5 @@
 {
-  "name": "@spotify-companion/server",
+  "name": "@gatefold/server",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@fastify/static": "^10.1.3",
-    "@spotify-companion/shared": "*",
+    "@gatefold/shared": "*",
     "dotenv": "^16.4.7",
     "fastify": "^5.2.1",
     "gray-matter": "^4.0.3",

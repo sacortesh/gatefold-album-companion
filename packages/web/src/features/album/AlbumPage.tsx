@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import type { AlbumTrack } from "@spotify-companion/shared";
+import type { AlbumTrack } from "@gatefold/shared";
 import { api, ApiRequestError } from "../../api/client";
 import { formatDuration } from "../../lib/format";
 import { useBacklog } from "../backlog/useBacklog";

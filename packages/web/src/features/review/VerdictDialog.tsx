@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import type { Review, Verdict } from "@spotify-companion/shared";
+import type { Review, Verdict } from "@gatefold/shared";
 import { api } from "../../api/client";
 import { useSubmitVerdict } from "./useVerdict";
 

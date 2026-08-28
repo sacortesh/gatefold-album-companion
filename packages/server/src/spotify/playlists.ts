@@ -1,4 +1,4 @@
-import type { AlbumSummary, PlaylistLite } from "@spotify-companion/shared";
+import type { AlbumSummary, PlaylistLite } from "@gatefold/shared";
 import { spotifyRequest } from "./client.js";
 import { getMe } from "./client.js";
 

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import type { RecentResponse } from "@spotify-companion/shared";
+import type { RecentResponse } from "@gatefold/shared";
 import { api, ApiRequestError } from "../../api/client";
 import { useTriage } from "../triage/useTriage";
 

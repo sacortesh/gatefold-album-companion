@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import type { AlbumSummary } from "@spotify-companion/shared";
+import type { AlbumSummary } from "@gatefold/shared";
 import { api } from "../../api/client";
 import { parseAlbumId } from "../../lib/spotify";
 import { useDebounced } from "../../lib/useDebounced";

@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import type { BacklogEntry } from "@spotify-companion/shared";
+import type { BacklogEntry } from "@gatefold/shared";
 import { formatDuration } from "../../lib/format";
 import { AlbumSearch } from "./AlbumSearch";
 import { PlaylistImport } from "./PlaylistImport";

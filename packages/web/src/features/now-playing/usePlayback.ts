@@ -4,7 +4,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import type { PlaybackState } from "@spotify-companion/shared";
+import type { PlaybackState } from "@gatefold/shared";
 import { api, ApiRequestError } from "../../api/client";
 
 export const PLAYBACK_KEY = ["playback"] as const;

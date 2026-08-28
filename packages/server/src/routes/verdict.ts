@@ -4,7 +4,7 @@ import {
   type Review,
   type RevisitResponse,
   type VerdictResponse,
-} from "@spotify-companion/shared";
+} from "@gatefold/shared";
 import { AppError } from "../errors.js";
 import { getAlbum, getAlbums, toAlbumSummary } from "../spotify/albums.js";
 import {

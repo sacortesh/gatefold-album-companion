@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import type { AuthStatus } from "@spotify-companion/shared";
+import type { AuthStatus } from "@gatefold/shared";
 import {
   buildAuthorizeUrl,
   consumeAuthState,

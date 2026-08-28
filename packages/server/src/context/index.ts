@@ -1,4 +1,4 @@
-import type { AlbumContext } from "@spotify-companion/shared";
+import type { AlbumContext } from "@gatefold/shared";
 import { makeCache } from "../cache.js";
 import { getAppConfig } from "../store/appConfig.js";
 import { getDiscogs } from "./discogs.js";

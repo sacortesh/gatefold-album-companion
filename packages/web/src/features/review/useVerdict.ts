@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { Review, VerdictRequest } from "@spotify-companion/shared";
+import type { Review, VerdictRequest } from "@gatefold/shared";
 import { api, ApiRequestError } from "../../api/client";
 import { BACKLOG_KEY } from "../backlog/useBacklog";
 

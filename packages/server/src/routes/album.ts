@@ -4,7 +4,7 @@ import type {
   AlbumDetail,
   AlbumLyricsResponse,
   AlbumTrack,
-} from "@spotify-companion/shared";
+} from "@gatefold/shared";
 import { getAlbumContext } from "../context/index.js";
 import { getLyrics } from "../lyrics/lrclib.js";
 import {

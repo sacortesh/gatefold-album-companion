@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import type { TrackLyrics } from "@spotify-companion/shared";
+import type { TrackLyrics } from "@gatefold/shared";
 
 interface Props {
   lyrics: TrackLyrics | undefined;
