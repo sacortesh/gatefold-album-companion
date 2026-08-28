@@ -53,6 +53,7 @@ Feature: Spotify connection
     When I open any page
     Then every page shows "Spotify isn't connected" with a link to Settings
     And Settings shows a green "Connect Spotify" button
+    OK @sergio
 
   Scenario: Connecting
     When I click "Connect Spotify"
@@ -61,6 +62,8 @@ Feature: Spotify connection
     Then I land back on Settings with a green banner "Connected to Spotify."
     And Settings shows "Connected as <my name>"
     And it shows "10 granted" scopes and a token-expiry time
+    OK @sergio
+
 
   Scenario: Declining
     When I click "Connect Spotify" and then cancel on Spotify's screen
@@ -72,6 +75,7 @@ Feature: Spotify connection
     When I stop the dev server (Ctrl-C) and run `npm run dev` again
     And I reload the app
     Then Settings still shows "Connected as <my name>" without re-approving
+    OK @sergio
 
   Scenario: Access token refreshes transparently (dev build only)
     Given I am connected
@@ -81,17 +85,21 @@ Feature: Spotify connection
     When I click "Corrupt access token (force 401)"
     And I reload
     Then the status recovers to "Connected" again
+    OK @sergio
 
   Scenario: Disconnecting
     When I click "Disconnect"
     Then the status returns to "Not connected" with a Connect button
     And data/.auth.json is removed
+    OK @sergio
 
   Scenario: Missing credentials
     Given SPOTIFY_CLIENT_ID / SECRET are blank in .env
     When I open Settings
     Then it tells me to add them to .env and restart
     And "Connect Spotify" is not offered
+    OK @sergio
+
 ```
 
 ---
@@ -113,10 +121,14 @@ Feature: Now Playing panel
       album, and cover art
     And "Playing on <device name>" is shown
     And the progress bar advances roughly in real time
+    OK @sergio
+
 
   Scenario: Album position
     Given the current track is being played from its album (not a playlist)
     Then the panel shows "track N of M"
+    OK @sergio
+
 
   Scenario: Pause and resume
     When I click "Pause"
@@ -124,21 +136,28 @@ Feature: Now Playing panel
     And the music stops within ~1 second
     When I click "Play"
     Then the music resumes and the button flips back to "Pause"
+    OK @sergio
+
 
   Scenario: Skip
     When I click the ⏭ button
     Then playback advances to the next track and the panel updates
     When I click ⏮
     Then it goes back
+    OK @sergio
+
 
   Scenario: Seek by clicking the bar
     When I click near the right end of the progress bar
     Then playback jumps to roughly that position
     And the elapsed / remaining times update
+    OK @sergio // this is crazy we have our own client
 
   Scenario: Album link
     When I click the album name in the panel
     Then I land on that album's page
+    OK @sergio
+
 
   Scenario: Nothing playing
     Given playback is stopped on every device
@@ -146,6 +165,8 @@ Feature: Now Playing panel
     Then it says "Nothing is playing" with a hint to start Spotify or pick
       a device
     And the recently-listened list is still shown below
+    OK @sergio
+
 ```
 
 ---
@@ -164,17 +185,23 @@ Feature: Device selection
   Scenario: Devices are listed
     Then I see each of my active Spotify devices with its name and type
     And the currently-active one is tagged "active"
+    OK @sergio
+
 
   Scenario: Setting a preferred device persists
     When I select a device with the radio button
     And I reload the page
     Then that device is still selected
     And data/config/settings.json shows its id as preferredDeviceId
+    OK @sergio
+
 
   Scenario: Play here
     Given a device is not the active one
     When I click "Play here" on its row
     Then playback transfers to that device within a couple of seconds
+    OK @sergio
+
 
   Scenario: Fallback when nothing is active
     Given no device is currently active
@@ -182,12 +209,15 @@ Feature: Device selection
     When I press Play on home, or "Play album" anywhere
     Then playback starts on the preferred device
     And it starts from the beginning of the track/album
+    OK @sergio
 
   Scenario: No device and no preference
     Given no device is active and no preferred device is set
     When I try to Play
     Then I get a calm message: "No active Spotify device. Open Spotify
       somewhere, or pick a device in Settings."
+    OK @sergio  
+
 ```
 
 ---
@@ -290,6 +320,7 @@ Feature: Album backlog
     When I click "Add" on one
     Then it appears as a card in the backlog list
     And the card shows "year · N tracks · <duration>"
+    OK @sergio
 
   Scenario: Add by link
     When I paste an open.spotify.com/album/... URL into the search box
@@ -314,6 +345,7 @@ Feature: Album backlog
     Given I have an active or preferred device
     When I click "Play album" on a card
     Then that album starts playing from track 1
+    OK @sergio
 
   Scenario: Open the album
     When I click a card's cover or title
@@ -322,6 +354,7 @@ Feature: Album backlog
   Scenario: Empty backlog
     Given the backlog is empty
     Then the page says so and points me at the search box
+    OK @sergio
 
   Scenario: A removed-from-Spotify album degrades gracefully
     Given an album in the backlog no longer resolves on Spotify
@@ -346,27 +379,32 @@ Feature: Album page
     And a line with year · track count · total duration · label
     And genres (if Spotify provides any)
     And a copyright line near the lyrics
+    OK @sergio
 
   Scenario: Full tracklist
     Then every track is listed with its number, title, and duration
     And explicit tracks show an "E" tag
     And a track has track-level Like and Banger buttons
+    OK @sergio
 
   Scenario: Selecting a track shows its lyrics
     When I click a track row
     Then the row highlights
     And the lyrics panel switches to that track's lyrics
     And the panel heading reads "<track name> — lyrics"
+    OK @sergio
 
   Scenario: Play from a track
     When I click a row's number (it becomes ▶ on hover) 
     Then playback starts the album from that track
+    OK @sergio
 
   Scenario: Synced lyrics follow the music
     Given the selected track is the one currently playing
     And that track has time-synced lyrics on LRCLIB
     Then the current line is highlighted and the panel auto-scrolls to it
     And past lines are dimmed
+    OK @sergio 
 
   Scenario: Lyrics fallbacks
     Given a track has only plain lyrics
@@ -376,16 +414,22 @@ Feature: Album page
     Given a track has no lyrics anywhere
     Then the panel says "No lyrics found."
     And the rest of the album still works
+    OK @sergio 
+
 
   Scenario: Backlog toggle
     Given the album is in my backlog
     Then a "Remove from backlog" button is shown
     Given it is not
     Then an "Add to backlog" button is shown, and clicking it adds it
+    NOTOK @sergio - add to backlog here seems broken, review.
+
 
   Scenario: Track-level triage state is accurate
     Then a track I have already Liked shows a filled ♥
     And a track already in the Banger playlist shows "✓ <label>"
+    NOTOK @sergio - tracks liked on spotify not reflect as liked in this app.
+
 ```
 
 ---
@@ -405,6 +449,8 @@ Feature: Finishing an album
     When I click "Finish album"
     Then a dialog opens with four verdicts (Keep / Revisit / Pass / Delete),
       a 1–10 rating, a tags field, and a notes box
+    OK @sergio
+
 
   Scenario: Pass
     When I choose "Pass", add a note, and click "Save & clear"
@@ -413,18 +459,25 @@ Feature: Finishing an album
     And a file data/reviews/2026/<artist>-<album>.md is written with my
       note and `verdict: pass`
     And nothing changes in my Spotify library
+    OK @sergio
+
 
   Scenario: Keep
     When I choose "Keep" and save
     Then the album is saved to my Spotify "Saved Albums"
     And the review file records `verdict: keep`
     And it leaves the backlog
+    OK @sergio
+
 
   Scenario: Revisit
     When I choose "Revisit" and save
     Then the album appears on the Revisit page
     And a review file is written
     And it leaves the backlog
+    OK @sergio
+
+
 
   Scenario: Delete
     Given the album is currently in my Saved Albums
@@ -435,6 +488,8 @@ Feature: Finishing an album
   Scenario: Rating and tags are captured
     When I pick a rating and enter "tag one, tag two"
     Then the review file has `rating:` and a `tags:` list
+    OK @sergio
+
 
   Scenario: Re-reviewing
     Given a review already exists for this album
@@ -443,10 +498,14 @@ Feature: Finishing an album
     When I open it, the dialog is pre-filled with the prior values
     When I change the verdict and save
     Then the file is updated and `listenedOn` (the original date) is kept
+    OK @sergio
+
 
   Scenario: Escape / backdrop close
     When I press Escape or click outside the dialog
     Then it closes without saving
+    OK @sergio
+
 ```
 
 ---
@@ -464,18 +523,24 @@ Feature: Revisit page
     Then each album shows its cover, name, artist
     And its prior verdict, rating, and notes preview
     And a "revisited N×" count if it has been through more than once
+    OK @sergio
+
 
   Scenario: Acting on a revisit item
     When I click "Play"
     Then the album starts playing
     When I click "Open"
     Then I land on the album page, where I can Update the review
+    OK @sergio
+
 
   Scenario: Completing a revisit
     Given an album is on the Revisit page
     When I open it and give it a non-Revisit verdict (Keep / Pass / Delete)
     Then it disappears from the Revisit page
     And its review's `revisitedOn` gains today's date
+    OK @sergio
+
 ```
 
 ---
