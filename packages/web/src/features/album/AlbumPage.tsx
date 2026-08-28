@@ -9,6 +9,8 @@ import { usePlayback } from "../now-playing/usePlayback";
 import { BangerButton, LikeButton } from "../recent/TriageControls";
 import { VerdictDialog } from "../review/VerdictDialog";
 import { useAlbumReview } from "../review/useVerdict";
+import { useTriageHotkeys } from "../triage/useTriageHotkeys";
+import { AlbumContextPanel } from "./AlbumContextPanel";
 import { LyricsPanel } from "./LyricsPanel";
 import { useAlbumTriage } from "./useAlbumTriage";
 
@@ -113,7 +115,7 @@ export function AlbumPage() {
     staleTime: 5 * 60_000,
   });
 
-  const { state, displayMs } = usePlayback();
+  const { state, displayMs, controls } = usePlayback();
   const backlog = useBacklog();
   const review = useAlbumReview(id);
 
@@ -123,12 +125,36 @@ export function AlbumPage() {
     tracks.map((t) => t.id),
   );
 
+  const nowId = state?.track?.id ?? null;
+  const nowInAlbum = tracks.some((t) => t.id === nowId);
+  const selectedId = picked ?? (nowInAlbum ? nowId : (tracks[0]?.id ?? null));
+  const thisAlbumIsPlaying = Boolean(
+    album.data && state?.contextUri === album.data.uri,
+  );
+
+  // L / B act on the playing track when it's on this album, otherwise on the
+  // selected row.
+  const hotkeyTargetId = nowInAlbum ? nowId : selectedId;
+  useTriageHotkeys(
+    Boolean(hotkeyTargetId),
+    () =>
+      hotkeyTargetId &&
+      triage.toggleLike(hotkeyTargetId, triage.stateFor(hotkeyTargetId).liked),
+    () => hotkeyTargetId && triage.fireBanger(hotkeyTargetId),
+  );
+
   const playAlbum = useMutation({
-    mutationFn: () => api.play({ contextUri: album.data!.uri }),
+    mutationFn: () =>
+      api.play({ contextUri: album.data!.uri, shuffle: false, repeat: "off" }),
   });
   const playFrom = useMutation({
     mutationFn: (trackUri: string) =>
-      api.play({ contextUri: album.data!.uri, offset: { uri: trackUri } }),
+      api.play({
+        contextUri: album.data!.uri,
+        offset: { uri: trackUri },
+        shuffle: false,
+        repeat: "off",
+      }),
   });
 
   if (album.error?.status === 401) {
@@ -152,14 +178,13 @@ export function AlbumPage() {
     );
 
   const a = album.data;
-  const nowId = state?.track?.id ?? null;
-  const nowInAlbum = tracks.some((t) => t.id === nowId);
-  const selectedId =
-    picked ?? (nowInAlbum ? nowId : (tracks[0]?.id ?? null));
   const selectedTrack = tracks.find((t) => t.id === selectedId) ?? null;
   const albumArtistKey = a.artists.join("|");
 
   const playMutationError = (playAlbum.error ?? playFrom.error) as
+    | Error
+    | undefined;
+  const backlogMutationError = (backlog.add.error ?? backlog.remove.error) as
     | Error
     | undefined;
 
@@ -188,14 +213,42 @@ export function AlbumPage() {
             <p className="text-xs text-neutral-600">{a.genres.join(", ")}</p>
           )}
 
-          <div className="flex flex-wrap gap-2 pt-2">
-            <button
-              type="button"
-              onClick={() => playAlbum.mutate()}
-              className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500"
-            >
-              Play album
-            </button>
+          <div className="flex flex-wrap items-center gap-2 pt-2">
+            {thisAlbumIsPlaying ? (
+              <>
+                <button
+                  type="button"
+                  onClick={controls.previous}
+                  className="rounded-md border border-neutral-700 px-3 py-2 text-sm hover:bg-neutral-800"
+                  aria-label="Previous track"
+                >
+                  ⏮
+                </button>
+                <button
+                  type="button"
+                  onClick={controls.toggle}
+                  className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500"
+                >
+                  {state?.isPlaying ? "Pause" : "Resume"}
+                </button>
+                <button
+                  type="button"
+                  onClick={controls.next}
+                  className="rounded-md border border-neutral-700 px-3 py-2 text-sm hover:bg-neutral-800"
+                  aria-label="Next track"
+                >
+                  ⏭
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={() => playAlbum.mutate()}
+                className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500"
+              >
+                Play album
+              </button>
+            )}
             <button
               type="button"
               onClick={() => setReviewOpen(true)}
@@ -207,22 +260,29 @@ export function AlbumPage() {
               <button
                 type="button"
                 onClick={() => backlog.remove.mutate(a.id)}
-                className="rounded-md border border-neutral-800 px-3 py-2 text-sm text-neutral-400 hover:bg-neutral-800"
+                disabled={backlog.remove.isPending}
+                className="rounded-md border border-neutral-800 px-3 py-2 text-sm text-neutral-400 hover:bg-neutral-800 disabled:opacity-50"
               >
-                Remove from backlog
+                {backlog.remove.isPending ? "Removing…" : "Remove from backlog"}
               </button>
             ) : (
               <button
                 type="button"
                 onClick={() => backlog.add.mutate(a.id)}
-                className="rounded-md border border-neutral-700 px-3 py-2 text-sm hover:bg-neutral-800"
+                disabled={backlog.add.isPending}
+                className="rounded-md border border-neutral-700 px-3 py-2 text-sm hover:bg-neutral-800 disabled:opacity-50"
               >
-                Add to backlog
+                {backlog.add.isPending ? "Adding…" : "Add to backlog"}
               </button>
             )}
           </div>
           {playMutationError && (
             <p className="text-sm text-red-400">{playMutationError.message}</p>
+          )}
+          {backlogMutationError && (
+            <p className="text-sm text-red-400">
+              Couldn&apos;t update the backlog: {backlogMutationError.message}
+            </p>
           )}
 
           {review.data && (
@@ -247,34 +307,46 @@ export function AlbumPage() {
         </div>
       </div>
 
+      <AlbumContextPanel albumId={a.id} />
+
       <div className="grid gap-8 lg:grid-cols-2">
-        <ol className="space-y-0.5">
-          {tracks.map((t, i) => {
-            const st = triage.stateFor(t.id);
-            return (
-              <TrackRow
-                key={t.id}
-                track={t}
-                index={i}
-                selected={t.id === selectedId}
-                isNow={t.id === nowId}
-                showArtist={t.artists.join("|") !== albumArtistKey}
-                liked={st.liked}
-                inBanger={st.inBanger}
-                bangerLabel={triage.bangerLabel}
-                pending={triage.pendingTrackId === t.id}
-                onSelect={() => setPicked(t.id)}
-                onPlay={() => playFrom.mutate(t.uri)}
-                onLike={() => triage.toggleLike(t.id, st.liked)}
-                onBanger={() => triage.fireBanger(t.id)}
-              />
-            );
-          })}
-        </ol>
+        <div>
+          <p className="mb-2 text-xs text-neutral-600">
+            <kbd>P</kbd> play/pause · <kbd>L</kbd> like · <kbd>B</kbd> banger —{" "}
+            {nowInAlbum
+              ? "on the playing track"
+              : selectedTrack
+                ? `on “${selectedTrack.name}” (selected)`
+                : "on the selected track"}
+          </p>
+          <ol className="space-y-0.5">
+            {tracks.map((t, i) => {
+              const st = triage.stateFor(t.id);
+              return (
+                <TrackRow
+                  key={t.id}
+                  track={t}
+                  index={i}
+                  selected={t.id === selectedId}
+                  isNow={t.id === nowId}
+                  showArtist={t.artists.join("|") !== albumArtistKey}
+                  liked={st.liked}
+                  inBanger={st.inBanger}
+                  bangerLabel={triage.bangerLabel}
+                  pending={triage.pendingTrackId === t.id}
+                  onSelect={() => setPicked(t.id)}
+                  onPlay={() => playFrom.mutate(t.uri)}
+                  onLike={() => triage.toggleLike(t.id, st.liked)}
+                  onBanger={() => triage.fireBanger(t.id)}
+                />
+              );
+            })}
+          </ol>
+        </div>
 
         <div className="lg:sticky lg:top-6 lg:self-start">
           <h2 className="mb-3 text-sm font-medium text-neutral-400">
-            {selectedTrack ? `${selectedTrack.name} — lyrics` : "Lyrics"}
+            {selectedTrack ? `Lyrics: ${selectedTrack.name}` : "Lyrics"}
           </h2>
           <div className="max-h-[70vh] overflow-y-auto pr-2">
             <LyricsPanel

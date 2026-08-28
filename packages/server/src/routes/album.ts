@@ -1,9 +1,11 @@
 import type { FastifyInstance } from "fastify";
 import type {
+  AlbumContext,
   AlbumDetail,
   AlbumLyricsResponse,
   AlbumTrack,
 } from "@spotify-companion/shared";
+import { getAlbumContext } from "../context/index.js";
 import { getLyrics } from "../lyrics/lrclib.js";
 import {
   getAlbum,
@@ -74,6 +76,16 @@ export async function albumRoutes(app: FastifyInstance): Promise<void> {
     const raw = await getAlbum(id);
     const tracks = await getAlbumTracks(raw);
     return buildDetail(raw, tracks);
+  });
+
+  app.get("/album/:id/context", async (req): Promise<AlbumContext> => {
+    const { id } = req.params as { id: string };
+    const raw = await getAlbum(id);
+    return getAlbumContext({
+      artist: raw.artists?.[0]?.name ?? "",
+      album: raw.name,
+      year: raw.release_date?.slice(0, 4) ?? null,
+    });
   });
 
   app.get("/album/:id/lyrics", async (req): Promise<AlbumLyricsResponse> => {
