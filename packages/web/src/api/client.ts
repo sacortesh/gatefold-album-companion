@@ -1,4 +1,5 @@
 import type {
+  AlbumContext,
   AlbumDetail,
   AlbumLyricsResponse,
   ApiError,
@@ -12,6 +13,7 @@ import type {
   DevicesResponse,
   HealthResponse,
   PlaybackState,
+  PlaylistAlbumsResponse,
   PlaylistsResponse,
   PlayRequest,
   RecentResponse,
@@ -123,8 +125,17 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ album }),
     }),
+  bulkAddToBacklog: (albums: string[]) =>
+    request<BacklogResponse>("/backlog/bulk", {
+      method: "POST",
+      body: JSON.stringify({ albums }),
+    }),
   removeFromBacklog: (albumId: string) =>
     request<{ ok: true }>(`/backlog/${albumId}`, { method: "DELETE" }),
+  playlistAlbums: (playlist: string) =>
+    request<PlaylistAlbumsResponse>(
+      `/playlist/${encodeURIComponent(playlist)}/albums`,
+    ),
   reorderBacklog: (albumIds: string[]) =>
     request<{ ok: true }>("/backlog", {
       method: "PUT",
@@ -134,6 +145,7 @@ export const api = {
     request<SearchResponse>(`/search?q=${encodeURIComponent(q)}`),
 
   album: (id: string) => request<AlbumDetail>(`/album/${id}`),
+  albumContext: (id: string) => request<AlbumContext>(`/album/${id}/context`),
   albumLyrics: (id: string) =>
     request<AlbumLyricsResponse>(`/album/${id}/lyrics`),
   trackStates: (ids: string[]) =>
@@ -147,6 +159,7 @@ export const api = {
       body: JSON.stringify(body),
     }),
   reviews: () => request<ReviewsResponse>("/reviews"),
+  reviewTemplate: () => request<{ template: string }>("/review-template"),
   review: (albumId: string) => request<Review>(`/review/${albumId}`),
   revisit: () => request<RevisitResponse>("/revisit"),
 };

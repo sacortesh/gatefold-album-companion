@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import type { Review, Verdict } from "@spotify-companion/shared";
+import { api } from "../../api/client";
 import { useSubmitVerdict } from "./useVerdict";
 
 const VERDICTS: Array<{ value: Verdict; label: string; hint: string }> = [
@@ -7,6 +9,18 @@ const VERDICTS: Array<{ value: Verdict; label: string; hint: string }> = [
   { value: "revisit", label: "Revisit", hint: "Come back later; keeps this review" },
   { value: "pass", label: "Pass", hint: "Not for me — just clears the backlog" },
   { value: "delete", label: "Delete", hint: "Pass + remove from saved albums" },
+];
+
+/** Quick-add chips for the tags field — genres and how the album felt. */
+const SUGGESTED_TAGS = [
+  "night-driving",
+  "focus",
+  "cathartic",
+  "melancholy",
+  "euphoric",
+  "unsettling",
+  "comfort",
+  "grower",
 ];
 
 interface Props {
@@ -23,6 +37,24 @@ export function VerdictDialog({ albumId, albumName, existing, onClose }: Props) 
   const [tags, setTags] = useState((existing?.tags ?? []).join(", "));
   const [notes, setNotes] = useState(existing?.notes ?? "");
 
+  const template = useQuery({
+    queryKey: ["review-template"],
+    queryFn: api.reviewTemplate,
+    staleTime: 5 * 60_000,
+  });
+
+  const parseTags = (s: string): string[] =>
+    s
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean);
+
+  const addTag = (tag: string) => {
+    const current = parseTags(tags);
+    if (current.includes(tag)) return;
+    setTags([...current, tag].join(", "));
+  };
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
@@ -35,10 +67,7 @@ export function VerdictDialog({ albumId, albumName, existing, onClose }: Props) 
         albumId,
         verdict,
         rating,
-        tags: tags
-          .split(",")
-          .map((t) => t.trim())
-          .filter(Boolean),
+        tags: parseTags(tags),
         notes,
       },
       { onSuccess: onClose },
@@ -102,21 +131,49 @@ export function VerdictDialog({ albumId, albumName, existing, onClose }: Props) 
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-xs text-neutral-400">Tags (comma-separated)</label>
+          <label className="text-xs text-neutral-400">
+            Genre, mood, how it made you feel{" "}
+            <span className="text-neutral-600">— optional</span>
+          </label>
           <input
             value={tags}
             onChange={(e) => setTags(e.target.value)}
             placeholder="blackgaze, 2013, night-driving"
             className="w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm"
           />
+          <div className="flex flex-wrap gap-1.5 pt-0.5">
+            {SUGGESTED_TAGS.filter(
+              (t) => !parseTags(tags).includes(t),
+            ).map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => addTag(t)}
+                className="rounded-full border border-neutral-800 px-2 py-0.5 text-xs text-neutral-400 hover:border-neutral-600 hover:text-neutral-200"
+              >
+                + {t}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-xs text-neutral-400">Notes</label>
+          <div className="flex items-center justify-between">
+            <label className="text-xs text-neutral-400">Notes</label>
+            {template.data && !notes.trim() && (
+              <button
+                type="button"
+                onClick={() => setNotes(template.data.template.trimEnd() + "\n")}
+                className="text-xs text-emerald-400 hover:text-emerald-300"
+              >
+                Insert review template
+              </button>
+            )}
+          </div>
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            rows={5}
+            rows={notes.trim() ? 12 : 5}
             className="w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm"
           />
         </div>

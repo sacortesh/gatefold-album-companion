@@ -13,7 +13,12 @@ import {
   saveAlbum,
 } from "../spotify/library.js";
 import { readConfig, writeConfig } from "../store/config.js";
-import { findReview, readAllReviews, writeReview } from "../store/reviews.js";
+import {
+  findReview,
+  readAllReviews,
+  readReviewTemplate,
+  writeReview,
+} from "../store/reviews.js";
 
 const today = (): string => new Date().toISOString().slice(0, 10);
 const dedupe = (xs: string[]): string[] => [...new Set(xs)];
@@ -89,6 +94,10 @@ export async function verdictRoutes(app: FastifyInstance): Promise<void> {
   });
 
   app.get("/reviews", async () => ({ reviews: await readAllReviews() }));
+
+  app.get("/review-template", async () => ({
+    template: await readReviewTemplate(),
+  }));
 
   app.get("/review/:albumId", async (req): Promise<Review> => {
     const { albumId } = req.params as { albumId: string };

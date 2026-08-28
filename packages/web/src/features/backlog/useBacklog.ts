@@ -22,7 +22,12 @@ export function useBacklog() {
 
   const add = useMutation({
     mutationFn: (album: string) => api.addToBacklog(album),
-    onSuccess: invalidate,
+    onSuccess: (entry) => {
+      invalidate();
+      // AlbumPage reads `inBacklog` off the album detail response, not the
+      // backlog query — refresh it so the button reflects the add.
+      void qc.invalidateQueries({ queryKey: ["album", entry.albumId] });
+    },
   });
 
   const remove = useMutation({
@@ -36,7 +41,10 @@ export function useBacklog() {
     onError: (_e, _v, ctx) => {
       if (ctx?.prev) qc.setQueryData(BACKLOG_KEY, ctx.prev);
     },
-    onSettled: invalidate,
+    onSettled: (_d, _e, albumId) => {
+      invalidate();
+      void qc.invalidateQueries({ queryKey: ["album", albumId] });
+    },
   });
 
   const reorder = useMutation({
@@ -56,8 +64,20 @@ export function useBacklog() {
     onSettled: invalidate,
   });
 
+  const importAlbums = useMutation({
+    mutationFn: (albumIds: string[]) => api.bulkAddToBacklog(albumIds),
+    onSuccess: (res) => {
+      qc.setQueryData(BACKLOG_KEY, res);
+      invalidate();
+      for (const item of res.items) {
+        void qc.invalidateQueries({ queryKey: ["album", item.albumId] });
+      }
+    },
+  });
+
   const playAlbum = useMutation({
-    mutationFn: (contextUri: string) => api.play({ contextUri }),
+    mutationFn: (contextUri: string) =>
+      api.play({ contextUri, shuffle: false, repeat: "off" }),
   });
 
   const move = (albumId: string, dir: -1 | 1) => {
@@ -76,6 +96,7 @@ export function useBacklog() {
     add,
     remove,
     reorder,
+    importAlbums,
     playAlbum,
     move,
   };

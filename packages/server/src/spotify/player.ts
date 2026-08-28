@@ -124,15 +124,46 @@ export async function getDevices(): Promise<Device[]> {
 const deviceQuery = (deviceId?: string) =>
   deviceId ? { device_id: deviceId } : {};
 
+export async function setShuffle(
+  state: boolean,
+  deviceId?: string,
+): Promise<void> {
+  await spotifyRequest({
+    method: "PUT",
+    path: "/me/player/shuffle",
+    query: { state: state ? "true" : "false", ...deviceQuery(deviceId) },
+  });
+}
+
+export async function setRepeat(
+  state: "off" | "track" | "context",
+  deviceId?: string,
+): Promise<void> {
+  await spotifyRequest({
+    method: "PUT",
+    path: "/me/player/repeat",
+    query: { state, ...deviceQuery(deviceId) },
+  });
+}
+
 export interface PlayOptions {
   contextUri?: string;
   uris?: string[];
   offset?: { position?: number; uri?: string };
   positionMs?: number;
   deviceId?: string;
+  /** When set, shuffle is forced to this state *before* playback starts. */
+  shuffle?: boolean;
+  /** When set, repeat is forced to this mode *before* playback starts. */
+  repeat?: "off" | "track" | "context";
 }
 
 export async function play(opts: PlayOptions = {}): Promise<void> {
+  // Normalise playback modes first — starting an album context with shuffle on
+  // makes Spotify begin on a random track instead of track 1.
+  if (opts.shuffle !== undefined) await setShuffle(opts.shuffle, opts.deviceId);
+  if (opts.repeat !== undefined) await setRepeat(opts.repeat, opts.deviceId);
+
   const body: Record<string, unknown> = {};
   if (opts.contextUri) body.context_uri = opts.contextUri;
   if (opts.uris) body.uris = opts.uris;

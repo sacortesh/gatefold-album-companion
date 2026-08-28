@@ -98,6 +98,10 @@ export const playRequestSchema = z.object({
     .optional(),
   positionMs: z.number().optional(),
   deviceId: z.string().optional(),
+  /** Force shuffle to this state before starting playback (album listens pass `false`). */
+  shuffle: z.boolean().optional(),
+  /** Force repeat to this mode before starting playback. */
+  repeat: repeatModeSchema.optional(),
 });
 export type PlayRequest = z.infer<typeof playRequestSchema>;
 
@@ -213,10 +217,32 @@ export const reorderBacklogRequestSchema = z.object({
 });
 export type ReorderBacklogRequest = z.infer<typeof reorderBacklogRequestSchema>;
 
+export const bulkAddBacklogRequestSchema = z.object({
+  albums: z.array(z.string().min(1)).min(1),
+});
+export type BulkAddBacklogRequest = z.infer<typeof bulkAddBacklogRequestSchema>;
+
 export const searchResponseSchema = z.object({
   albums: z.array(albumSummarySchema),
 });
 export type SearchResponse = z.infer<typeof searchResponseSchema>;
+
+/** One album distilled out of a source playlist. */
+export const playlistAlbumSchema = z.object({
+  album: albumSummarySchema,
+  /** How many of the playlist's tracks come from this album. */
+  trackCount: z.number(),
+  inBacklog: z.boolean(),
+});
+export type PlaylistAlbum = z.infer<typeof playlistAlbumSchema>;
+
+export const playlistAlbumsResponseSchema = z.object({
+  playlistName: z.string(),
+  albums: z.array(playlistAlbumSchema),
+});
+export type PlaylistAlbumsResponse = z.infer<
+  typeof playlistAlbumsResponseSchema
+>;
 
 // --- Phase 5: album view + lyrics ---------------------------------
 
@@ -300,3 +326,38 @@ export const revisitResponseSchema = z.object({
   items: z.array(revisitEntrySchema),
 });
 export type RevisitResponse = z.infer<typeof revisitResponseSchema>;
+
+// --- Phase 8 Rev-3: album context -------------------------------
+
+export const albumContextCreditSchema = z.object({
+  name: z.string(),
+  roles: z.array(z.string()),
+});
+export type AlbumContextCredit = z.infer<typeof albumContextCreditSchema>;
+
+export const albumContextLinkSchema = z.object({
+  label: z.string(),
+  url: z.string(),
+});
+
+export const albumContextSchema = z.object({
+  /** Prose on why the album matters, from Wikipedia. */
+  summary: z.string().nullable(),
+  summarySource: albumContextLinkSchema.nullable(),
+  /** Personnel / credits, from Discogs, grouped by person. */
+  credits: z.array(albumContextCreditSchema),
+  /** Free-text release notes, from Discogs. */
+  notes: z.string().nullable(),
+  facts: z.object({
+    firstReleased: z.string().nullable(),
+    labels: z.array(z.string()),
+    genres: z.array(z.string()),
+    formats: z.array(z.string()),
+  }),
+  links: z.array(albumContextLinkSchema),
+  /** Providers that actually contributed something. */
+  sources: z.array(z.enum(["musicbrainz", "wikipedia", "discogs"])),
+  /** True when Discogs creds aren't configured, so the UI can nudge. */
+  discogsConfigured: z.boolean(),
+});
+export type AlbumContext = z.infer<typeof albumContextSchema>;
