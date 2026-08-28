@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import type { BacklogEntry } from "@spotify-companion/shared";
 import { formatDuration } from "../../lib/format";
 import { AlbumSearch } from "./AlbumSearch";
+import { PlaylistImport } from "./PlaylistImport";
 import { useBacklog } from "./useBacklog";
 
 function Card({
@@ -127,6 +128,8 @@ export function BacklogPage() {
         addError={add.isError ? (add.error as Error).message : null}
         existingIds={new Set(items.map((i) => i.albumId))}
       />
+
+      <PlaylistImport />
 
       {playAlbum.isError && (
         <p className="text-sm text-red-400">

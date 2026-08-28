@@ -2,9 +2,11 @@ import type { FastifyInstance } from "fastify";
 import type { BacklogItem } from "@spotify-companion/shared";
 import {
   addBacklogRequestSchema,
+  bulkAddBacklogRequestSchema,
   reorderBacklogRequestSchema,
   type BacklogEntry,
   type BacklogResponse,
+  type PlaylistAlbumsResponse,
 } from "@spotify-companion/shared";
 import { AppError } from "../errors.js";
 import {
@@ -13,6 +15,10 @@ import {
   parseAlbumId,
   toAlbumSummary,
 } from "../spotify/albums.js";
+import {
+  getPlaylistAlbums,
+  parsePlaylistId,
+} from "../spotify/playlists.js";
 import { readConfig, writeConfig } from "../store/config.js";
 
 const today = (): string => new Date().toISOString().slice(0, 10);
@@ -72,6 +78,39 @@ export async function backlogRoutes(app: FastifyInstance): Promise<void> {
     return enriched as BacklogEntry;
   });
 
+  app.post("/backlog/bulk", async (req): Promise<BacklogResponse> => {
+    const { albums } = bulkAddBacklogRequestSchema.parse(req.body);
+    const ids = [
+      ...new Set(
+        albums
+          .map((a) => parseAlbumId(a))
+          .filter((x): x is string => Boolean(x)),
+      ),
+    ];
+
+    const backlog = await readConfig("backlog");
+    const have = new Set(backlog.items.map((i) => i.albumId));
+    const toAdd = ids.filter((id) => !have.has(id));
+
+    if (toAdd.length) {
+      const raws = await getAlbums(toAdd);
+      for (const id of toAdd) {
+        const raw = raws.get(id);
+        if (!raw) continue;
+        backlog.items.push({
+          albumId: id,
+          uri: raw.uri,
+          addedAt: today(),
+          priority: backlog.items.length,
+        });
+      }
+      backlog.items = renumber(backlog.items);
+      await writeConfig("backlog", backlog);
+    }
+
+    return { items: await enrich(backlog.items) };
+  });
+
   app.delete("/backlog/:albumId", async (req) => {
     const { albumId } = req.params as { albumId: string };
     const backlog = await readConfig("backlog");
@@ -81,6 +120,45 @@ export async function backlogRoutes(app: FastifyInstance): Promise<void> {
     await writeConfig("backlog", backlog);
     return { ok: true as const };
   });
+
+  app.get(
+    "/playlist/:id/albums",
+    async (req): Promise<PlaylistAlbumsResponse> => {
+      const { id: rawId } = req.params as { id: string };
+      const id = parsePlaylistId(rawId);
+      if (!id) {
+        throw new AppError(
+          "bad_playlist",
+          "That doesn't look like a Spotify playlist id or link.",
+          400,
+        );
+      }
+
+      const [{ name, albums }, backlog] = await Promise.all([
+        getPlaylistAlbums(id).catch((err: unknown) => {
+          if (err instanceof AppError && err.statusCode === 404) {
+            throw new AppError(
+              "playlist_not_found",
+              "No playlist with that id — is it public?",
+              404,
+            );
+          }
+          throw err;
+        }),
+        readConfig("backlog"),
+      ]);
+
+      const inBacklog = new Set(backlog.items.map((i) => i.albumId));
+      return {
+        playlistName: name,
+        albums: albums.map((a) => ({
+          album: a.album,
+          trackCount: a.trackCount,
+          inBacklog: inBacklog.has(a.album.id),
+        })),
+      };
+    },
+  );
 
   app.put("/backlog", async (req) => {
     const { albumIds } = reorderBacklogRequestSchema.parse(req.body);
