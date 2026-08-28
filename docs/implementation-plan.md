@@ -238,11 +238,41 @@ Fix: js-yaml can't dump `undefined` → strip absent optionals in
 
 Goal: it survives real use and a fresh clone.
 
+### Correctness / UX
 - [ ] error states: no active device, account not Premium (control
       disabled, triage still works), auth expired, 429 surfaced calmly
 - [ ] empty states: empty backlog, nothing playing, no lyrics, not
       connected
 - [ ] keyboard-shortcut help overlay (`?`)
+
+### Responsive layout (assessed 2026-08-28)
+- [ ] nav bar: 4 items + status dot overflow the header below ~360 px —
+      let it wrap, or collapse to a compact/menu form on narrow screens
+- [ ] backlog cards: cover + ▲▼ + "Play album" + "Remove" are all
+      fixed-width `shrink-0` (~260 px) → the row breaks on a phone;
+      restack the controls / move secondary actions into a menu
+- [ ] album tracklist: "play from here" ▶ is `group-hover` only →
+      invisible on touch; give every row a real tap target
+- [ ] audit remaining rows (recent, revisit, device picker) at 360 px for
+      horizontal overflow — the page body must never scroll sideways
+
+### Performance on low-end / mobile
+- [ ] images: server returns Spotify's 640 px image (`images[0]`) for
+      every thumbnail — pick the smallest for `image` fields in
+      `recent.ts` / `albums.ts` / `playlists.ts` (keep a bigger one only
+      for the now-playing art); add `loading="lazy"` + explicit
+      width/height to all `<img>`
+- [ ] isolate the 500 ms progress ticker (`usePlayback` → `useTicker`)
+      into a leaf component so it doesn't re-render the whole Now Playing
+      tree (which embeds the Recent list) twice a second — or drive the
+      bar with a CSS transition / rAF
+- [ ] pause polling when the tab is hidden (`visibilitychange` →
+      `refetchInterval` off) — `/playback` 3 s, `/recent` 15 s, health
+      30 s all run in the background today
+- [ ] consider a lighter bundle (361 KB raw / ~110 KB gzip): route-level
+      code-splitting so first paint isn't the whole app
+
+### Ship
 - [ ] `README.md` — dashboard setup, `.env`, `npm run dev`, first-run auth
 - [ ] Vitest: `spotify` wrapper retry/refresh, `store` round-trips,
       `verdict` side-effects, `/api/recent` state resolution
@@ -250,7 +280,15 @@ Goal: it survives real use and a fresh clone.
 
 **AC:** a fresh clone + the README gets someone to a working app;
 `npm test` green; unplugging the speaker / revoking the token both fail
-gracefully.
+gracefully; no horizontal scroll at 360 px on any page.
+
+### Deferred — LAN / mobile access (own decision, not Phase 7)
+The server binds `127.0.0.1` only, so a separate phone can't reach it, and
+"loopback-only" is currently the entire security model. Serving it to
+another device on the wifi (`HOST=0.0.0.0` + LAN IP + matching redirect
+URI) needs real auth on `/api/*` first — anyone on the network could
+otherwise control playback and edit the library. Revisit when mobile use
+is actually wanted.
 
 ---
 
