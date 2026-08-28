@@ -3,6 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "description": "A companion app on top of Spotify for deliberate album listening",
+  "license": "AGPL-3.0-only",
+  "repository": "github:sacortesh/album-companion",
   "workspaces": [
     "packages/shared",
     "packages/server",
