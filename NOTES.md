@@ -85,6 +85,7 @@ and clear it from the backlog.
 - Functional spec: [docs/functional-spec.md](docs/functional-spec.md) (v0.6, MVP1 scoped)
 - Architecture: [docs/architecture.md](docs/architecture.md) (proposal)
 - Implementation plan: [docs/implementation-plan.md](docs/implementation-plan.md) (8 phases, MVP1)
+- Acceptance tests: [docs/acceptance-tests.md](docs/acceptance-tests.md) (manual BDD suite for validating the UI + journeys)
 
 **Build status:** Phases 0–6 ✅ — the full MVP1 core loop works.
 git `main`, no remote yet. Only Phase 7 (polish + tests) remains.
