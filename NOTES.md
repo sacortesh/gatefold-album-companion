@@ -92,8 +92,11 @@ full MVP1 core loop plus: backlog-first landing, sticky bottom player
 card, shuffle-off on album play, live like-state, review-notes template,
 "About this album" context panel (MusicBrainz + Wikipedia + Discogs), and
 importing albums from a playlist. Typecheck + build green, not yet
-browser-verified. git `main`, no remote yet. Phase 7 (polish + tests) is
-the remaining track — see implementation-plan.md.
+browser-verified. git `main`, pushed to
+`github.com/sacortesh/album-companion`. Remaining tracks: Phase 7 (polish
++ tests) and **Phase 9 — self-hosting / distribution** (Docker image,
+UI-configured secrets, PKCE auth, `/config` volume, update banner;
+Sonarr/Radarr shape). See implementation-plan.md.
 
 Run: `npm install && npm run dev` → app on :5173, API on :8888.
 Flow: add albums to the Backlog → open one → listen, Like/Banger tracks,

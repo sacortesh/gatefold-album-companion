@@ -401,17 +401,130 @@ a friend's playlist link can seed the backlog.
 
 ---
 
+## Phase 9 — Self-hosting / distribution
+
+Status: **proposal** (scoped 2026-08-28)
+
+Goal: ship the app the way Sonarr / Radarr ship — one container per person,
+a `/config` volume, all setup done in the UI, "pull the image to update."
+Each self-hoster brings their own Spotify app + Discogs key; no shared
+backend, no multi-tenancy.
+
+### Design decisions (settle before building)
+
+- **Config lives in the volume, not `.env`.** Secrets and app settings
+  move into a mutable file under `/config`; env vars stay as an override
+  (compose-file users). `env.ts`'s boot-time `spotifyConfigured` /
+  `discogsConfigured` become runtime reads.
+- **The Spotify OAuth redirect URI is the one hard edge** (no Sonarr
+  equivalent). Spotify allows plain `http` only for `127.0.0.1`; any other
+  host needs HTTPS. So there are two documented tiers:
+  - *Local only* — browse from the same box, redirect
+    `http://127.0.0.1:8888/callback`, no TLS.
+  - *Remote* — real domain + reverse proxy (Caddy / Cloudflare Tunnel /
+    Traefik), that URL registered in the Spotify dashboard.
+  The Settings UI shows the exact redirect URI to paste, plus connection
+  status.
+- **Auth → PKCE.** Drop the client secret entirely so provisioning is
+  just a client ID. (Authorization Code + PKCE; Spotify supports it for
+  the Web API.)
+- **Updates = pull, not in-app.** No in-container self-updater (Sonarr
+  disables its own under Docker). Semver tags on GHCR + a "new version"
+  banner that checks the GitHub releases API + docs for
+  `docker compose pull && up -d` / Watchtower.
+
+### 9.1 Runtime config store
+- [ ] `store/appConfig.ts` — read/write `/config/app.json`
+      (`spotifyClientId`, `apiKey`, `uiAuth`, `discogsKey/Secret`,
+      `publicUrl`); env vars override file values; defaults on first run
+- [ ] rework `env.ts` → split process-level (`PORT`, `HOST`, `CONFIG_DIR`)
+      from app config; `auth/oauth.ts` + `context/discogs.ts` read the
+      store, not `env`
+- [ ] `GET/PUT /api/settings/app` (secrets write-only: browser gets
+      `{ spotifyClientId, discogsConfigured, redirectUri, … }`, never the
+      secret back)
+
+### 9.2 API key + optional UI auth
+- [ ] generate `apiKey` on first run; `preHandler` on `/api/*` requires
+      `X-Api-Key` (or `?apikey=`); SPA fetches it from a bootstrap route
+      after UI auth
+- [ ] optional forms auth for the UI (username + argon2/bcrypt hash in
+      `app.json`); login page; signed session cookie; `/callback` and
+      health stay open
+- [ ] "regenerate API key" + auth toggle in Settings
+
+### 9.3 Paths / volume restructure
+- [ ] all mutable state under one `CONFIG_DIR` (`/config` in the image):
+      `config/`, `reviews/`, `cache/`, `.auth.json`, `app.json`
+- [ ] first-run seeding: empty volume → write default `config/*.json` +
+      `review-template.md` (currently seeded from the repo's `data/`)
+- [ ] `paths.ts` keyed off `CONFIG_DIR` env (default `./data` in dev)
+
+### 9.4 Auth → PKCE
+- [ ] `auth/oauth.ts` — code_verifier/challenge, no `client_secret`;
+      token exchange + refresh via PKCE
+- [ ] drop `SPOTIFY_CLIENT_SECRET` from everywhere; docs + `.env.example`
+
+### 9.5 Container
+- [ ] multi-stage `Dockerfile` — build web, compile server with `tsc`
+      (drop `tsx` + dev deps from the runtime image), non-root user,
+      `tini`, `HEALTHCHECK` → `/api/health`, `EXPOSE 8888`, `VOLUME /config`
+- [ ] `HOST=0.0.0.0` supported (already configurable) + documented
+- [ ] `docker-compose.yml` (image, `./config:/config`, port, env)
+- [ ] `.dockerignore`
+
+### 9.6 Settings UI
+- [ ] Settings sections: **Spotify** (client ID, redirect-URI display +
+      copy, connect/disconnect, status), **Discogs** (consumer key/secret,
+      masked), **Security** (API key, UI auth), **About / Updates**
+      (version, latest, changelog link)
+- [ ] first-run wizard: if `spotifyClientId` unset → land on Settings
+      with a short "getting started" panel
+
+### 9.7 Release + update check
+- [ ] `GET /api/version` → `{ current, latest?, updateAvailable }`
+      (latest cached from `api.github.com/repos/<repo>/releases/latest`,
+      ~6 h TTL); banner in `Layout`
+- [ ] GH Actions: on `v*` tag → `docker buildx` amd64 + arm64 → push
+      `ghcr.io/<repo>:{version,latest}`; attach a changelog to the release
+
+### 9.8 Docs
+- [ ] `README.md` rewrite — self-hosting quick start (compose snippet)
+- [ ] `docs/self-hosting.md` — Spotify app walkthrough (screenshots),
+      Discogs key, the two redirect-URI tiers, reverse-proxy examples
+      (Caddy / Cloudflare Tunnel / Traefik / nginx), volume backup,
+      updating
+- [ ] **(you)** create the GitHub release / tag workflow secrets
+      (`GHCR` uses `GITHUB_TOKEN`, nothing to provision) and enable
+      packages
+
+**AC:** `docker compose up` on a clean host → open the UI → (optional)
+set a UI password → paste a Spotify client ID → see the redirect URI to
+register → connect → the full app works with `/config` as the only
+persistent state; `/api/*` rejects calls without the key; a new tagged
+release produces a multi-arch image and the running app shows an
+"update available" banner.
+
+### Not in Phase 9
+- Multi-user / accounts / hosted signup (needs Spotify Extended Quota
+  Mode — a separate decision, likely never for a hobby project).
+- Auto-updating the container from inside itself.
+
+---
+
 ## Dependency graph
 
 ```
 0 ─▶ 1 ─▶ 2 ─▶ 3 ─▶ 7
           └──▶ 4 ─▶ 5 ─▶ 6 ─▶ 7 ─▶ 8
+                                   └──▶ 9
 ```
 
 Phases 3 and 4 both only need Phase 2; everything funnels into 7. Phase 8
 (Revision 1) builds on the finished MVP1 loop; its four Rev batches are
 independent of each other and can land in any order (Rev-1 first is
-easiest).
+easiest). Phase 9 (self-hosting) needs the config/auth refactor (9.1–9.4)
+before the container work (9.5+) is worthwhile.
 
 ## Not in this plan (later MVPs)
 
