@@ -29,6 +29,10 @@ export function useAlbumTriage(albumId: string, trackIds: string[]) {
     queryFn: () => api.trackStates(trackIds),
     enabled: trackIds.length > 0,
     staleTime: 10_000,
+    // Pick up Likes made in the Spotify app (or on the now-playing card) while
+    // this page is open.
+    refetchInterval: 20_000,
+    refetchOnWindowFocus: true,
   });
 
   const autoLike = query.data?.bangerAutoLike ?? true;

@@ -1,10 +1,12 @@
 import { NavLink, Outlet } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../api/client";
+import { NowPlayingCard } from "./NowPlayingCard";
 
 const navItems = [
-  { to: "/", label: "Now Playing", end: true },
-  { to: "/backlog", label: "Backlog" },
+  { to: "/", label: "Backlog", end: true },
+  { to: "/now-playing", label: "Now Playing" },
+  { to: "/recent", label: "Recent" },
   { to: "/revisit", label: "Revisit" },
   { to: "/settings", label: "Settings" },
 ];
@@ -52,9 +54,11 @@ export function Layout() {
         <HealthDot />
       </header>
 
-      <main className="flex-1 py-8">
+      <main className="flex-1 py-8 pb-28">
         <Outlet />
       </main>
+
+      <NowPlayingCard />
     </div>
   );
 }

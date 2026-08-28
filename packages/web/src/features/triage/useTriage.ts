@@ -20,8 +20,15 @@ export function useTriage<T>({ queryKey, applyLike, applyBanger }: Config<T>) {
   const patch = (fn: (prev: T) => T) =>
     qc.setQueryData<T>(queryKey, (prev) => (prev ? fn(prev) : prev));
 
+  // After a Like/Banger, refresh not just this view but every other surface that
+  // shows liked/inBanger state — the now-playing card, the recent list, and any
+  // album view's per-track states — so they never drift out of sync.
   const invalidateSoon = () =>
-    window.setTimeout(() => void qc.invalidateQueries({ queryKey }), 700);
+    window.setTimeout(() => {
+      void qc.invalidateQueries({ queryKey });
+      void qc.invalidateQueries({ queryKey: ["recent"] });
+      void qc.invalidateQueries({ queryKey: ["track-states"] });
+    }, 700);
 
   const like = useMutation({
     mutationFn: ({ trackId, liked }: { trackId: string; liked: boolean }) =>

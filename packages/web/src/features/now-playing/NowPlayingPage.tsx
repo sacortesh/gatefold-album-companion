@@ -1,40 +1,12 @@
-import { useEffect, useRef, type MouseEvent } from "react";
+import { type MouseEvent } from "react";
 import { Link } from "react-router-dom";
 import type { Device } from "@spotify-companion/shared";
 import { formatDuration } from "../../lib/format";
 import { RecentPage } from "../recent/RecentPage";
 import { BangerButton, LikeButton } from "../recent/TriageControls";
 import { useRecent } from "../recent/useRecent";
+import { useTriageHotkeys } from "../triage/useTriageHotkeys";
 import { usePlayback } from "./usePlayback";
-
-/** L = toggle Like on the current track, B = Banger it. Ignores typing in fields. */
-function useTriageHotkeys(
-  enabled: boolean,
-  onLike: () => void,
-  onBanger: () => void,
-) {
-  const latest = useRef({ onLike, onBanger });
-  latest.current = { onLike, onBanger };
-
-  useEffect(() => {
-    if (!enabled) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.metaKey || e.ctrlKey || e.altKey) return;
-      const el = e.target as HTMLElement | null;
-      if (el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)) return;
-      if (el?.isContentEditable) return;
-      if (e.key === "l" || e.key === "L") {
-        e.preventDefault();
-        latest.current.onLike();
-      } else if (e.key === "b" || e.key === "B") {
-        e.preventDefault();
-        latest.current.onBanger();
-      }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [enabled]);
-}
 
 function DeviceLine({ device }: { device: Device | null }) {
   if (!device) return null;
@@ -224,8 +196,8 @@ export function NowPlayingPage() {
         </div>
 
         <p className="text-xs text-neutral-600">
-          Shortcuts: <kbd>L</kbd> like · <kbd>B</kbd> banger · click the bar to
-          seek
+          Shortcuts: <kbd>P</kbd> play/pause · <kbd>L</kbd> like · <kbd>B</kbd>{" "}
+          banger · click the bar to seek
         </p>
 
         {controls.error && (
