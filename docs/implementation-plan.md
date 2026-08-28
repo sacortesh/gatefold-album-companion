@@ -168,23 +168,35 @@ Fix: routes no longer mask transient Spotify errors as "album not found"
 
 ---
 
-## Phase 5 — Album experience view
+## Phase 5 — Album experience view  ✅ done (2026-08-28)
 
 Goal: the "complete listening" screen — tracklist, metadata, lyrics.
 
-- [ ] `server/lyrics/` — LRCLIB client: `GET /api/get` by
-      artist/track/album/duration, fallback to `/api/search`; on-disk
-      cache in `data/cache/lyrics/`
-- [ ] `GET /api/album/:id` — merge Spotify album + tracklist +
-      per-track lyrics (synced / plain / none)
-- [ ] `web/features/album` — full tracklist w/ durations + disc/track
-      numbers; metadata block (release date, label, popularity,
-      copyright); lyrics panel with synced view when available, plain
-      fallback, and a clean "no lyrics" state
-- [ ] click a track in the list → play from that track
+- [x] `cache.ts` — namespaced on-disk cache (`makeCache`), replacing
+      `spotify/cache.ts`; `data/cache/{spotify,lyrics}/`
+- [x] `lyrics/lrclib.ts` — LRCLIB `get` by artist/track/album/duration,
+      `search` fallback, LRC parser (multi-timestamp), 30-day cache
+      incl. misses, instrumental handling
+- [x] `spotify/albums.ts` — `getAlbumTracks` (paginates > 50), richer
+      `RawAlbum` (label, popularity, genres, copyrights)
+- [x] routes: `GET /api/album/:id` (metadata + full tracklist +
+      `inBacklog`), `GET /api/album/:id/lyrics` (all tracks, concurrency
+      5), `GET /api/track-states?ids=` (per-track liked/inBanger)
+- [x] shared `useTriage` extracted; `useRecent` + `useAlbumTriage` both
+      use it
+- [x] `web/features/album/AlbumPage` — header (cover, meta, label,
+      genres, Play album, backlog toggle), tracklist (# / hover-▶ / name
+      / E / now / duration / Like / Banger, click = select), sticky
+      `LyricsPanel` (synced w/ live highlight + autoscroll when it's the
+      now-playing track, plain fallback, instrumental / none states),
+      copyright footer
+- [x] click a track → play from there (`offset.uri`); "View album" link
+      on Now Playing
 
-**AC:** open any backlog album → see the full tracklist + metadata +
-lyrics for most tracks, with graceful gaps; clicking a track plays it.
+**AC:** ✅ verified live — Sunbather album loads with full metadata +
+tracklist; lyrics resolve in ~1.5 s (mix of synced / plain / instrumental,
+good LRCLIB coverage); Daft Punk RAM all-synced; play-from-track jumps to
+track 5; `track-states` reflects the user's real Liked Songs.
 
 ---
 

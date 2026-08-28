@@ -87,13 +87,14 @@ and clear it from the backlog.
 - Implementation plan: [docs/implementation-plan.md](docs/implementation-plan.md) (8 phases, MVP1)
 
 **Build status:** Phase 0 ✅ · 1 auth ✅ · 2 playback ✅ · 3 Like+Banger ✅ ·
-4 Backlog ✅. git `main`, no remote yet.
+4 Backlog ✅ · 5 Album view + lyrics ✅. git `main`, no remote yet.
 
 Run: `npm install && npm run dev` → app on :5173, API on :8888.
-Now Playing: track + transport + big Like/Banger (L/B) + recently-listened
-list. Backlog: search/add albums, reorder, remove, Play album. Settings:
-device picker + Banger-playlist dropdown.
-Next: Phase 5 — Album experience view (tracklist + metadata + LRCLIB lyrics).
+Now Playing (transport + Like/Banger + recent list) · Backlog (search /
+add / reorder / Play album, cards link to album view) · Album view
+(tracklist + metadata + synced LRCLIB lyrics, per-track Like/Banger,
+play-from-track) · Settings (device + Banger playlist).
+Next: Phase 6 — Album verdict + review.
 
 Stack: pnpm monorepo — `packages/{shared,server,web}` + `data/` (config +
 reviews) in git. React + Vite + TanStack Query (polling) frontend;

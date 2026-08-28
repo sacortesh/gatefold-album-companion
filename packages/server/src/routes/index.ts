@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { authApiRoutes, authWebRoutes } from "./auth.js";
 import { configRoutes } from "./config.js";
 import { healthRoutes } from "./health.js";
+import { albumRoutes } from "./album.js";
 import { backlogRoutes } from "./backlog.js";
 import { playbackRoutes } from "./playback.js";
 import { searchRoutes } from "./search.js";
@@ -21,6 +22,7 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
       await api.register(triageRoutes);
       await api.register(backlogRoutes);
       await api.register(searchRoutes);
+      await api.register(albumRoutes);
     },
     { prefix: "/api" },
   );

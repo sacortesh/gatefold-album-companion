@@ -216,3 +216,71 @@ export const searchResponseSchema = z.object({
   albums: z.array(albumSummarySchema),
 });
 export type SearchResponse = z.infer<typeof searchResponseSchema>;
+
+// --- Phase 5: album view + lyrics ---------------------------------
+
+export const albumTrackSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  uri: z.string(),
+  artists: z.array(z.string()),
+  durationMs: z.number(),
+  trackNumber: z.number().nullable(),
+  discNumber: z.number().nullable(),
+  explicit: z.boolean(),
+});
+export type AlbumTrack = z.infer<typeof albumTrackSchema>;
+
+export const albumDetailSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  uri: z.string(),
+  artists: z.array(z.string()),
+  image: z.string().nullable(),
+  year: z.string().nullable(),
+  releaseDate: z.string().nullable(),
+  label: z.string().nullable(),
+  popularity: z.number().nullable(),
+  totalTracks: z.number(),
+  durationMs: z.number(),
+  genres: z.array(z.string()),
+  copyrights: z.array(z.string()),
+  tracks: z.array(albumTrackSchema),
+  inBacklog: z.boolean(),
+});
+export type AlbumDetail = z.infer<typeof albumDetailSchema>;
+
+export const lyricLineSchema = z.object({
+  timeMs: z.number(),
+  text: z.string(),
+});
+export type LyricLine = z.infer<typeof lyricLineSchema>;
+
+export const trackLyricsSchema = z.object({
+  source: z.literal("lrclib").nullable(),
+  synced: z.array(lyricLineSchema).nullable(),
+  plain: z.string().nullable(),
+  instrumental: z.boolean(),
+});
+export type TrackLyrics = z.infer<typeof trackLyricsSchema>;
+
+export const albumLyricsResponseSchema = z.object({
+  /** keyed by track id */
+  lyrics: z.record(z.string(), trackLyricsSchema),
+});
+export type AlbumLyricsResponse = z.infer<typeof albumLyricsResponseSchema>;
+
+export const trackTriageStateSchema = z.object({
+  liked: z.boolean(),
+  inBanger: z.boolean(),
+});
+export type TrackTriageState = z.infer<typeof trackTriageStateSchema>;
+
+export const trackStatesResponseSchema = z.object({
+  bangerPlaylistId: z.string().nullable(),
+  bangerLabel: z.string(),
+  bangerAutoLike: z.boolean(),
+  /** keyed by track id */
+  states: z.record(z.string(), trackTriageStateSchema),
+});
+export type TrackStatesResponse = z.infer<typeof trackStatesResponseSchema>;

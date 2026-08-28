@@ -5,6 +5,7 @@ import {
   type PlaylistsResponse,
   type RecentResponse,
   type TrackRef,
+  type TrackStatesResponse,
 } from "@spotify-companion/shared";
 import { AppError } from "../errors.js";
 import {
@@ -147,4 +148,36 @@ export async function triageRoutes(app: FastifyInstance): Promise<void> {
   app.get("/playlists", async (): Promise<PlaylistsResponse> => ({
     playlists: await getEditablePlaylists(),
   }));
+
+  app.get("/track-states", async (req): Promise<TrackStatesResponse> => {
+    const ids = String((req.query as { ids?: string }).ids ?? "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .slice(0, 100);
+
+    const buttons = await readConfig("buttons");
+    const bangerPlaylistId = buttons.banger.playlistId || null;
+
+    const [saved, bangerIds] = await Promise.all([
+      ids.length
+        ? areTracksSaved(ids)
+        : Promise.resolve({} as Record<string, boolean>),
+      bangerPlaylistId
+        ? getPlaylistTrackIds(bangerPlaylistId).catch(emptySet)
+        : Promise.resolve(emptySet()),
+    ]);
+
+    return {
+      bangerPlaylistId,
+      bangerLabel: buttons.banger.label,
+      bangerAutoLike: buttons.banger.autoLike,
+      states: Object.fromEntries(
+        ids.map((id) => [
+          id,
+          { liked: saved[id] ?? false, inBanger: bangerIds.has(id) },
+        ]),
+      ),
+    };
+  });
 }

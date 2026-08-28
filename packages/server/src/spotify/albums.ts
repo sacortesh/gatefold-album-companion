@@ -1,17 +1,38 @@
 import type { AlbumSummary } from "@spotify-companion/shared";
-import { getCached, setCached } from "./cache.js";
+import { makeCache } from "../cache.js";
 import { spotifyRequest } from "./client.js";
 
-interface RawAlbum {
+const cache = makeCache("spotify");
+
+export interface RawAlbumTrack {
+  id: string;
+  name: string;
+  uri: string;
+  duration_ms: number;
+  track_number?: number;
+  disc_number?: number;
+  explicit?: boolean;
+  artists?: Array<{ name: string }>;
+}
+
+export interface RawAlbum {
   id: string;
   name: string;
   uri: string;
   album_type?: string;
   release_date?: string;
   total_tracks: number;
+  label?: string;
+  popularity?: number;
+  genres?: string[];
+  copyrights?: Array<{ text: string; type: string }>;
   images?: Array<{ url: string; width: number | null }>;
   artists?: Array<{ name: string }>;
-  tracks?: { items?: Array<{ duration_ms: number }>; total?: number };
+  tracks?: {
+    items?: RawAlbumTrack[];
+    total?: number;
+    next?: string | null;
+  };
 }
 
 const ALBUM_TTL_MS = 7 * 24 * 3600_000; // albums are effectively immutable
@@ -40,11 +61,29 @@ export function toAlbumSummary(raw: RawAlbum): AlbumSummary {
 
 export async function getAlbum(id: string): Promise<RawAlbum> {
   const key = `album:${id}`;
-  const cached = await getCached<RawAlbum>(key, ALBUM_TTL_MS);
+  const cached = await cache.get<RawAlbum>(key, ALBUM_TTL_MS);
   if (cached) return cached;
   const raw = await spotifyRequest<RawAlbum>({ path: `/albums/${id}` });
-  await setCached(key, raw);
+  await cache.set(key, raw);
   return raw;
+}
+
+/** Full tracklist, following pagination for albums with > 50 tracks. */
+export async function getAlbumTracks(album: RawAlbum): Promise<RawAlbumTrack[]> {
+  const tracks = [...(album.tracks?.items ?? [])];
+  let hasMore = Boolean(album.tracks?.next);
+  let offset = tracks.length;
+
+  while (hasMore) {
+    const page = await spotifyRequest<{
+      items: RawAlbumTrack[];
+      next: string | null;
+    }>({ path: `/albums/${album.id}/tracks`, query: { limit: 50, offset } });
+    tracks.push(...page.items);
+    offset += page.items.length;
+    hasMore = Boolean(page.next) && page.items.length > 0;
+  }
+  return tracks;
 }
 
 /** Batch fetch, using the per-album cache and `/albums?ids=` (20 max) for misses. */
@@ -53,7 +92,7 @@ export async function getAlbums(ids: string[]): Promise<Map<string, RawAlbum>> {
   const missing: string[] = [];
 
   for (const id of ids) {
-    const cached = await getCached<RawAlbum>(`album:${id}`, ALBUM_TTL_MS);
+    const cached = await cache.get<RawAlbum>(`album:${id}`, ALBUM_TTL_MS);
     if (cached) out.set(id, cached);
     else missing.push(id);
   }
@@ -67,7 +106,7 @@ export async function getAlbums(ids: string[]): Promise<Map<string, RawAlbum>> {
     for (const raw of res.albums) {
       if (!raw) continue;
       out.set(raw.id, raw);
-      await setCached(`album:${raw.id}`, raw);
+      await cache.set(`album:${raw.id}`, raw);
     }
   }
 

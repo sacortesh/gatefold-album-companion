@@ -1,4 +1,6 @@
 import type {
+  AlbumDetail,
+  AlbumLyricsResponse,
   ApiError,
   AuthStatus,
   Backlog,
@@ -16,6 +18,7 @@ import type {
   Revisit,
   SearchResponse,
   Settings,
+  TrackStatesResponse,
 } from "@spotify-companion/shared";
 
 export class ApiRequestError extends Error {
@@ -124,6 +127,14 @@ export const api = {
     }),
   search: (q: string) =>
     request<SearchResponse>(`/search?q=${encodeURIComponent(q)}`),
+
+  album: (id: string) => request<AlbumDetail>(`/album/${id}`),
+  albumLyrics: (id: string) =>
+    request<AlbumLyricsResponse>(`/album/${id}/lyrics`),
+  trackStates: (ids: string[]) =>
+    request<TrackStatesResponse>(
+      `/track-states?ids=${encodeURIComponent(ids.join(","))}`,
+    ),
 };
 
 /** Full-page redirect into the Spotify consent screen. */

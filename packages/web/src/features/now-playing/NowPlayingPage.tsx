@@ -145,7 +145,12 @@ export function NowPlayingPage() {
               {track.artists.join(", ")}
             </p>
             <p className="truncate text-sm text-neutral-500">
-              {track.album.name}
+              <Link
+                to={`/album/${track.album.id}`}
+                className="hover:text-neutral-300 hover:underline"
+              >
+                {track.album.name}
+              </Link>
               {inAlbum
                 ? ` · track ${track.trackNumber} of ${track.album.totalTracks}`
                 : ""}
