@@ -2,12 +2,15 @@ import type {
   ApiError,
   AuthStatus,
   Backlog,
+  BangerResponse,
   Buttons,
   ConfigName,
   DevicesResponse,
   HealthResponse,
   PlaybackState,
+  PlaylistsResponse,
   PlayRequest,
+  RecentResponse,
   Revisit,
   Settings,
 } from "@spotify-companion/shared";
@@ -88,6 +91,20 @@ export const api = {
       method: "PUT",
       body: JSON.stringify(value),
     }),
+
+  recent: () => request<RecentResponse>("/recent"),
+  like: (trackId: string) => post("/like", { trackId }),
+  unlike: (trackId: string) =>
+    request<{ ok: true }>("/like", {
+      method: "DELETE",
+      body: JSON.stringify({ trackId }),
+    }),
+  banger: (trackId: string) =>
+    request<BangerResponse>("/banger", {
+      method: "POST",
+      body: JSON.stringify({ trackId }),
+    }),
+  playlists: () => request<PlaylistsResponse>("/playlists"),
 };
 
 /** Full-page redirect into the Spotify consent screen. */

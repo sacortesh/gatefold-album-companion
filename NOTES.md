@@ -86,12 +86,14 @@ and clear it from the backlog.
 - Architecture: [docs/architecture.md](docs/architecture.md) (proposal)
 - Implementation plan: [docs/implementation-plan.md](docs/implementation-plan.md) (8 phases, MVP1)
 
-**Build status:** Phase 0 ✅ · Phase 1 (auth) ✅ · Phase 2 (now playing +
-playback control) ✅. git `main`, no remote yet.
+**Build status:** Phase 0 ✅ · 1 auth ✅ · 2 playback ✅ · 3 Like + Banger ✅.
+git `main`, no remote yet.
 
 Run: `npm install && npm run dev` → app on :5173, API on :8888.
-Now Playing page + playback controls + device picker in Settings all live.
-Next: Phase 3 — Like + Banger.
+Now Playing shows the track + transport + big Like/Banger (L/B keys) +
+the recently-listened list with per-row Like/Banger. Settings has the
+device picker and the Banger-playlist dropdown.
+Next: Phase 4 — Backlog.
 
 Stack: pnpm monorepo — `packages/{shared,server,web}` + `data/` (config +
 reviews) in git. React + Vite + TanStack Query (polling) frontend;

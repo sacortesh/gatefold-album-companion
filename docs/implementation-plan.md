@@ -107,28 +107,35 @@ body, not JSON.)
 
 ---
 
-## Phase 3 — Like + Banger
+## Phase 3 — Like + Banger  ✅ done (2026-08-27)
 
 Goal: the core triage loop, on the current track and on history rows.
 
-- [ ] `server/spotify` helpers: `isTrackSaved(ids[])`, `saveTrack`,
-      `removeSavedTrack`, `getMyPlaylists`, `playlistContains` (cache by
-      `snapshot_id`), `addToPlaylist`
-- [ ] routes: `POST/DELETE /api/like`, `POST /api/banger` (idempotent:
-      membership check → add → auto-Like), `GET /api/playlists`
-- [ ] `GET /api/recent` — `recently-played` (50) + current track,
-      deduped; batch-resolve `liked` + `inBanger` per row
-- [ ] `web/features/now-playing` — big **Like** toggle (key `L`),
-      **Banger** button (key `b`)
-- [ ] `web/features/recent` — recently-listened list; inline Like +
-      Banger per row with "already Liked / already in <playlist>" state
-- [ ] `web/features/settings` — banger-playlist picker → writes
-      `buttons.json`
-- [ ] mutations do optimistic updates + invalidate `/api/recent`
+- [x] `spotify/library.ts` — `areTracksSaved` (batched /contains),
+      `isTrackSaved`, `saveTrack`, `removeSavedTrack`
+- [x] `spotify/playlists.ts` — `getEditablePlaylists` (owned +
+      collaborative, paginated), `getPlaylistTrackIds` (cached by
+      `snapshot_id` + 30 s TTL), `addTrackToPlaylist` (optimistic cache
+      bump)
+- [x] `spotify/recent.ts` — `getRecentlyPlayed`, raw→`TrackRef`
+- [x] routes: `POST/DELETE /api/like`, `POST /api/banger` (idempotent:
+      membership check → add → auto-Like), `GET /api/playlists`,
+      `GET /api/recent` (current track + recently-played 50, deduped,
+      `liked`/`inBanger` batch-resolved)
+- [x] `web/features/recent` — `useRecent` hook (15 s poll, optimistic
+      like/banger + rollback), `RecentPage` list, `TriageControls`
+      (Like ♥ / Banger) shared sm/lg
+- [x] `web/features/now-playing` — big Like + Banger on the current
+      track, `L` / `B` hotkeys, recently-listened list below
+- [x] `web/features/settings/BangerPlaylistPicker` — dropdown of editable
+      playlists → writes `buttons.json`, invalidates recent
 
-**AC:** Like the current track and a track from 3 songs ago; Banger a
-track → it lands in the playlist *and* in Liked Songs; re-pressing does
-nothing; state shown matches Spotify after a manual refresh.
+**AC:** ✅ verified live — Like a recent track (`liked` flips, then
+un-Like), Banger a track → `{addedToPlaylist:true, liked:true}`, it shows
+in the playlist + Liked Songs, re-press → `addedToPlaylist:false`. Test
+data cleaned up afterward (account left as found).
+Fix along the way: membership cache now has a 30 s TTL on top of the
+snapshot check — Spotify's playlist `snapshot_id` lags external edits.
 
 ---
 

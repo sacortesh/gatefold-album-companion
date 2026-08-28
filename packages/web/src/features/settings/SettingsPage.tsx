@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, startSpotifyLogin } from "../../api/client";
+import { BangerPlaylistPicker } from "./BangerPlaylistPicker";
 import { DevicePicker } from "./DevicePicker";
 
 const AUTH_MESSAGES: Record<string, { tone: "ok" | "err"; text: string }> = {
@@ -133,6 +134,8 @@ export function SettingsPage() {
       </div>
 
       {s?.connected && <DevicePicker />}
+
+      {s?.connected && <BangerPlaylistPicker />}
 
       {import.meta.env.DEV && s?.connected && (
         <div className="space-y-2 rounded-lg border border-dashed border-neutral-800 p-4">

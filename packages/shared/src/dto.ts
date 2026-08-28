@@ -114,3 +114,59 @@ export type TransferRequest = z.infer<typeof transferRequestSchema>;
 
 export const okSchema = z.object({ ok: z.literal(true) });
 export type Ok = z.infer<typeof okSchema>;
+
+// --- Phase 3: Like + Banger -----------------------------------------
+
+/** Lightweight track reference used by the recently-listened list. */
+export const trackRefSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  uri: z.string(),
+  artists: z.array(z.string()),
+  albumName: z.string(),
+  image: z.string().nullable(),
+  durationMs: z.number(),
+});
+export type TrackRef = z.infer<typeof trackRefSchema>;
+
+export const recentRowSchema = z.object({
+  track: trackRefSchema,
+  /** ISO timestamp from Spotify; null for the currently-playing row. */
+  playedAt: z.string().nullable(),
+  isCurrent: z.boolean(),
+  liked: z.boolean(),
+  inBanger: z.boolean(),
+});
+export type RecentRow = z.infer<typeof recentRowSchema>;
+
+export const recentResponseSchema = z.object({
+  rows: z.array(recentRowSchema),
+  bangerPlaylistId: z.string().nullable(),
+  bangerLabel: z.string(),
+  bangerAutoLike: z.boolean(),
+});
+export type RecentResponse = z.infer<typeof recentResponseSchema>;
+
+export const trackIdRequestSchema = z.object({ trackId: z.string().min(1) });
+export type TrackIdRequest = z.infer<typeof trackIdRequestSchema>;
+
+export const bangerResponseSchema = z.object({
+  ok: z.literal(true),
+  addedToPlaylist: z.boolean(),
+  liked: z.boolean(),
+});
+export type BangerResponse = z.infer<typeof bangerResponseSchema>;
+
+export const playlistLiteSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  trackCount: z.number(),
+  ownerName: z.string(),
+  image: z.string().nullable(),
+});
+export type PlaylistLite = z.infer<typeof playlistLiteSchema>;
+
+export const playlistsResponseSchema = z.object({
+  playlists: z.array(playlistLiteSchema),
+});
+export type PlaylistsResponse = z.infer<typeof playlistsResponseSchema>;
