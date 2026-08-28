@@ -292,17 +292,131 @@ is actually wanted.
 
 ---
 
+## Phase 8 — Revision 1 (from the first real listening sessions)
+
+Source: hands-on review notes, 2026-08-28. Runs as its own track — none of
+it blocks Phase 7. Fold new scenarios into `docs/acceptance-tests.md` as
+each item lands.
+
+### Rev-1 — quick wins  ✅ done (2026-08-28)
+
+- [x] lyrics panel heading: `"<title> — lyrics"` → `"Lyrics: <title>"`
+      (`web/features/album/AlbumPage.tsx`)
+- [x] shuffle **and** repeat forced off when an album starts — added
+      `shuffle?`/`repeat?` to `PlayOptions` + `playRequestSchema`;
+      `setShuffle`/`setRepeat` run *before* the play PUT in
+      `server/spotify/player.ts` (so a shuffled context can't start on a
+      random track); wired from `AlbumPage` play + `useBacklog` play only.
+      The no-device path still falls through to `playWithFallback`.
+- [x] add-to-backlog from the album panel: `useBacklog` add/remove now
+      invalidate `["album", id]`; `AlbumPage` renders add/remove errors +
+      pending labels
+- [x] verdict dialog tags: relabelled "Genre, mood, how it made you feel
+      — optional" + click-to-add suggestion chips
+- [x] verdict dialog: "Insert review template" button (shown only when
+      notes are empty); `GET /api/review-template` reads
+      `data/config/review-template.md` with a built-in fallback
+      (`store/reviews.ts` `readReviewTemplate`)
+
+### Rev-2 — Backlog-first IA + global player card  ✅ done (2026-08-28)
+
+- [x] landing route (`/`) renders `BacklogPage`; nav reordered
+      (Backlog · Now Playing · Recent · Revisit · Settings); `/recent` is
+      its own route now; `/backlog` kept as an alias. Now Playing page
+      unchanged, just demoted from the index.
+- [x] `NowPlayingCard` — global **sticky bottom bar** in `Layout.tsx`:
+      small art / track / artist·album / ♥ / Banger / ▶⏸ / ⏭ / thin
+      progress bar (display-only). Hidden when nothing is playing or not
+      connected. `main` got `pb-28` to clear it. `P` toggles play/pause
+      from anywhere (generic `useHotkeys` in `features/triage/`).
+- [x] live liked-state everywhere — `useTriage.invalidateSoon` now also
+      invalidates `["recent"]` and `["track-states"]` (prefix) after every
+      Like/Banger; `useAlbumTriage` gained `refetchInterval: 20s` +
+      `refetchOnWindowFocus`. Fixes the stale album-view Like button.
+- [x] album detail page: when this album is the active context the header
+      shows ⏮ / Pause·Resume / ⏭ (via `usePlayback().controls`) instead of
+      "Play album"
+- [x] `L` / `B` hotkeys on the album page — `useTriageHotkeys` extracted
+      to `features/triage/`; targets the now-playing track when it's on
+      the album, else the selected row; a hint line shows the target
+
+### Rev-3 — "About this album" context panel  ✅ done (2026-08-28)
+
+- [x] `server/src/context/` — `musicbrainz.ts` (release-group lookup →
+      first-release-date, secondary types, authoritative Wikipedia-relation
+      title; retries on transient TLS resets), `wikipedia.ts` (REST search
+      + summary; strips "Pt. I"/edition suffixes for the query, rejects a
+      candidate whose title carries specifics the album lacks — e.g. "Part
+      II"), `discogs.ts` (key/secret auth, scores releases to skip
+      promos/singles/comps, credits grouped by person), `http.ts`
+      (User-Agent, timeout, retry, `safe()` wrapper), `index.ts`
+      (orchestrator, merges links, 30-day cache, skips caching a fully
+      empty result)
+- [x] `GET /api/album/:id/context` → `AlbumContext` DTO; every provider is
+      independent and degrades to null
+- [x] `AlbumContextPanel` — `<details>` "About this album" on `AlbumPage`
+      (below the header): Wikipedia prose + "Read on Wikipedia", a facts
+      grid (first released / label / genre / format), grouped personnel,
+      Discogs release notes, external links, and a nudge when Discogs
+      creds are absent
+- [x] Discogs consumer key/secret in `.env` + `.env.example`;
+      `DISCOGS_CONSUMER_KEY` / `_SECRET` in `env.ts` + `discogsConfigured`
+
+Note: MusicBrainz + Wikipedia are partly blocked from this sandbox's
+egress (TLS resets) so `firstReleased` shows null here; verified working
+for Wikipedia + Discogs against real albums (Avantasia, Gojira). Both
+light up fully on a normal network.
+
+### Rev-4 — playlist as a backlog source  ✅ done (2026-08-28)
+
+- [x] `spotify/playlists.ts` `getPlaylistAlbums` — paginates the playlist,
+      keeps only `album_type === "album"` tracks, dedupes by name+artist
+      (Spotify carries one album under several ids), counts tracks per
+      album, preserves order; `parsePlaylistId` (id / URI / URL)
+- [x] `GET /api/playlist/:id/albums` → `PlaylistAlbumsResponse`
+      (`playlistName` + `{album, trackCount, inBacklog}[]`); friendly 404
+      for private/missing playlists
+- [x] `POST /api/backlog/bulk` `{albums: string[]}` — one atomic
+      read-modify-write (looping the single-add route would race on the
+      config file)
+- [x] `PlaylistImport` — a `<details>` under `AlbumSearch` on the backlog
+      page: paste link → "Read" → checklist (art / name / artist / track
+      count, already-in-backlog rows disabled) with "Select all new" →
+      "Add N to backlog"
+
+Note: Spotify now 404s editorial/algorithmic playlists via the API —
+this works on user-owned and public user playlists (verified against the
+account's own playlists).
+
+### Explicitly out of scope for Rev-1
+
+- Non-Spotify / manual albums (review + context + external search links,
+  no playback) — parked; revisit later.
+
+**AC:** shuffle never leaks into an album listen; the album-view Like
+button matches Spotify's real state within a poll; `L`/`B` work on the
+album page; opening the app lands on the Backlog with the bottom player
+bar present; the album page shows sourced context incl. Discogs credits;
+a friend's playlist link can seed the backlog.
+
+---
+
 ## Dependency graph
 
 ```
 0 ─▶ 1 ─▶ 2 ─▶ 3 ─▶ 7
-          └──▶ 4 ─▶ 5 ─▶ 6 ─▶ 7
+          └──▶ 4 ─▶ 5 ─▶ 6 ─▶ 7 ─▶ 8
 ```
 
-Phases 3 and 4 both only need Phase 2; everything funnels into 7.
+Phases 3 and 4 both only need Phase 2; everything funnels into 7. Phase 8
+(Revision 1) builds on the finished MVP1 loop; its four Rev batches are
+independent of each other and can land in any order (Rev-1 first is
+easiest).
 
 ## Not in this plan (later MVPs)
 
 MVP2 — multi-button system + custom command buttons + button CRUD.
 MVP3+ — FR-6b revisit-with-review-alongside, history/archive filters,
 export, audio-feature charts, Stream Deck / MIDI bridge.
+Parked — non-Spotify / manual albums: review + external context + YouTube
+Music / Bandcamp search links, no playback. Deferred out of Phase 8 Rev-1.

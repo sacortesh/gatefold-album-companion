@@ -87,15 +87,22 @@ and clear it from the backlog.
 - Implementation plan: [docs/implementation-plan.md](docs/implementation-plan.md) (8 phases, MVP1)
 - Acceptance tests: [docs/acceptance-tests.md](docs/acceptance-tests.md) (manual BDD suite for validating the UI + journeys)
 
-**Build status:** Phases 0–6 ✅ — the full MVP1 core loop works.
-git `main`, no remote yet. Only Phase 7 (polish + tests) remains.
+**Build status:** Phases 0–6 ✅ + Phase 8 Revision 1 (Rev-1..4) ✅ — the
+full MVP1 core loop plus: backlog-first landing, sticky bottom player
+card, shuffle-off on album play, live like-state, review-notes template,
+"About this album" context panel (MusicBrainz + Wikipedia + Discogs), and
+importing albums from a playlist. Typecheck + build green, not yet
+browser-verified. git `main`, no remote yet. Phase 7 (polish + tests) is
+the remaining track — see implementation-plan.md.
 
 Run: `npm install && npm run dev` → app on :5173, API on :8888.
 Flow: add albums to the Backlog → open one → listen, Like/Banger tracks,
 read synced lyrics → "Finish album" → Keep / Revisit / Pass / Delete +
 notes → it clears from the backlog and writes `data/reviews/<year>/*.md`.
 Revisit page lists the "come back to it" albums.
-Next: Phase 7 — polish (error/empty states, README, Vitest, keyboard help).
+Next: browser-verify Phase 8 Rev-1..4, then Phase 7 polish (error/empty
+states, README, Vitest, keyboard help). `.env` now also holds
+DISCOGS_CONSUMER_KEY / DISCOGS_CONSUMER_SECRET.
 
 Stack: pnpm monorepo — `packages/{shared,server,web}` + `data/` (config +
 reviews) in git. React + Vite + TanStack Query (polling) frontend;
