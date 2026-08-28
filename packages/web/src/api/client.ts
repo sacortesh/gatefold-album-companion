@@ -15,10 +15,15 @@ import type {
   PlaylistsResponse,
   PlayRequest,
   RecentResponse,
+  Review,
+  ReviewsResponse,
   Revisit,
+  RevisitResponse,
   SearchResponse,
   Settings,
   TrackStatesResponse,
+  VerdictRequest,
+  VerdictResponse,
 } from "@spotify-companion/shared";
 
 export class ApiRequestError extends Error {
@@ -135,6 +140,15 @@ export const api = {
     request<TrackStatesResponse>(
       `/track-states?ids=${encodeURIComponent(ids.join(","))}`,
     ),
+
+  verdict: (body: VerdictRequest) =>
+    request<VerdictResponse>("/verdict", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  reviews: () => request<ReviewsResponse>("/reviews"),
+  review: (albumId: string) => request<Review>(`/review/${albumId}`),
+  revisit: () => request<RevisitResponse>("/revisit"),
 };
 
 /** Full-page redirect into the Spotify consent screen. */

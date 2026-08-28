@@ -7,6 +7,8 @@ import { formatDuration } from "../../lib/format";
 import { useBacklog } from "../backlog/useBacklog";
 import { usePlayback } from "../now-playing/usePlayback";
 import { BangerButton, LikeButton } from "../recent/TriageControls";
+import { VerdictDialog } from "../review/VerdictDialog";
+import { useAlbumReview } from "../review/useVerdict";
 import { LyricsPanel } from "./LyricsPanel";
 import { useAlbumTriage } from "./useAlbumTriage";
 
@@ -97,6 +99,7 @@ function TrackRow({
 export function AlbumPage() {
   const { id = "" } = useParams();
   const [picked, setPicked] = useState<string | null>(null);
+  const [reviewOpen, setReviewOpen] = useState(false);
 
   const album = useQuery<Awaited<ReturnType<typeof api.album>>, ApiRequestError>({
     queryKey: ["album", id],
@@ -112,6 +115,7 @@ export function AlbumPage() {
 
   const { state, displayMs } = usePlayback();
   const backlog = useBacklog();
+  const review = useAlbumReview(id);
 
   const tracks = album.data?.tracks ?? [];
   const triage = useAlbumTriage(
@@ -192,11 +196,18 @@ export function AlbumPage() {
             >
               Play album
             </button>
+            <button
+              type="button"
+              onClick={() => setReviewOpen(true)}
+              className="rounded-md border border-neutral-700 px-3 py-2 text-sm hover:bg-neutral-800"
+            >
+              {review.data ? "Update review" : "Finish album"}
+            </button>
             {a.inBacklog ? (
               <button
                 type="button"
                 onClick={() => backlog.remove.mutate(a.id)}
-                className="rounded-md border border-neutral-700 px-3 py-2 text-sm hover:bg-neutral-800"
+                className="rounded-md border border-neutral-800 px-3 py-2 text-sm text-neutral-400 hover:bg-neutral-800"
               >
                 Remove from backlog
               </button>
@@ -212,6 +223,26 @@ export function AlbumPage() {
           </div>
           {playMutationError && (
             <p className="text-sm text-red-400">{playMutationError.message}</p>
+          )}
+
+          {review.data && (
+            <div className="mt-2 rounded-md border border-neutral-800 bg-neutral-900/50 p-3 text-sm">
+              <p className="text-neutral-300">
+                <span className="font-medium capitalize">
+                  {review.data.verdict}
+                </span>
+                {review.data.rating != null && ` · ${review.data.rating}/10`}
+                <span className="text-neutral-500">
+                  {" "}
+                  · reviewed {review.data.listenedOn}
+                </span>
+              </p>
+              {review.data.notes && (
+                <p className="mt-1 whitespace-pre-wrap text-neutral-400">
+                  {review.data.notes}
+                </p>
+              )}
+            </div>
           )}
         </div>
       </div>
@@ -262,6 +293,15 @@ export function AlbumPage() {
           )}
         </div>
       </div>
+
+      {reviewOpen && (
+        <VerdictDialog
+          albumId={a.id}
+          albumName={a.name}
+          existing={review.data ?? null}
+          onClose={() => setReviewOpen(false)}
+        />
+      )}
     </section>
   );
 }

@@ -200,30 +200,37 @@ track 5; `track-states` reflects the user's real Liked Songs.
 
 ---
 
-## Phase 6 — Album verdict + review
+## Phase 6 — Album verdict + review  ✅ done (2026-08-28)
 
 Goal: close the loop — verdict, notes, file written, backlog cleared.
 
-- [ ] `shared` — review frontmatter schema, `verdict` enum
-      (`keep|revisit|pass|delete`)
-- [ ] `server/store` — review read/write (markdown + frontmatter),
-      `<artist>-<album>` slug helper, `reviews/<year>/` foldering
-- [ ] `POST /api/verdict` `{albumId, verdict, review}`:
-      - Keep → `saveAlbum` · Revisit → append `revisit.json` ·
-        Delete → `removeSavedAlbum` if saved · Pass → nothing
-      - all → write the review file, remove the album from `backlog.json`
-- [ ] routes: `GET /api/reviews`, `GET /api/review/:albumId`,
-      `GET /api/revisit`
-- [ ] `web/features/review` — verdict buttons + notes + rating (1–10) +
-      tags; prompted when an album is marked done
-- [ ] `web/features/revisit` — simple list of revisit albums linking to
-      their prior review (the review-shown-alongside-playback flow,
-      FR-6b, is MVP3)
+- [x] `shared/review.ts` — `reviewSchema`, `verdictResponseSchema`,
+      `reviewsResponseSchema` (verdict enum + frontmatter were there)
+- [x] `store/reviews.ts` — gray-matter read/write, `slug()` +
+      `<artist>-<album>.md` under `reviews/<year>/`, `readAllReviews`,
+      `findReview`; drops `undefined` optionals before YAML dump
+- [x] `spotify/library.ts` — `isAlbumSaved`, `saveAlbum`,
+      `removeSavedAlbum`
+- [x] `POST /api/verdict` — keep→saveAlbum, delete→removeSavedAlbum (if
+      saved), revisit→`revisit.json`, all→write review + drop from
+      backlog; re-review keeps `listenedOn`, bumps `revisitedOn` only
+      when it was in Revisit
+- [x] `GET /api/reviews`, `GET /api/review/:albumId` (404 if none),
+      `GET /api/revisit` (enriched w/ album summary + review)
+- [x] `web/features/review` — `VerdictDialog` (4 verdict cards, 1–10
+      rating, tags, notes), `useAlbumReview` / `useSubmitVerdict`;
+      AlbumPage gets a "Finish album / Update review" button + a
+      prior-review banner
+- [x] `web/features/revisit/RevisitPage` — cards (cover, prior verdict +
+      rating + notes, revisit count), Play / Open
 
-**AC:** finish an album → pick each verdict in turn (on test albums) →
-correct Spotify side-effect happens, `reviews/2026/*.md` is written with
-valid frontmatter, the album leaves the backlog, Revisit shows up in its
-list.
+**AC:** ✅ verified live — all four verdicts: PASS (review + backlog clear,
+no side-effect), KEEP (album saved), REVISIT (`revisit.json` + shows in
+`/api/revisit`), DELETE (album removed from Library, confirmed via
+`/me/albums/contains`). Review files written with valid frontmatter;
+`GET /api/review/:id` 404s when absent. All test data cleaned up.
+Fix: js-yaml can't dump `undefined` → strip absent optionals in
+`writeReview`.
 
 ---
 

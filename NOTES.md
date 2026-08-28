@@ -86,15 +86,15 @@ and clear it from the backlog.
 - Architecture: [docs/architecture.md](docs/architecture.md) (proposal)
 - Implementation plan: [docs/implementation-plan.md](docs/implementation-plan.md) (8 phases, MVP1)
 
-**Build status:** Phase 0 ✅ · 1 auth ✅ · 2 playback ✅ · 3 Like+Banger ✅ ·
-4 Backlog ✅ · 5 Album view + lyrics ✅. git `main`, no remote yet.
+**Build status:** Phases 0–6 ✅ — the full MVP1 core loop works.
+git `main`, no remote yet. Only Phase 7 (polish + tests) remains.
 
 Run: `npm install && npm run dev` → app on :5173, API on :8888.
-Now Playing (transport + Like/Banger + recent list) · Backlog (search /
-add / reorder / Play album, cards link to album view) · Album view
-(tracklist + metadata + synced LRCLIB lyrics, per-track Like/Banger,
-play-from-track) · Settings (device + Banger playlist).
-Next: Phase 6 — Album verdict + review.
+Flow: add albums to the Backlog → open one → listen, Like/Banger tracks,
+read synced lyrics → "Finish album" → Keep / Revisit / Pass / Delete +
+notes → it clears from the backlog and writes `data/reviews/<year>/*.md`.
+Revisit page lists the "come back to it" albums.
+Next: Phase 7 — polish (error/empty states, README, Vitest, keyboard help).
 
 Stack: pnpm monorepo — `packages/{shared,server,web}` + `data/` (config +
 reviews) in git. React + Vite + TanStack Query (polling) frontend;

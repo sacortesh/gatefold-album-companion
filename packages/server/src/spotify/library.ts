@@ -38,3 +38,25 @@ export async function removeSavedTrack(id: string): Promise<void> {
     body: { ids: [id] },
   });
 }
+
+// --- saved albums -----------------------------------------------------
+
+export async function isAlbumSaved(id: string): Promise<boolean> {
+  const flags = await spotifyRequest<boolean[]>({
+    path: "/me/albums/contains",
+    query: { ids: id },
+  });
+  return flags[0] ?? false;
+}
+
+export async function saveAlbum(id: string): Promise<void> {
+  await spotifyRequest({ method: "PUT", path: "/me/albums", body: { ids: [id] } });
+}
+
+export async function removeSavedAlbum(id: string): Promise<void> {
+  await spotifyRequest({
+    method: "DELETE",
+    path: "/me/albums",
+    body: { ids: [id] },
+  });
+}

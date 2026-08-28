@@ -3,8 +3,9 @@ import { Layout } from "./components/Layout";
 import { AlbumPage } from "./features/album/AlbumPage";
 import { BacklogPage } from "./features/backlog/BacklogPage";
 import { NowPlayingPage } from "./features/now-playing/NowPlayingPage";
+import { RevisitPage } from "./features/revisit/RevisitPage";
 import { SettingsPage } from "./features/settings/SettingsPage";
-import { NotFoundPage, RevisitPage } from "./routes/pages";
+import { NotFoundPage } from "./routes/pages";
 
 const router = createBrowserRouter([
   {

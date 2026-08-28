@@ -17,10 +17,12 @@ export const reviewFrontmatterSchema = z.object({
 export type ReviewFrontmatter = z.infer<typeof reviewFrontmatterSchema>;
 
 /** A parsed review file: frontmatter + the markdown body below it. */
-export interface Review extends ReviewFrontmatter {
-  notes: string;
-  path: string;
-}
+export const reviewSchema = reviewFrontmatterSchema.extend({
+  notes: z.string(),
+  /** repo-relative path, e.g. `data/reviews/2026/deafheaven-sunbather.md` */
+  path: z.string(),
+});
+export type Review = z.infer<typeof reviewSchema>;
 
 /** Payload the web app sends to `POST /api/verdict`. */
 export const verdictRequestSchema = z.object({
@@ -31,3 +33,16 @@ export const verdictRequestSchema = z.object({
   notes: z.string().default(""),
 });
 export type VerdictRequest = z.infer<typeof verdictRequestSchema>;
+
+export const verdictResponseSchema = z.object({
+  verdict: verdictSchema,
+  review: reviewSchema,
+  savedAlbum: z.boolean(),
+  removedFromLibrary: z.boolean(),
+});
+export type VerdictResponse = z.infer<typeof verdictResponseSchema>;
+
+export const reviewsResponseSchema = z.object({
+  reviews: z.array(reviewSchema),
+});
+export type ReviewsResponse = z.infer<typeof reviewsResponseSchema>;

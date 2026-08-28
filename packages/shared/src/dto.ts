@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { reviewSchema } from "./review.js";
 
 /** `GET /api/health` */
 export const healthResponseSchema = z.object({
@@ -284,3 +285,18 @@ export const trackStatesResponseSchema = z.object({
   states: z.record(z.string(), trackTriageStateSchema),
 });
 export type TrackStatesResponse = z.infer<typeof trackStatesResponseSchema>;
+
+// --- Phase 6: revisit list ---------------------------------------
+
+export const revisitEntrySchema = z.object({
+  albumId: z.string(),
+  addedAt: z.string(),
+  album: albumSummarySchema.nullable(),
+  review: reviewSchema.nullable(),
+});
+export type RevisitEntry = z.infer<typeof revisitEntrySchema>;
+
+export const revisitResponseSchema = z.object({
+  items: z.array(revisitEntrySchema),
+});
+export type RevisitResponse = z.infer<typeof revisitResponseSchema>;
