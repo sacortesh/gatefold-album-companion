@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, startSpotifyLogin } from "../../api/client";
 import { BangerPlaylistPicker } from "./BangerPlaylistPicker";
 import { DevicePicker } from "./DevicePicker";
+import { SpotifySetup } from "./SpotifySetup";
 
 const AUTH_MESSAGES: Record<string, { tone: "ok" | "err"; text: string }> = {
   connected: { tone: "ok", text: "Connected to Spotify." },
@@ -12,7 +13,7 @@ const AUTH_MESSAGES: Record<string, { tone: "ok" | "err"; text: string }> = {
   failed: { tone: "err", text: "Could not complete the Spotify login. Try again." },
   unconfigured: {
     tone: "err",
-    text: "Spotify client id/secret are missing from .env.",
+    text: "Set a Spotify client ID below before connecting.",
   },
 };
 
@@ -85,10 +86,8 @@ export function SettingsPage() {
         )}
 
         {s && !s.configured && (
-          <p className="text-sm text-red-400">
-            Add <code className="text-neutral-300">SPOTIFY_CLIENT_ID</code> and{" "}
-            <code className="text-neutral-300">SPOTIFY_CLIENT_SECRET</code> to{" "}
-            <code className="text-neutral-300">.env</code>, then restart.
+          <p className="text-sm text-neutral-400">
+            Not configured yet — set a client ID below.
           </p>
         )}
 
@@ -132,6 +131,8 @@ export function SettingsPage() {
           </div>
         )}
       </div>
+
+      <SpotifySetup />
 
       {s?.connected && <DevicePicker />}
 

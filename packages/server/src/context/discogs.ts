@@ -1,10 +1,14 @@
-import { env } from "../env.js";
 import { getJson } from "./http.js";
 
 const BASE = "https://api.discogs.com";
 
-const authHeader = (): Record<string, string> => ({
-  authorization: `Discogs key=${env.DISCOGS_CONSUMER_KEY}, secret=${env.DISCOGS_CONSUMER_SECRET}`,
+export interface DiscogsCreds {
+  key: string;
+  secret: string;
+}
+
+const authHeader = (creds: DiscogsCreds): Record<string, string> => ({
+  authorization: `Discogs key=${creds.key}, secret=${creds.secret}`,
 });
 
 interface RawSearch {
@@ -55,11 +59,14 @@ const cleanNotes = (n: string): string =>
     .trim()
     .slice(0, 1200);
 
-export async function getDiscogs(input: {
-  artist: string;
-  album: string;
-  year: string | null;
-}): Promise<DiscogsContext | null> {
+export async function getDiscogs(
+  input: {
+    artist: string;
+    album: string;
+    year: string | null;
+  },
+  creds: DiscogsCreds,
+): Promise<DiscogsContext | null> {
   const params = new URLSearchParams({
     type: "release",
     artist: input.artist,
@@ -69,7 +76,7 @@ export async function getDiscogs(input: {
 
   const search = await getJson<RawSearch>(
     `${BASE}/database/search?${params.toString()}`,
-    { headers: authHeader() },
+    { headers: authHeader(creds) },
   );
 
   // Prefer the original studio album over promos, singles, comps and reissues.
@@ -88,7 +95,7 @@ export async function getDiscogs(input: {
   if (!best) return null;
 
   const release = await getJson<RawRelease>(`${BASE}/releases/${best.r.id}`, {
-    headers: authHeader(),
+    headers: authHeader(creds),
   });
 
   const byPerson = new Map<string, Set<string>>();

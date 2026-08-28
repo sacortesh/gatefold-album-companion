@@ -1,5 +1,4 @@
 import { readFile, rm, writeFile } from "node:fs/promises";
-import { env } from "../env.js";
 import { NotConnectedError } from "../errors.js";
 import { AUTH_FILE } from "../paths.js";
 import {
@@ -65,9 +64,12 @@ async function apply(
 
 // --- Public API --------------------------------------------------------
 
-/** Completes the OAuth callback: swap the code for tokens and persist. */
-export async function completeLogin(code: string): Promise<void> {
-  const token = await exchangeCode(code);
+/** Completes the OAuth callback: swap the code (+ PKCE verifier) for tokens and persist. */
+export async function completeLogin(
+  code: string,
+  verifier: string,
+): Promise<void> {
+  const token = await exchangeCode(code, verifier);
   await apply(token, await readStored());
 }
 
@@ -108,8 +110,7 @@ export function accessTokenExpiresAt(): string | null {
     : null;
 }
 
-export const spotifyConfigured = (): boolean =>
-  Boolean(env.SPOTIFY_CLIENT_ID && env.SPOTIFY_CLIENT_SECRET);
+export { spotifyConfigured } from "../store/appConfig.js";
 
 // --- Debug hooks (non-production only; wired in routes/auth.ts) ---------
 

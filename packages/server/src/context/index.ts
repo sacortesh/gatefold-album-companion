@@ -1,6 +1,6 @@
 import type { AlbumContext } from "@spotify-companion/shared";
 import { makeCache } from "../cache.js";
-import { discogsConfigured } from "../env.js";
+import { getAppConfig } from "../store/appConfig.js";
 import { getDiscogs } from "./discogs.js";
 import { safe } from "./http.js";
 import { getMusicBrainz } from "./musicbrainz.js";
@@ -18,6 +18,9 @@ export interface AlbumContextInput {
 export async function getAlbumContext(
   input: AlbumContextInput,
 ): Promise<AlbumContext> {
+  const { discogsConsumerKey, discogsConsumerSecret } = await getAppConfig();
+  const discogsConfigured = Boolean(discogsConsumerKey && discogsConsumerSecret);
+
   const key = `ctx:${input.artist}::${input.album}`.toLowerCase();
   const cached = await cache.get<AlbumContext>(key, TTL_MS);
   if (cached) return { ...cached, discogsConfigured };
@@ -27,7 +30,12 @@ export async function getAlbumContext(
     getWikipedia(input, mb?.wikipediaTitle ?? null),
   );
   const discogs = discogsConfigured
-    ? await safe("discogs", () => getDiscogs(input))
+    ? await safe("discogs", () =>
+        getDiscogs(input, {
+          key: discogsConsumerKey,
+          secret: discogsConsumerSecret,
+        }),
+      )
     : null;
 
   const sources: AlbumContext["sources"] = [];

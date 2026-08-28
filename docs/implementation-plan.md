@@ -433,16 +433,21 @@ backend, no multi-tenancy.
   banner that checks the GitHub releases API + docs for
   `docker compose pull && up -d` / Watchtower.
 
-### 9.1 Runtime config store
-- [ ] `store/appConfig.ts` — read/write `/config/app.json`
-      (`spotifyClientId`, `apiKey`, `uiAuth`, `discogsKey/Secret`,
-      `publicUrl`); env vars override file values; defaults on first run
-- [ ] rework `env.ts` → split process-level (`PORT`, `HOST`, `CONFIG_DIR`)
-      from app config; `auth/oauth.ts` + `context/discogs.ts` read the
-      store, not `env`
-- [ ] `GET/PUT /api/settings/app` (secrets write-only: browser gets
-      `{ spotifyClientId, discogsConfigured, redirectUri, … }`, never the
-      secret back)
+### 9.1 Runtime config store  ✅ done (2026-08-28)
+- [x] `store/appConfig.ts` — read/write `data/app.json`
+      (`spotifyClientId`, `discogsConsumerKey/Secret`, `publicUrl`);
+      matching env vars override the file and lock the UI field;
+      `redirectUri` + `webOrigin` derived; in-memory cache
+- [x] `env.ts` trimmed to process-level (`PORT`, `HOST`, `NODE_ENV`,
+      `WEB_ORIGIN`) + optional overrides; `spotifyConfigured` /
+      `discogsConfigured` moved to `appConfig` (now async);
+      `context/discogs.ts` takes creds as an arg from `context/index.ts`
+- [x] `GET/PUT /api/settings/app` (`routes/settings.ts`) — response is
+      secret-free (`spotifyClientId`, `publicUrl`, `redirectUri`,
+      `discogsConfigured`, `envLocked`); PUT ignores env-locked fields
+- [x] `data/app.json` gitignored; `SpotifySetup` card in Settings —
+      client-ID field, redirect-URI display + copy, public-URL field
+- [ ] `apiKey` / `uiAuth` fields in `app.json` — deferred to 9.2
 
 ### 9.2 API key + optional UI auth
 - [ ] generate `apiKey` on first run; `preHandler` on `/api/*` requires
@@ -460,10 +465,14 @@ backend, no multi-tenancy.
       `review-template.md` (currently seeded from the repo's `data/`)
 - [ ] `paths.ts` keyed off `CONFIG_DIR` env (default `./data` in dev)
 
-### 9.4 Auth → PKCE
-- [ ] `auth/oauth.ts` — code_verifier/challenge, no `client_secret`;
-      token exchange + refresh via PKCE
-- [ ] drop `SPOTIFY_CLIENT_SECRET` from everywhere; docs + `.env.example`
+### 9.4 Auth → PKCE  ✅ done (2026-08-28)
+- [x] `auth/oauth.ts` — `code_verifier`/`code_challenge` (S256), no
+      `client_secret`; `client_id` in the token bodies; verifier stored
+      alongside the CSRF `state` (`issueAuthState` / `consumeAuthState`)
+- [x] `SPOTIFY_CLIENT_SECRET` removed from `env.ts`, `.env`, `.env.example`;
+      `AuthStatus` gained `redirectUri`
+- Note: existing connections made under the old confidential flow won't
+      refresh under PKCE — one reconnect click fixes it.
 
 ### 9.5 Container
 - [ ] multi-stage `Dockerfile` — build web, compile server with `tsc`

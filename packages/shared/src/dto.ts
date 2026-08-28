@@ -34,10 +34,36 @@ export const authStatusSchema = z.object({
       displayName: z.string().nullable(),
     })
     .nullable(),
-  /** True only when Spotify client id/secret are configured in `.env`. */
+  /** True once a Spotify client id is set (in the UI or via env). */
   configured: z.boolean(),
+  /** The redirect URI to register in the Spotify dashboard. */
+  redirectUri: z.string(),
 });
 export type AuthStatus = z.infer<typeof authStatusSchema>;
+
+/** `GET /api/settings/app` — never returns secrets, only whether they're set. */
+export const appSettingsSchema = z.object({
+  spotifyClientId: z.string(),
+  publicUrl: z.string(),
+  redirectUri: z.string(),
+  discogsConfigured: z.boolean(),
+  /** Fields pinned by an env var — the UI shows these read-only. */
+  envLocked: z.object({
+    spotifyClientId: z.boolean(),
+    publicUrl: z.boolean(),
+    discogs: z.boolean(),
+  }),
+});
+export type AppSettings = z.infer<typeof appSettingsSchema>;
+
+/** `PUT /api/settings/app` — omitted fields are left unchanged; env-locked fields are ignored. */
+export const appSettingsUpdateSchema = z.object({
+  spotifyClientId: z.string().optional(),
+  publicUrl: z.string().optional(),
+  discogsConsumerKey: z.string().optional(),
+  discogsConsumerSecret: z.string().optional(),
+});
+export type AppSettingsUpdate = z.infer<typeof appSettingsUpdateSchema>;
 
 // --- Phase 2: playback ------------------------------------------------
 

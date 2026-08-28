@@ -1,11 +1,12 @@
 import { buildApp } from "./app.js";
-import { env, spotifyConfigured } from "./env.js";
+import { env } from "./env.js";
+import { spotifyConfigured } from "./store/appConfig.js";
 
 const app = await buildApp();
 
-if (!spotifyConfigured) {
+if (!(await spotifyConfigured())) {
   app.log.warn(
-    "Spotify credentials not set — copy .env.example to .env (Phase 1). API health still works.",
+    "No Spotify client id yet — set one in Settings (or SPOTIFY_CLIENT_ID). API health still works.",
   );
 }
 

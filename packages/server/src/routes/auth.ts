@@ -1,6 +1,10 @@
 import type { FastifyInstance } from "fastify";
 import type { AuthStatus } from "@spotify-companion/shared";
-import { buildAuthorizeUrl, consumeState, issueState } from "../auth/oauth.js";
+import {
+  buildAuthorizeUrl,
+  consumeAuthState,
+  issueAuthState,
+} from "../auth/oauth.js";
 import {
   _debugCorrupt,
   _debugExpire,
@@ -14,17 +18,30 @@ import {
 import { env } from "../env.js";
 import { AppError, NotConnectedError } from "../errors.js";
 import { getMe } from "../spotify/client.js";
+import { getAppConfig } from "../store/appConfig.js";
 
-const settingsUrl = (params: string): string =>
-  `${env.WEB_ORIGIN}/settings?${params}`;
+async function settingsUrl(params: string): Promise<string> {
+  const { webOrigin } = await getAppConfig();
+  return `${webOrigin}/settings?${params}`;
+}
 
-function disconnected(configured: boolean): AuthStatus {
-  return { connected: false, scopes: [], expiresAt: null, user: null, configured };
+function disconnected(configured: boolean, redirectUri: string): AuthStatus {
+  return {
+    connected: false,
+    scopes: [],
+    expiresAt: null,
+    user: null,
+    configured,
+    redirectUri,
+  };
 }
 
 async function buildStatus(): Promise<AuthStatus> {
-  const configured = spotifyConfigured();
-  if (!configured || !(await isConnected())) return disconnected(configured);
+  const { spotifyClientId, redirectUri } = await getAppConfig();
+  const configured = Boolean(spotifyClientId);
+  if (!configured || !(await isConnected())) {
+    return disconnected(configured, redirectUri);
+  }
 
   try {
     const me = await getMe(); // exercises the token + refresh path
@@ -34,13 +51,17 @@ async function buildStatus(): Promise<AuthStatus> {
       expiresAt: accessTokenExpiresAt(),
       user: { id: me.id, displayName: me.display_name },
       configured,
+      redirectUri,
     };
   } catch (err) {
     if (
       err instanceof NotConnectedError ||
       (err instanceof AppError && err.statusCode === 401)
     ) {
-      return { ...disconnected(configured), scopes: currentScopes() };
+      return {
+        ...disconnected(configured, redirectUri),
+        scopes: currentScopes(),
+      };
     }
     throw err;
   }
@@ -49,10 +70,11 @@ async function buildStatus(): Promise<AuthStatus> {
 /** Top-level browser routes: `/auth/login`, `/callback`. */
 export async function authWebRoutes(app: FastifyInstance): Promise<void> {
   app.get("/auth/login", async (_req, reply) => {
-    if (!spotifyConfigured()) {
-      return reply.redirect(settingsUrl("auth=unconfigured"));
+    if (!(await spotifyConfigured())) {
+      return reply.redirect(await settingsUrl("auth=unconfigured"));
     }
-    return reply.redirect(buildAuthorizeUrl(issueState()));
+    const { state, challenge } = issueAuthState();
+    return reply.redirect(await buildAuthorizeUrl(state, challenge));
   });
 
   app.get("/callback", async (req, reply) => {
@@ -62,17 +84,19 @@ export async function authWebRoutes(app: FastifyInstance): Promise<void> {
       error?: string;
     };
 
-    if (error) return reply.redirect(settingsUrl(`auth=denied`));
-    if (!code || !consumeState(state)) {
-      return reply.redirect(settingsUrl("auth=invalid"));
+    if (error) return reply.redirect(await settingsUrl("auth=denied"));
+
+    const verifier = consumeAuthState(state);
+    if (!code || !verifier) {
+      return reply.redirect(await settingsUrl("auth=invalid"));
     }
 
     try {
-      await completeLogin(code);
-      return reply.redirect(settingsUrl("auth=connected"));
+      await completeLogin(code, verifier);
+      return reply.redirect(await settingsUrl("auth=connected"));
     } catch (err) {
       req.log.error(err, "OAuth callback failed");
-      return reply.redirect(settingsUrl("auth=failed"));
+      return reply.redirect(await settingsUrl("auth=failed"));
     }
   });
 }
@@ -91,7 +115,11 @@ export async function authApiRoutes(app: FastifyInstance): Promise<void> {
       const { action } = (req.body ?? {}) as { action?: string };
       if (action === "expire") _debugExpire();
       else if (action === "corrupt") _debugCorrupt();
-      else throw new AppError("bad_request", "action must be 'expire' or 'corrupt'");
+      else
+        throw new AppError(
+          "bad_request",
+          "action must be 'expire' or 'corrupt'",
+        );
       return { ok: true, action };
     });
   }

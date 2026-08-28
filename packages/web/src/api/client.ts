@@ -3,6 +3,8 @@ import type {
   AlbumDetail,
   AlbumLyricsResponse,
   ApiError,
+  AppSettings,
+  AppSettingsUpdate,
   AuthStatus,
   Backlog,
   BacklogEntry,
@@ -80,6 +82,12 @@ export const api = {
   authStatus: () => request<AuthStatus>("/auth/status"),
   authDisconnect: () =>
     request<{ connected: false }>("/auth", { method: "DELETE" }),
+  appSettings: () => request<AppSettings>("/settings/app"),
+  updateAppSettings: (body: AppSettingsUpdate) =>
+    request<AppSettings>("/settings/app", {
+      method: "PUT",
+      body: JSON.stringify(body),
+    }),
   authDebug: (action: "expire" | "corrupt") =>
     request<{ ok: true; action: string }>("/auth/debug", {
       method: "POST",

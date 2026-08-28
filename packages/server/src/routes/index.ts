@@ -6,6 +6,7 @@ import { albumRoutes } from "./album.js";
 import { backlogRoutes } from "./backlog.js";
 import { playbackRoutes } from "./playback.js";
 import { searchRoutes } from "./search.js";
+import { settingsRoutes } from "./settings.js";
 import { triageRoutes } from "./triage.js";
 import { verdictRoutes } from "./verdict.js";
 
@@ -18,6 +19,7 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
     async (api) => {
       await api.register(healthRoutes);
       await api.register(authApiRoutes);
+      await api.register(settingsRoutes);
       await api.register(playbackRoutes);
       await api.register(configRoutes);
       await api.register(triageRoutes);

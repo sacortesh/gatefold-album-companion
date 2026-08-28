@@ -1,6 +1,6 @@
-import { randomBytes } from "node:crypto";
-import { env } from "../env.js";
+import { createHash, randomBytes } from "node:crypto";
 import { AppError } from "../errors.js";
+import { getAppConfig } from "../store/appConfig.js";
 
 const AUTHORIZE_URL = "https://accounts.spotify.com/authorize";
 const TOKEN_URL = "https://accounts.spotify.com/api/token";
@@ -27,49 +27,65 @@ export interface SpotifyTokenResponse {
   refresh_token?: string;
 }
 
-function basicAuthHeader(): string {
-  const raw = `${env.SPOTIFY_CLIENT_ID}:${env.SPOTIFY_CLIENT_SECRET}`;
-  return `Basic ${Buffer.from(raw).toString("base64")}`;
+const b64url = (buf: Buffer): string =>
+  buf
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+
+// --- PKCE + CSRF state (in-memory, single-user, short-lived) --------------
+
+interface Pending {
+  at: number;
+  verifier: string;
 }
-
-// --- CSRF state (in-memory, single-user, short-lived) ---------------------
-
-const pendingStates = new Map<string, number>();
+const pending = new Map<string, Pending>();
 const STATE_TTL_MS = 10 * 60_000;
 
-export function issueState(): string {
+/** Start a login: mint a CSRF `state` and its paired PKCE verifier/challenge. */
+export function issueAuthState(): { state: string; challenge: string } {
   const state = randomBytes(16).toString("hex");
-  pendingStates.set(state, Date.now());
-  return state;
+  const verifier = b64url(randomBytes(64));
+  const challenge = b64url(createHash("sha256").update(verifier).digest());
+  pending.set(state, { at: Date.now(), verifier });
+  return { state, challenge };
 }
 
-export function consumeState(state: string | undefined): boolean {
-  if (!state) return false;
-  const issuedAt = pendingStates.get(state);
-  pendingStates.delete(state);
-  return issuedAt !== undefined && Date.now() - issuedAt < STATE_TTL_MS;
+/** Redeem a `state` from the callback → its verifier, or null if unknown/expired. */
+export function consumeAuthState(state: string | undefined): string | null {
+  if (!state) return null;
+  const entry = pending.get(state);
+  pending.delete(state);
+  if (!entry || Date.now() - entry.at >= STATE_TTL_MS) return null;
+  return entry.verifier;
 }
 
-// --- Flow ----------------------------------------------------------------
+// --- Flow (Authorization Code with PKCE — no client secret) --------------
 
-export function buildAuthorizeUrl(state: string): string {
+export async function buildAuthorizeUrl(
+  state: string,
+  challenge: string,
+): Promise<string> {
+  const { spotifyClientId, redirectUri } = await getAppConfig();
   const params = new URLSearchParams({
     response_type: "code",
-    client_id: env.SPOTIFY_CLIENT_ID,
+    client_id: spotifyClientId,
     scope: SCOPES.join(" "),
-    redirect_uri: env.SPOTIFY_REDIRECT_URI,
+    redirect_uri: redirectUri,
     state,
+    code_challenge_method: "S256",
+    code_challenge: challenge,
   });
   return `${AUTHORIZE_URL}?${params.toString()}`;
 }
 
-async function tokenRequest(body: URLSearchParams): Promise<SpotifyTokenResponse> {
+async function tokenRequest(
+  body: URLSearchParams,
+): Promise<SpotifyTokenResponse> {
   const res = await fetch(TOKEN_URL, {
     method: "POST",
-    headers: {
-      authorization: basicAuthHeader(),
-      "content-type": "application/x-www-form-urlencoded",
-    },
+    headers: { "content-type": "application/x-www-form-urlencoded" },
     body,
   });
 
@@ -84,23 +100,31 @@ async function tokenRequest(body: URLSearchParams): Promise<SpotifyTokenResponse
   return JSON.parse(text) as SpotifyTokenResponse;
 }
 
-export function exchangeCode(code: string): Promise<SpotifyTokenResponse> {
+export async function exchangeCode(
+  code: string,
+  verifier: string,
+): Promise<SpotifyTokenResponse> {
+  const { spotifyClientId, redirectUri } = await getAppConfig();
   return tokenRequest(
     new URLSearchParams({
       grant_type: "authorization_code",
       code,
-      redirect_uri: env.SPOTIFY_REDIRECT_URI,
+      redirect_uri: redirectUri,
+      client_id: spotifyClientId,
+      code_verifier: verifier,
     }),
   );
 }
 
-export function refreshAccessToken(
+export async function refreshAccessToken(
   refreshToken: string,
 ): Promise<SpotifyTokenResponse> {
+  const { spotifyClientId } = await getAppConfig();
   return tokenRequest(
     new URLSearchParams({
       grant_type: "refresh_token",
       refresh_token: refreshToken,
+      client_id: spotifyClientId,
     }),
   );
 }

@@ -2,10 +2,11 @@ node_modules/
 dist/
 *.tsbuildinfo
 
-# secrets / local auth
+# secrets / local auth / runtime config
 .env
 .env.local
 data/.auth.json
+data/app.json
 
 # derived caches (not source of truth)
 data/cache/
