@@ -1,8 +1,10 @@
 import { existsSync } from "node:fs";
+import cookie from "@fastify/cookie";
 import Fastify, { type FastifyError, type FastifyInstance } from "fastify";
 import { env } from "./env.js";
 import { WEB_DIST } from "./paths.js";
 import { registerRoutes } from "./routes/index.js";
+import { getAppConfig } from "./store/appConfig.js";
 
 export async function buildApp(): Promise<FastifyInstance> {
   const app = Fastify({
@@ -38,6 +40,9 @@ export async function buildApp(): Promise<FastifyInstance> {
       error: { code: err.code ?? "internal_error", message: err.message },
     });
   });
+
+  const { cookieSecret } = await getAppConfig();
+  await app.register(cookie, { secret: cookieSecret });
 
   await registerRoutes(app);
 

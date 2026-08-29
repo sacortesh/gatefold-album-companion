@@ -1,6 +1,7 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { Layout } from "./components/Layout";
 import { AlbumPage } from "./features/album/AlbumPage";
+import { LoginGate } from "./features/auth/LoginGate";
 import { BacklogPage } from "./features/backlog/BacklogPage";
 import { NowPlayingPage } from "./features/now-playing/NowPlayingPage";
 import { RecentPage } from "./features/recent/RecentPage";
@@ -26,5 +27,9 @@ const router = createBrowserRouter([
 ]);
 
 export function App() {
-  return <RouterProvider router={router} />;
+  return (
+    <LoginGate>
+      <RouterProvider router={router} />
+    </LoginGate>
+  );
 }

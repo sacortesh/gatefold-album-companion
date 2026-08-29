@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, startSpotifyLogin } from "../../api/client";
 import { BangerPlaylistPicker } from "./BangerPlaylistPicker";
 import { DevicePicker } from "./DevicePicker";
+import { SecuritySettings } from "./SecuritySettings";
 import { SpotifySetup } from "./SpotifySetup";
 
 const AUTH_MESSAGES: Record<string, { tone: "ok" | "err"; text: string }> = {
@@ -133,6 +134,8 @@ export function SettingsPage() {
       </div>
 
       <SpotifySetup />
+
+      <SecuritySettings />
 
       {s?.connected && <DevicePicker />}
 

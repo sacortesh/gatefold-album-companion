@@ -1,5 +1,6 @@
 import type { FastifyInstance } from "fastify";
-import type { AuthStatus } from "@gatefold/shared";
+import type { AuthStatus, SessionStatus } from "@gatefold/shared";
+import { uiLoginRequestSchema } from "@gatefold/shared";
 import {
   buildAuthorizeUrl,
   consumeAuthState,
@@ -18,7 +19,14 @@ import {
 import { env } from "../env.js";
 import { AppError, NotConnectedError } from "../errors.js";
 import { getMe } from "../spotify/client.js";
-import { getAppConfig } from "../store/appConfig.js";
+import {
+  bumpSessionEpoch,
+  getAppConfig,
+  verifyUiCredentials,
+} from "../store/appConfig.js";
+
+const SESSION_COOKIE = "gatefold_session";
+const SESSION_MAX_AGE_SECONDS = 30 * 24 * 60 * 60; // 30 days
 
 async function settingsUrl(params: string): Promise<string> {
   const { webOrigin } = await getAppConfig();
@@ -67,7 +75,10 @@ async function buildStatus(): Promise<AuthStatus> {
   }
 }
 
-/** Top-level browser routes: `/auth/login`, `/callback`. */
+/** Top-level browser routes: `/auth/login`, `/callback`, `/auth/session`,
+ *  `/auth/ui-login`, `/auth/ui-logout`. None of these sit behind the
+ *  `/api/*` API-key guard — `/auth/session` is precisely how the SPA
+ *  obtains that key in the first place. */
 export async function authWebRoutes(app: FastifyInstance): Promise<void> {
   app.get("/auth/login", async (_req, reply) => {
     if (!(await spotifyConfigured())) {
@@ -98,6 +109,41 @@ export async function authWebRoutes(app: FastifyInstance): Promise<void> {
       req.log.error(err, "OAuth callback failed");
       return reply.redirect(await settingsUrl("auth=failed"));
     }
+  });
+
+  app.get("/auth/session", async (req): Promise<SessionStatus> => {
+    const { uiAuth, apiKey, sessionEpoch } = await getAppConfig();
+
+    if (!uiAuth.enabled) return { enabled: false, authenticated: true, apiKey };
+
+    const raw = req.cookies[SESSION_COOKIE];
+    const unsigned = raw ? req.unsignCookie(raw) : null;
+    const authenticated =
+      Boolean(unsigned?.valid) && unsigned?.value === String(sessionEpoch);
+
+    return { enabled: true, authenticated, apiKey: authenticated ? apiKey : null };
+  });
+
+  app.post("/auth/ui-login", async (req, reply) => {
+    const { username, password } = uiLoginRequestSchema.parse(req.body ?? {});
+    const ok = await verifyUiCredentials(username, password);
+    if (!ok) throw new AppError("invalid_credentials", "Wrong username or password", 401);
+
+    const { sessionEpoch } = await getAppConfig();
+    reply.cookie(SESSION_COOKIE, String(sessionEpoch), {
+      signed: true,
+      httpOnly: true,
+      sameSite: "lax",
+      path: "/",
+      maxAge: SESSION_MAX_AGE_SECONDS,
+    });
+    return { ok: true };
+  });
+
+  app.post("/auth/ui-logout", async (_req, reply) => {
+    await bumpSessionEpoch(); // invalidates this and every other outstanding session
+    reply.clearCookie(SESSION_COOKIE, { path: "/" });
+    return { ok: true };
   });
 }
 

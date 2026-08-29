@@ -47,6 +47,13 @@ export const appSettingsSchema = z.object({
   publicUrl: z.string(),
   redirectUri: z.string(),
   discogsConfigured: z.boolean(),
+  /** Required on every other `/api/*` call — shown for copy/paste into scripts. */
+  apiKey: z.string(),
+  uiAuth: z.object({
+    enabled: z.boolean(),
+    username: z.string(),
+    passwordSet: z.boolean(),
+  }),
   /** Fields pinned by an env var — the UI shows these read-only. */
   envLocked: z.object({
     spotifyClientId: z.boolean(),
@@ -64,6 +71,30 @@ export const appSettingsUpdateSchema = z.object({
   discogsConsumerSecret: z.string().optional(),
 });
 export type AppSettingsUpdate = z.infer<typeof appSettingsUpdateSchema>;
+
+/** `PUT /api/settings/ui-auth` — `password` only needs sending when setting/changing it. */
+export const uiAuthUpdateSchema = z.object({
+  enabled: z.boolean().optional(),
+  username: z.string().optional(),
+  password: z.string().min(1).optional(),
+});
+export type UiAuthUpdate = z.infer<typeof uiAuthUpdateSchema>;
+
+/** `POST /auth/ui-login` */
+export const uiLoginRequestSchema = z.object({
+  username: z.string().min(1),
+  password: z.string().min(1),
+});
+export type UiLoginRequest = z.infer<typeof uiLoginRequestSchema>;
+
+/** `GET /auth/session` — the SPA calls this first; `apiKey` is only present
+ *  once authenticated (or when UI auth is off), and is what unlocks `/api/*`. */
+export const sessionStatusSchema = z.object({
+  enabled: z.boolean(),
+  authenticated: z.boolean(),
+  apiKey: z.string().nullable(),
+});
+export type SessionStatus = z.infer<typeof sessionStatusSchema>;
 
 // --- Phase 2: playback ------------------------------------------------
 

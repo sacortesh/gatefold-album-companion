@@ -447,16 +447,23 @@ backend, no multi-tenancy.
       `discogsConfigured`, `envLocked`); PUT ignores env-locked fields
 - [x] `data/app.json` gitignored; `SpotifySetup` card in Settings —
       client-ID field, redirect-URI display + copy, public-URL field
-- [ ] `apiKey` / `uiAuth` fields in `app.json` — deferred to 9.2
+- [x] `apiKey` / `uiAuth` fields in `app.json` — done in 9.2
 
-### 9.2 API key + optional UI auth
-- [ ] generate `apiKey` on first run; `preHandler` on `/api/*` requires
-      `X-Api-Key` (or `?apikey=`); SPA fetches it from a bootstrap route
-      after UI auth
-- [ ] optional forms auth for the UI (username + argon2/bcrypt hash in
-      `app.json`); login page; signed session cookie; `/callback` and
-      health stay open
-- [ ] "regenerate API key" + auth toggle in Settings
+### 9.2 API key + optional UI auth  ✅ done (2026-08-29)
+- [x] generate `apiKey` on first run (`appConfig.ts`); `preHandler` on
+      `/api/*` requires `X-Api-Key` (or `?apikey=`) via `auth/apiKeyGuard.ts`,
+      registered as a hook on a second `/api` encapsulation so
+      `/api/health` stays open; SPA fetches the key from `GET /auth/session`
+      (open, outside `/api`) after UI auth and sends it back on every call
+- [x] optional forms auth for the UI (username + scrypt hash — `node:crypto`,
+      no native-build dependency — in `app.json` via `auth/password.ts`);
+      `LoginGate` renders a login form when enabled and unauthenticated;
+      `POST /auth/ui-login`/`ui-logout` set/clear an `@fastify/cookie`
+      signed session cookie; the cookie value is `sessionEpoch`, bumped on
+      every UI-auth change or logout to invalidate outstanding sessions;
+      `/callback` and `/api/health` stay open
+- [x] "regenerate API key" + auth toggle + username/password form in
+      Settings → Security (`SecuritySettings.tsx`)
 
 ### 9.3 Paths / volume restructure
 - [ ] all mutable state under one `CONFIG_DIR` (`/config` in the image):

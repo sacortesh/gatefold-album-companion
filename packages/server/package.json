@@ -10,6 +10,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@fastify/cookie": "^11.0.2",
     "@fastify/static": "^10.1.3",
     "@gatefold/shared": "*",
     "dotenv": "^16.4.7",

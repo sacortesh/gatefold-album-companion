@@ -109,8 +109,11 @@ Revisit page lists the "come back to it" albums.
 Phase 9 (self-hosting) in progress: repo hygiene (README, AGPL LICENSE,
 CI), 9.1 runtime config store + 9.4 PKCE auth done — Spotify client id +
 Discogs keys now settable in Settings (data/app.json), no client secret.
-Existing Spotify connection needs one reconnect (PKCE). Next: 9.2 API-key
-guard, 9.3 /config volume, 9.5 Dockerfile.
+Existing Spotify connection needs one reconnect (PKCE). 9.2 API key +
+optional UI auth done (2026-08-29) — `apiKey` required on every `/api/*`
+call except `/api/health`; optional username/password sign-in gates the
+SPA via a signed session cookie, managed from Settings → Security. Next:
+9.3 /config volume, 9.5 Dockerfile.
 
 Next: browser-verify Phase 8 + the new Settings setup flow, then Phase 7
 polish (error/empty states, Vitest, keyboard help).

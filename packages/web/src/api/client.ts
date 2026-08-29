@@ -24,8 +24,10 @@ import type {
   Revisit,
   RevisitResponse,
   SearchResponse,
+  SessionStatus,
   Settings,
   TrackStatesResponse,
+  UiAuthUpdate,
   VerdictRequest,
   VerdictResponse,
 } from "@gatefold/shared";
@@ -41,17 +43,30 @@ export class ApiRequestError extends Error {
   }
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`/api${path}`, {
-    headers: { "content-type": "application/json", ...init?.headers },
-    ...init,
-  });
+/** Set once at boot from `GET /auth/session`, sent back as `X-Api-Key` on
+ *  every `/api/*` call. `null` until the session bootstrap resolves. */
+let apiKey: string | null = null;
+export function setApiKey(key: string | null): void {
+  apiKey = key;
+}
 
+/** Called on a 401 from the API-key guard — e.g. the key was regenerated in
+ *  another tab. The caller re-runs the session bootstrap. */
+let onUnauthorized: (() => void) | null = null;
+export function setOnUnauthorized(handler: (() => void) | null): void {
+  onUnauthorized = handler;
+}
+
+async function parseResponse<T>(res: Response): Promise<T> {
   const text = await res.text();
   const body = text ? (JSON.parse(text) as unknown) : undefined;
 
   if (!res.ok) {
     const err = (body as ApiError | undefined)?.error;
+    // Only the API-key guard's own code means "the key is bad" — a plain 401
+    // also covers "Spotify isn't connected" (`not_connected`), which is a
+    // normal, frequent state and must not be treated as an auth failure.
+    if (err?.code === "unauthorized") onUnauthorized?.();
     throw new ApiRequestError(
       err?.code ?? "http_error",
       err?.message ?? res.statusText,
@@ -59,6 +74,29 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     );
   }
   return body as T;
+}
+
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(`/api${path}`, {
+    headers: {
+      "content-type": "application/json",
+      ...(apiKey ? { "x-api-key": apiKey } : {}),
+      ...init?.headers,
+    },
+    ...init,
+  });
+  return parseResponse<T>(res);
+}
+
+/** For the handful of endpoints that live outside `/api` (session bootstrap,
+ *  UI login/logout) — no API key, but cookies are sent. */
+async function rawRequest<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(path, {
+    headers: { "content-type": "application/json", ...init?.headers },
+    credentials: "same-origin",
+    ...init,
+  });
+  return parseResponse<T>(res);
 }
 
 const post = (path: string, body?: unknown) =>
@@ -93,6 +131,21 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ action }),
     }),
+  regenerateApiKey: () =>
+    request<AppSettings>("/settings/api-key/regenerate", { method: "POST" }),
+  updateUiAuth: (body: UiAuthUpdate) =>
+    request<AppSettings>("/settings/ui-auth", {
+      method: "PUT",
+      body: JSON.stringify(body),
+    }),
+
+  session: () => rawRequest<SessionStatus>("/auth/session"),
+  uiLogin: (username: string, password: string) =>
+    rawRequest<{ ok: true }>("/auth/ui-login", {
+      method: "POST",
+      body: JSON.stringify({ username, password }),
+    }),
+  uiLogout: () => rawRequest<{ ok: true }>("/auth/ui-logout", { method: "POST" }),
 
   playback: () => request<PlaybackState>("/playback"),
   devices: () => request<DevicesResponse>("/devices"),
