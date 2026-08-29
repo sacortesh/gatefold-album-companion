@@ -14,8 +14,9 @@ export const defaultSettings: Settings = { preferredDeviceId: null };
  */
 export const bangerButtonSchema = z.object({
   label: z.string().min(1).default("Banger"),
-  /** Spotify playlist id (not URI) the track is added to. */
-  playlistId: z.string().min(1),
+  /** Spotify playlist id (not URI) the track is added to. Empty until set
+   *  in Settings — routes treat "" the same as unset (409 on /banger). */
+  playlistId: z.string().default(""),
   /** MVP1 is always true — Banger is a superset of Like. */
   autoLike: z.boolean().default(true),
   /** Single-key shortcut. */
@@ -24,7 +25,7 @@ export const bangerButtonSchema = z.object({
 export type BangerButton = z.infer<typeof bangerButtonSchema>;
 
 export const buttonsSchema = z.object({
-  banger: bangerButtonSchema,
+  banger: bangerButtonSchema.default({}),
 });
 export type Buttons = z.infer<typeof buttonsSchema>;
 

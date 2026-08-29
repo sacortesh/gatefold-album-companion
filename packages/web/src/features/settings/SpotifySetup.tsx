@@ -94,7 +94,7 @@ export function SpotifySetup() {
           value={clientId}
           onChange={(e) => setClientId(e.target.value)}
           disabled={s.envLocked.spotifyClientId}
-          placeholder="e.g. a504fe68c732435cae919014621b5086"
+          placeholder="e.g. 1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d"
           className="w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 font-mono text-xs disabled:opacity-60"
         />
       </div>

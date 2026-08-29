@@ -8,6 +8,12 @@ dist/
 data/.auth.json
 data/app.json
 
+# personal runtime state — backlog, buttons, revisit queue, reviews. The app
+# writes sane empty defaults on first run (see store/config.ts); only
+# data/config/review-template.md is a shipped default and stays tracked.
+data/config/*.json
+data/reviews/
+
 # derived caches (not source of truth)
 data/cache/
 
