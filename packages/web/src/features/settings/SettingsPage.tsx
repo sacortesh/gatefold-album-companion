@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, startSpotifyLogin } from "../../api/client";
 import { BangerPlaylistPicker } from "./BangerPlaylistPicker";
 import { DevicePicker } from "./DevicePicker";
+import { DiscogsSetup } from "./DiscogsSetup";
 import { SecuritySettings } from "./SecuritySettings";
 import { SpotifySetup } from "./SpotifySetup";
 
@@ -134,6 +135,8 @@ export function SettingsPage() {
       </div>
 
       <SpotifySetup />
+
+      <DiscogsSetup />
 
       <SecuritySettings />
 

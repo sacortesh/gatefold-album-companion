@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 import { api } from "../../api/client";
 
 const Fact = ({ label, value }: { label: string; value: string }) => (
@@ -121,9 +122,11 @@ export function AlbumContextPanel({ albumId }: { albumId: string }) {
 
         {d && !d.discogsConfigured && (
           <p className="text-xs text-neutral-600">
-            Set <code>DISCOGS_CONSUMER_KEY</code> /{" "}
-            <code>DISCOGS_CONSUMER_SECRET</code> in <code>.env</code> for
-            personnel &amp; credits.
+            Add a Discogs key in{" "}
+            <Link to="/settings" className="text-emerald-500 hover:underline">
+              Settings
+            </Link>{" "}
+            for personnel &amp; credits.
           </p>
         )}
 
