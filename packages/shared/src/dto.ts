@@ -10,6 +10,16 @@ export const healthResponseSchema = z.object({
 });
 export type HealthResponse = z.infer<typeof healthResponseSchema>;
 
+/** `GET /api/version` — checked against GitHub releases, ~6h server-side cache. */
+export const versionResponseSchema = z.object({
+  current: z.string(),
+  /** Null when no release was found or the GitHub API was unreachable. */
+  latest: z.string().nullable(),
+  updateAvailable: z.boolean(),
+  releaseUrl: z.string().nullable(),
+});
+export type VersionResponse = z.infer<typeof versionResponseSchema>;
+
 /** Uniform error body for every `/api/*` failure. */
 export const apiErrorSchema = z.object({
   error: z.object({

@@ -4,7 +4,7 @@
   "private": true,
   "description": "A companion app on top of Spotify for deliberate album listening",
   "license": "AGPL-3.0-only",
-  "repository": "github:sacortesh/album-companion",
+  "repository": "github:sacortesh/gatefold-album-companion",
   "workspaces": [
     "packages/shared",
     "packages/server",

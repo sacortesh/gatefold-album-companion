@@ -1,6 +1,6 @@
 /** A polite identifier for the third-party metadata APIs (MusicBrainz asks for one). */
 export const USER_AGENT =
-  "gatefold/0.1.0 (+https://github.com/sacortesh/album-companion)";
+  "gatefold/0.1.0 (+https://github.com/sacortesh/gatefold-album-companion)";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 

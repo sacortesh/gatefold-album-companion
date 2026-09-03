@@ -1,8 +1,8 @@
 services:
   gatefold:
-    # Pulls the published image once it exists (Phase 9.7); `docker compose
-    # build` (or `up --build`) builds and tags it locally from the
-    # Dockerfile in the meantime — either way this file doesn't change.
+    # Pulls the published image (built by .github/workflows/release.yml on
+    # a version tag). `docker compose up --build` builds and tags it
+    # locally from the Dockerfile instead, e.g. before a release exists.
     image: ghcr.io/sacortesh/gatefold-album-companion:latest
     build: .
     container_name: gatefold

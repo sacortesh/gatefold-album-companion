@@ -10,6 +10,7 @@ import { searchRoutes } from "./search.js";
 import { settingsRoutes } from "./settings.js";
 import { triageRoutes } from "./triage.js";
 import { verdictRoutes } from "./verdict.js";
+import { versionRoutes } from "./version.js";
 
 /** Mounts every route. Phase 5+ registers album view, verdict, etc. here. */
 export async function registerRoutes(app: FastifyInstance): Promise<void> {
@@ -30,6 +31,7 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
       api.addHook("preHandler", apiKeyGuard);
       await api.register(authApiRoutes);
       await api.register(settingsRoutes);
+      await api.register(versionRoutes);
       await api.register(playbackRoutes);
       await api.register(configRoutes);
       await api.register(triageRoutes);

@@ -30,6 +30,7 @@ import type {
   UiAuthUpdate,
   VerdictRequest,
   VerdictResponse,
+  VersionResponse,
 } from "@gatefold/shared";
 
 export class ApiRequestError extends Error {
@@ -116,6 +117,7 @@ interface ConfigMap {
 
 export const api = {
   health: () => request<HealthResponse>("/health"),
+  version: () => request<VersionResponse>("/version"),
 
   authStatus: () => request<AuthStatus>("/auth/status"),
   authDisconnect: () =>

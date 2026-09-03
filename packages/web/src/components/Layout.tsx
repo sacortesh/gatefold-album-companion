@@ -13,6 +13,25 @@ const navItems = [
   { to: "/settings", label: "Settings" },
 ];
 
+function UpdateBanner() {
+  const { data } = useQuery({
+    queryKey: ["version"],
+    queryFn: api.version,
+    staleTime: 3600_000,
+  });
+
+  if (!data?.updateAvailable) return null;
+
+  return (
+    <Link
+      to="/settings"
+      className="mt-3 block rounded-md border border-emerald-900 bg-emerald-950 px-3 py-1.5 text-center text-xs text-emerald-200 hover:bg-emerald-900"
+    >
+      Gatefold {data.latest} is available — see Settings → About
+    </Link>
+  );
+}
+
 function HealthDot() {
   const { data, isError } = useQuery({
     queryKey: ["health"],
@@ -34,6 +53,7 @@ function HealthDot() {
 export function Layout() {
   return (
     <div className="mx-auto flex min-h-screen max-w-5xl flex-col px-6">
+      <UpdateBanner />
       <header className="border-b border-neutral-800 py-4">
         <div className="flex items-center justify-between">
           <Link

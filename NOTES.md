@@ -140,9 +140,26 @@ write; fixed with a root-then-drop-privileges entrypoint script
 `docker compose` itself wasn't installed in this dev environment either
 (brew install docker-compose + a cliPluginsExtraDirs entry in
 ~/.docker/config.json) — now available for future testing.
-Next: 9.6's remaining piece (About/Updates section) needs 9.7's
-GET /api/version first; otherwise 9.7 (release + update check) and 9.8
-(docs) are what's left before Phase 9 is fully closed out.
+2026-09-03: 9.7 (release + update check) done — `GET /api/version` checks
+`api.github.com/repos/sacortesh/album-companion/releases/latest`, 6h
+on-disk cache (a failed/rate-limited lookup is cached too, as a null
+release, so it isn't retried every request). Closes 9.6's last box too
+(`AboutSettings.tsx` in Settings) plus an `UpdateBanner` in `Layout`
+linking to Settings when `updateAvailable`. `.github/workflows/release.yml`
+added: on a `v*.*.*` tag, multi-arch (amd64/arm64) buildx push to
+`ghcr.io/sacortesh/album-companion:{version,latest}` + `gh release create
+--generate-notes`. Not yet exercised against a real tag push.
+2026-09-03 (cont'd): 9.8 (docs) done — README self-hosting section
+rewritten (compose quick start, link out), new docs/self-hosting.md
+(Spotify app walkthrough, local vs. remote redirect-URI tiers,
+Caddy/Cloudflare Tunnel/Traefik/nginx examples, backup, updating,
+troubleshooting). Along the way found the 9.7 GitHub-releases lookup was
+pointed at the wrong repo name — package.json's `repository` field still
+said `sacortesh/album-companion` from before the repo was renamed to
+`gatefold-album-companion`; fixed there + version.ts + context/http.ts's
+User-Agent. Phase 9 is now fully closed except one manual step (create
+the release tag / enable GHCR packages — needs the user). Only Phase 7
+(polish, responsive layout, perf, tests) remains open.
 
 Stack: npm workspaces monorepo — `packages/{shared,server,web}`. `data/`
 is local-only now (gitignored), not committed. React + Vite + TanStack

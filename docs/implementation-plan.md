@@ -530,27 +530,42 @@ backend, no multi-tenancy.
       status (`DiscogsSetup.tsx`, 2026-08-30)
 - [x] **Security** section — API key copy/regenerate, UI auth toggle +
       username/password (`SecuritySettings.tsx`, 2026-08-29)
-- [ ] **About / Updates** section (version, latest, changelog link) —
-      depends on 9.7's `/api/version`
+- [x] **About / Updates** section (version, latest, changelog link) —
+      `AboutSettings.tsx`, built alongside 9.7's `/api/version`
 - [ ] first-run wizard: if `spotifyClientId` unset → land on Settings
       with a short "getting started" panel
 
-### 9.7 Release + update check
-- [ ] `GET /api/version` → `{ current, latest?, updateAvailable }`
-      (latest cached from `api.github.com/repos/<repo>/releases/latest`,
-      ~6 h TTL); banner in `Layout`
-- [ ] GH Actions: on `v*` tag → `docker buildx` amd64 + arm64 → push
-      `ghcr.io/<repo>:{version,latest}`; attach a changelog to the release
+### 9.7 Release + update check  ✅ done (2026-09-03)
+- [x] `GET /api/version` → `{ current, latest, updateAvailable, releaseUrl }`
+      (`server/src/version.ts`, cached via `makeCache("meta")` ~6 h TTL incl.
+      a failed/rate-limited GitHub lookup, so it isn't retried every
+      request); `current` still reads root `package.json` like `/api/health`
+      does. `AboutSettings.tsx` shows it in Settings; `UpdateBanner` in
+      `Layout.tsx` links to Settings when `updateAvailable` is true.
+- [x] `.github/workflows/release.yml` — on a `v*.*.*` tag: `docker buildx`
+      amd64 + arm64 → push `ghcr.io/<repo>:{version,latest}`; `gh release
+      create --generate-notes` for the changelog. Not yet run against a
+      real tag (needs a version bump + tag push to verify end to end).
 
-### 9.8 Docs
-- [ ] `README.md` rewrite — self-hosting quick start (compose snippet)
-- [ ] `docs/self-hosting.md` — Spotify app walkthrough (screenshots),
-      Discogs key, the two redirect-URI tiers, reverse-proxy examples
-      (Caddy / Cloudflare Tunnel / Traefik / nginx), volume backup,
-      updating
+### 9.8 Docs  ✅ mostly done (2026-09-03)
+- [x] `README.md` rewrite — self-hosting quick start (compose snippet),
+      links to `docs/self-hosting.md`; also fixed a stale dev-setup step
+      still asking for `SPOTIFY_CLIENT_SECRET` (removed in 9.4's PKCE move)
+- [x] `docs/self-hosting.md` — Spotify app walkthrough (text steps, not
+      screenshots — no way to capture real dashboard screenshots from
+      here), Discogs key, the two redirect-URI tiers, reverse-proxy
+      examples (Caddy / Cloudflare Tunnel / Traefik / nginx), backup,
+      updating, a troubleshooting section
 - [ ] **(you)** create the GitHub release / tag workflow secrets
       (`GHCR` uses `GITHUB_TOKEN`, nothing to provision) and enable
       packages
+
+Also fixed while here: the repo was renamed to `gatefold-album-companion`
+at some point but `package.json`'s `repository` field, `version.ts`'s
+GitHub-releases lookup (9.7), and `context/http.ts`'s User-Agent still
+said the old `sacortesh/album-companion` — the version-check would have
+silently queried a repo that doesn't exist. All three now match the real
+remote.
 
 **AC:** `docker compose up` on a clean host → open the UI → (optional)
 set a UI password → paste a Spotify client ID → see the redirect URI to

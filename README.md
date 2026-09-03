@@ -25,7 +25,8 @@ self-hosted tool for people who still listen to records front to back.
 
 Docs: [`docs/functional-spec.md`](docs/functional-spec.md) ·
 [`docs/architecture.md`](docs/architecture.md) ·
-[`docs/implementation-plan.md`](docs/implementation-plan.md)
+[`docs/implementation-plan.md`](docs/implementation-plan.md) ·
+[`docs/self-hosting.md`](docs/self-hosting.md)
 
 ## Stack
 
@@ -47,10 +48,12 @@ Requires Node ≥ 20 and a **Spotify account** (Premium only for playback
 *control* — observing and triage work without it).
 
 1. Create a Spotify app at <https://developer.spotify.com/dashboard> and add the
-   redirect URI **`http://127.0.0.1:8888/callback`** verbatim.
-2. `cp .env.example .env` and fill in `SPOTIFY_CLIENT_ID` / `SPOTIFY_CLIENT_SECRET`.
+   redirect URI **`http://127.0.0.1:8888/callback`** verbatim. Auth is
+   Authorization Code + PKCE, so there's no client secret.
+2. `cp .env.example .env` and fill in `SPOTIFY_CLIENT_ID`.
    Optionally add `DISCOGS_CONSUMER_KEY` / `DISCOGS_CONSUMER_SECRET`
    (<https://www.discogs.com/settings/developers>) to enable the credits panel.
+   (Both can also be set later from the Settings page instead.)
 3. Install and start:
 
    ```bash
@@ -70,19 +73,34 @@ Useful scripts: `npm run typecheck`, `npm test`.
 
 ## Self-hosting
 
-Docker images and a UI-driven setup (no `.env` needed) are **in progress** —
-see **Phase 9** in [`docs/implementation-plan.md`](docs/implementation-plan.md).
-Until then, run it from source as above.
+One container, one `/config` volume, all setup done in the UI — no `.env`
+required (though one still works, for docker-compose users who prefer it).
 
-One constraint worth knowing early: Spotify only allows a plain-`http` redirect
-URI for `127.0.0.1`. Reaching the app from another device needs a real domain
-with HTTPS in front (a reverse proxy or a tunnel).
+```bash
+mkdir gatefold && cd gatefold
+curl -O https://raw.githubusercontent.com/sacortesh/gatefold-album-companion/main/docker-compose.yml
+docker compose up -d
+```
+
+Open `http://<host>:8888` and follow Settings: paste a Spotify client ID,
+see the exact redirect URI to register, connect. Everything mutable lives
+under `./config` — that's the whole backup surface.
+
+One constraint worth knowing early: Spotify only allows a plain-`http`
+redirect URI for `127.0.0.1`. Reaching the app from another device needs a
+real domain with HTTPS in front (a reverse proxy or a tunnel).
+
+Full walkthrough — the Spotify app, Discogs, remote access, reverse-proxy
+configs (Caddy/Traefik/nginx/Cloudflare Tunnel), backup, updating — in
+[`docs/self-hosting.md`](docs/self-hosting.md).
 
 ## Status
 
 MVP1 core loop (Phases 0–6) and Revision 1 (Phase 8: backlog-first UI, ambient
-player, context panel, playlist import) are done. Phase 7 (polish, tests) and
-Phase 9 (self-hosting) are the open tracks.
+player, context panel, playlist import) are done. Phase 9 (self-hosting:
+runtime config, API key + optional UI auth, PKCE auth, the `/config` volume,
+the Docker image, and the update-check banner) is done. Phase 7 (polish,
+responsive layout, tests) is the remaining open track.
 
 ## License
 
