@@ -57,13 +57,41 @@ async function persist(next: AppConfigFile): Promise<void> {
   await writeFile(FILE, `${JSON.stringify(next, null, 2)}\n`, "utf8");
 }
 
+/** `app.json` holds secrets nobody wants to re-enter blind (Spotify client
+ *  ID, Discogs creds, the API key). If it exists but doesn't parse as this
+ *  version expects it — corrupt JSON, or a shape an incompatible version
+ *  left behind — copy it aside instead of silently discarding it, so a
+ *  reset-to-defaults is at least recoverable rather than a quiet data loss. */
+async function backupBrokenFile(raw: string, err: unknown): Promise<void> {
+  const backupPath = `${FILE}.broken-${Date.now()}`;
+  const reason = err instanceof Error ? err.message : String(err);
+  try {
+    await writeFile(backupPath, raw, "utf8");
+    console.warn(
+      `[appConfig] ${FILE} didn't match the expected shape (${reason}). ` +
+        `Falling back to defaults — Spotify client ID, Discogs creds, API ` +
+        `key, and UI auth will need re-entering. The original file was ` +
+        `preserved at ${backupPath} in case it needs recovering.`,
+    );
+  } catch (writeErr) {
+    console.warn(
+      `[appConfig] ${FILE} didn't match the expected shape (${reason}), ` +
+        `and backing it up also failed — its contents were not preserved:`,
+      writeErr,
+    );
+  }
+}
+
 async function readFileConfig(): Promise<AppConfigFile> {
   if (cached) return cached;
 
+  let raw: string | undefined;
   let parsed: AppConfigFile;
   try {
-    parsed = fileSchema.parse(JSON.parse(await readFile(FILE, "utf8")));
-  } catch {
+    raw = await readFile(FILE, "utf8");
+    parsed = fileSchema.parse(JSON.parse(raw));
+  } catch (err) {
+    if (raw !== undefined) await backupBrokenFile(raw, err);
     parsed = fileSchema.parse({});
   }
 
