@@ -17,10 +17,13 @@ const patchRow = (
 });
 
 export function useRecent() {
+  // Fetched once on open (react-query's default), not on a timer — the
+  // Spotify calls underneath this (playback + recently-played + saved-tracks
+  // batch + banger-playlist membership) are the single heaviest recurring
+  // cost in the app. Use `query.refetch()` for a manual refresh.
   const query = useQuery<RecentResponse, ApiRequestError>({
     queryKey: RECENT_KEY,
     queryFn: api.recent,
-    refetchInterval: 15_000,
     retry: (count, err) => err.status !== 401 && count < 2,
   });
 

@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { api } from "../../api/client";
 
@@ -40,9 +41,7 @@ export function AlbumContextPanel({ albumId }: { albumId: string }) {
   return (
     <details className="group rounded-lg border border-neutral-800 bg-neutral-900/40">
       <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 text-sm font-medium text-neutral-300">
-        <span className="inline-block text-xs transition group-open:rotate-90">
-          ▶
-        </span>
+        <ChevronRight className="size-4 transition group-open:rotate-90" />
         About this album
         {ctx.isLoading && (
           <span className="text-xs font-normal text-neutral-500">loading…</span>

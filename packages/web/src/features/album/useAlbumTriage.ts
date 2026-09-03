@@ -29,9 +29,9 @@ export function useAlbumTriage(albumId: string, trackIds: string[]) {
     queryFn: () => api.trackStates(trackIds),
     enabled: trackIds.length > 0,
     staleTime: 10_000,
-    // Pick up Likes made in the Spotify app (or on the now-playing card) while
-    // this page is open.
-    refetchInterval: 20_000,
+    // Loaded once on open, not on a timer (same Spotify-call cost as the
+    // Recent poll). refetchOnWindowFocus still catches Likes made elsewhere
+    // (Spotify app, the now-playing card) when you tab back in.
     refetchOnWindowFocus: true,
   });
 
@@ -48,6 +48,7 @@ export function useAlbumTriage(albumId: string, trackIds: string[]) {
   });
 
   return {
+    query,
     bangerLabel: query.data?.bangerLabel ?? "Banger",
     stateFor: (trackId: string) =>
       query.data?.states[trackId] ?? { liked: false, inBanger: false },

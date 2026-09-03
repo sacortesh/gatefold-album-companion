@@ -42,7 +42,9 @@ export function usePlayback(): PlaybackView {
   const query = useQuery<PlaybackState, ApiRequestError>({
     queryKey: PLAYBACK_KEY,
     queryFn: api.playback,
-    refetchInterval: 3000,
+    // Position between polls is extrapolated client-side (useTicker below),
+    // so this only needs to be frequent enough to catch a track change.
+    refetchInterval: 6000,
     retry: (count, err) => err.status !== 401 && count < 2,
   });
 

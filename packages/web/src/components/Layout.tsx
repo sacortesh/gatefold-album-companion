@@ -1,6 +1,7 @@
 import { Link, NavLink, Outlet } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../api/client";
+import { GatefoldMark } from "./GatefoldMark";
 import { NowPlayingCard } from "./NowPlayingCard";
 
 const navItems = [
@@ -8,6 +9,7 @@ const navItems = [
   { to: "/now-playing", label: "Now Playing" },
   { to: "/recent", label: "Recent" },
   { to: "/revisit", label: "Revisit" },
+  { to: "/reviews", label: "Reviews" },
   { to: "/settings", label: "Settings" },
 ];
 
@@ -38,7 +40,7 @@ export function Layout() {
             to="/"
             className="text-sm font-semibold tracking-tight text-neutral-100"
           >
-            <span className="text-emerald-500">▸</span> Gatefold
+            <GatefoldMark /> Gatefold
           </Link>
           <HealthDot />
         </div>

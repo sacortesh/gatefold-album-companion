@@ -1,4 +1,5 @@
-import { readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import path from "node:path";
 import { NotConnectedError } from "../errors.js";
 import { AUTH_FILE } from "../paths.js";
 import {
@@ -35,6 +36,7 @@ async function readStored(): Promise<StoredAuth | null> {
 async function writeStored(next: StoredAuth): Promise<void> {
   stored = next;
   scope = next.scope;
+  await mkdir(path.dirname(AUTH_FILE), { recursive: true });
   await writeFile(AUTH_FILE, `${JSON.stringify(next, null, 2)}\n`, "utf8");
 }
 

@@ -1,3 +1,4 @@
+import { RefreshCw } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { RecentRow } from "@gatefold/shared";
 import { formatRelative } from "../../lib/format";
@@ -89,14 +90,25 @@ export function RecentPage() {
     <section className="space-y-4">
       <div className="flex items-baseline justify-between">
         <h1 className="text-2xl font-semibold">Recently listened</h1>
-        {!bangerPlaylistId && (
-          <Link
-            to="/settings"
-            className="text-xs text-amber-400 hover:underline"
+        <div className="flex items-center gap-3">
+          {!bangerPlaylistId && (
+            <Link
+              to="/settings"
+              className="text-xs text-amber-400 hover:underline"
+            >
+              Set a Banger playlist →
+            </Link>
+          )}
+          <button
+            type="button"
+            onClick={() => void query.refetch()}
+            disabled={query.isFetching}
+            className="flex items-center gap-1.5 rounded-md border border-neutral-700 px-3 py-1.5 text-sm text-neutral-300 hover:bg-neutral-800 disabled:opacity-50"
           >
-            Set a Banger playlist →
-          </Link>
-        )}
+            <RefreshCw className={`size-3.5 ${query.isFetching ? "animate-spin" : ""}`} />
+            Refresh
+          </button>
+        </div>
       </div>
 
       {query.isLoading && (

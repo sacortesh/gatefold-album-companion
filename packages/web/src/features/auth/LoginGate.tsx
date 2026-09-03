@@ -1,6 +1,7 @@
 import { type FormEvent, type ReactNode, useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, setApiKey, setOnUnauthorized } from "../../api/client";
+import { GatefoldMark } from "../../components/GatefoldMark";
 
 function LoginForm({ onSuccess }: { onSuccess: () => void }) {
   const [username, setUsername] = useState("");
@@ -25,7 +26,7 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
   return (
     <div className="mx-auto mt-24 max-w-sm space-y-4 px-6">
       <h1 className="text-center text-lg font-semibold text-neutral-100">
-        <span className="text-emerald-500">▸</span> Gatefold
+        <GatefoldMark className="size-5" /> Gatefold
       </h1>
       <form
         onSubmit={submit}

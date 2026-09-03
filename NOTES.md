@@ -108,21 +108,48 @@ notes → it clears from the backlog and writes `data/reviews/<year>/*.md`.
 Revisit page lists the "come back to it" albums.
 Phase 9 (self-hosting) in progress: repo hygiene (README, AGPL LICENSE,
 CI), 9.1 runtime config store + 9.4 PKCE auth done — Spotify client id +
-Discogs keys now settable in Settings (data/app.json), no client secret.
-Existing Spotify connection needs one reconnect (PKCE). 9.2 API key +
-optional UI auth done (2026-08-29) — `apiKey` required on every `/api/*`
-call except `/api/health`; optional username/password sign-in gates the
-SPA via a signed session cookie, managed from Settings → Security. Next:
-9.3 /config volume, 9.5 Dockerfile.
+Discogs keys settable in Settings (data/app.json), no client secret.
+9.2 API key + optional UI auth done (2026-08-29) — `apiKey` required on
+every `/api/*` call except `/api/health`; optional username/password
+sign-in gates the SPA via a signed session cookie. 9.6 Settings UI is
+functionally done (Spotify/Discogs/Security sections all built) modulo
+the About/Updates section, which needs 9.7's version-check endpoint
+first. Also since: a Reviews page (browse every past verdict, not just
+the Revisit queue), Lucide icons replacing the old Unicode-glyph
+grab-bag (Banger got a real 🤘 hand-metal icon), a real favicon/navbar
+mark from clean vector art, and two reliability fixes surfaced by
+testing — spotifyRequest() now has a 15s timeout + caps 429 backoff at
+5s instead of sleeping on Spotify's literal Retry-After (hit a 39min
+one), and the ambient Now Playing bar's polling was too aggressive
+(2s/15s continuous on every page) so it's now load-on-open +
+manual-refresh for Recent/track-states, playback poll relaxed to 6s.
+2026-08-29: found real personal backlog data (74 albums) and a real
+Spotify client ID committed since Phase 0 — untracked going forward
+(data/config/*.json + data/reviews/ now gitignored; review-template.md
+stays tracked as the one genuine shipped default), still on disk
+locally. 9.3 /config volume restructure done (2026-08-30) — DATA_DIR now reads
+CONFIG_DIR env (default ./data), verified against a volume that didn't
+exist at all (reads + writes, all self-create their dirs). 9.5 Container
+done same day — Dockerfile, docker-compose.yml, .dockerignore, all
+actually built and run (not just written): `docker compose up -d` on a
+clean volume, config round-trips through the API, restart survives.
+Caught a real bug this way — a bind-mounted host /config dir doesn't
+inherit the image's baked-in chown, so the non-root `node` user couldn't
+write; fixed with a root-then-drop-privileges entrypoint script
+(docker-entrypoint.sh), same pattern Sonarr/LinuxServer.io images use.
+`docker compose` itself wasn't installed in this dev environment either
+(brew install docker-compose + a cliPluginsExtraDirs entry in
+~/.docker/config.json) — now available for future testing.
+Next: 9.6's remaining piece (About/Updates section) needs 9.7's
+GET /api/version first; otherwise 9.7 (release + update check) and 9.8
+(docs) are what's left before Phase 9 is fully closed out.
 
-Next: browser-verify Phase 8 + the new Settings setup flow, then Phase 7
-polish (error/empty states, Vitest, keyboard help).
-
-Stack: pnpm monorepo — `packages/{shared,server,web}` + `data/` (config +
-reviews) in git. React + Vite + TanStack Query (polling) frontend;
-stateless Fastify backend that holds the Spotify secret and reads/writes
-config + review files. LRCLIB for lyrics. No app-side listening log —
-"recently listened" = Spotify's recently-played (50) + current track.
+Stack: npm workspaces monorepo — `packages/{shared,server,web}`. `data/`
+is local-only now (gitignored), not committed. React + Vite + TanStack
+Query frontend; Fastify backend that holds the Spotify tokens and
+reads/writes config + review files. LRCLIB for lyrics. No app-side
+listening log — "recently listened" = Spotify's recently-played (50) +
+current track.
 
 Song actions: **Like** (big button, save to Liked Songs) + **Banger**
 (add to configured playlist, auto-Likes). Album verdict: Keep / Revisit /

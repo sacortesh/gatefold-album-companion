@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ExternalLink } from "lucide-react";
 import { api } from "../../api/client";
 import { RECENT_KEY } from "../recent/useRecent";
 
@@ -79,9 +80,9 @@ export function BangerPlaylistPicker() {
           href={`https://open.spotify.com/playlist/${selected}`}
           target="_blank"
           rel="noreferrer"
-          className="text-xs text-neutral-500 hover:text-neutral-300"
+          className="inline-flex items-center gap-1 text-xs text-neutral-500 hover:text-neutral-300"
         >
-          Open current playlist in Spotify ↗
+          Open current playlist in Spotify <ExternalLink className="size-3" />
         </a>
       )}
     </div>

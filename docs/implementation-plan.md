@@ -465,12 +465,29 @@ backend, no multi-tenancy.
 - [x] "regenerate API key" + auth toggle + username/password form in
       Settings → Security (`SecuritySettings.tsx`)
 
-### 9.3 Paths / volume restructure
-- [ ] all mutable state under one `CONFIG_DIR` (`/config` in the image):
-      `config/`, `reviews/`, `cache/`, `.auth.json`, `app.json`
-- [ ] first-run seeding: empty volume → write default `config/*.json` +
-      `review-template.md` (currently seeded from the repo's `data/`)
-- [ ] `paths.ts` keyed off `CONFIG_DIR` env (default `./data` in dev)
+### 9.3 Paths / volume restructure  ✅ done (2026-08-30)
+- [x] `paths.ts` — `DATA_DIR` now reads `process.env.CONFIG_DIR`, default
+      `./data` in dev; dotenv loading moved into `paths.ts` (was `env.ts`)
+      so a `.env`-file `CONFIG_DIR` is picked up too, not just a real env
+      var — `env.ts` imports `paths.js` for the side effect and no longer
+      loads dotenv itself
+- [x] all mutable state under one root (`/config` in the image): `config/`,
+      `reviews/`, `cache/`, `.auth.json`, `app.json` — unchanged sub-layout,
+      just re-rooted off `DATA_DIR`
+- [x] no explicit "first-run seeding" needed — every config file already
+      falls back to schema defaults when absent (`readConfig`), reviews
+      list empty-safe (`readAllReviews`), review template has a hardcoded
+      fallback (`DEFAULT_REVIEW_TEMPLATE`), app.json self-heals
+      (`apiKey`/`cookieSecret` generated on first read). The only real
+      gaps were two missing `mkdir` calls on the *write* paths —
+      `store/config.ts#writeConfig` and `auth/tokenStore.ts#writeStored`
+      would 500 on a truly empty volume before any read had happened to
+      create the directory first. Both fixed.
+- [x] verified against a volume that didn't exist at all (not even an
+      empty dir): boots, `GET`/`PUT` on every config name, `/api/reviews`,
+      `/api/review-template` all work and self-create their directories
+- [x] `.env.example` documents `CONFIG_DIR`; stale "no API auth yet"
+      comment on `HOST=0.0.0.0` corrected (9.2 added the API key)
 
 ### 9.4 Auth → PKCE  ✅ done (2026-08-28)
 - [x] `auth/oauth.ts` — `code_verifier`/`code_challenge` (S256), no
@@ -481,19 +498,40 @@ backend, no multi-tenancy.
 - Note: existing connections made under the old confidential flow won't
       refresh under PKCE — one reconnect click fixes it.
 
-### 9.5 Container
-- [ ] multi-stage `Dockerfile` — build web, compile server with `tsc`
-      (drop `tsx` + dev deps from the runtime image), non-root user,
-      `tini`, `HEALTHCHECK` → `/api/health`, `EXPOSE 8888`, `VOLUME /config`
-- [ ] `HOST=0.0.0.0` supported (already configurable) + documented
-- [ ] `docker-compose.yml` (image, `./config:/config`, port, env)
-- [ ] `.dockerignore`
+### 9.5 Container  ✅ done (2026-08-30)
+- [x] multi-stage `Dockerfile` — `npm run build` for `shared`/`server`/`web`
+      in the build stage; `shared`'s package.json is patched *inside the
+      image only* (`main`/`types` → `dist/`, `exports` dropped) so the
+      compiled server can resolve it under plain `node` — the committed
+      package.json still points at `.ts` source, tsx/Vite dev is untouched;
+      `npm prune --omit=dev` drops tsx/vite/typescript/etc. from the final
+      layer; `tini` + `HEALTHCHECK` → `/api/health` (open, no API key
+      needed) → `EXPOSE 8888`, `VOLUME /config`
+- [x] non-root: `docker-entrypoint.sh` runs as root just long enough to
+      `chown -R node:node /config` (a bind-mounted host dir doesn't inherit
+      the image's build-time chown — this bit a first pass, caught by
+      actually running the container, not just reading the Dockerfile),
+      then `su-exec node` before exec'ing the app. Verified the real app
+      process runs as uid 1000, not root.
+- [x] `HOST=0.0.0.0` baked into the image as the container default
+      (documented in `.env.example`); `CONFIG_DIR=/config` likewise
+- [x] `docker-compose.yml` — verified for real: `docker compose up -d`,
+      config round-trips, healthcheck reports `healthy`, config survives a
+      `docker restart`
+- [x] `.dockerignore`
+- Built and ran the actual image locally (not just written/reviewed) to
+      verify all of the above — caught the bind-mount ownership bug this
+      way; would have shipped broken otherwise.
 
 ### 9.6 Settings UI
-- [ ] Settings sections: **Spotify** (client ID, redirect-URI display +
-      copy, connect/disconnect, status), **Discogs** (consumer key/secret,
-      masked), **Security** (API key, UI auth), **About / Updates**
-      (version, latest, changelog link)
+- [x] **Spotify** section — client ID, redirect-URI display + copy,
+      connect/disconnect, status (`SpotifySetup.tsx`)
+- [x] **Discogs** section — consumer key/secret, masked, "configured"
+      status (`DiscogsSetup.tsx`, 2026-08-30)
+- [x] **Security** section — API key copy/regenerate, UI auth toggle +
+      username/password (`SecuritySettings.tsx`, 2026-08-29)
+- [ ] **About / Updates** section (version, latest, changelog link) —
+      depends on 9.7's `/api/version`
 - [ ] first-run wizard: if `spotifyClientId` unset → land on Settings
       with a short "getting started" panel
 

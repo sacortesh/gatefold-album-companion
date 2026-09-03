@@ -1,0 +1,24 @@
+services:
+  gatefold:
+    # Pulls the published image once it exists (Phase 9.7); `docker compose
+    # build` (or `up --build`) builds and tags it locally from the
+    # Dockerfile in the meantime — either way this file doesn't change.
+    image: ghcr.io/sacortesh/gatefold-album-companion:latest
+    build: .
+    container_name: gatefold
+    restart: unless-stopped
+    ports:
+      - "8888:8888"
+    volumes:
+      # The only persistent state — config, reviews, cache, the Spotify
+      # token. Back this up; everything else is disposable.
+      - ./config:/config
+    # Everything below is optional — the app can be fully configured from
+    # Settings in the UI instead. Set a value here only to pin it (the
+    # matching UI field then shows read-only). See .env.example for the
+    # full list and what each one does.
+    environment:
+      PUBLIC_URL: ""
+      # SPOTIFY_CLIENT_ID: ""
+      # DISCOGS_CONSUMER_KEY: ""
+      # DISCOGS_CONSUMER_SECRET: ""

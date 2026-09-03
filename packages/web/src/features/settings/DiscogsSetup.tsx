@@ -71,7 +71,9 @@ export function DiscogsSetup() {
           )}
         </label>
         <input
-          type="password"
+          type="text"
+          autoComplete="off"
+          spellCheck={false}
           value={consumerKey}
           onChange={(e) => setConsumerKey(e.target.value)}
           disabled={s.envLocked.discogs}
@@ -88,7 +90,9 @@ export function DiscogsSetup() {
           )}
         </label>
         <input
-          type="password"
+          type="text"
+          autoComplete="off"
+          spellCheck={false}
           value={consumerSecret}
           onChange={(e) => setConsumerSecret(e.target.value)}
           disabled={s.envLocked.discogs}

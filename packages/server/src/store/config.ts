@@ -1,4 +1,4 @@
-import { readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
 import { configSchemas, type ConfigName } from "@gatefold/shared";
@@ -28,6 +28,7 @@ export async function writeConfig<N extends ConfigName>(
 ): Promise<ConfigValue<N>> {
   const schema = configSchemas[name] as z.ZodType<ConfigValue<N>>;
   const parsed = schema.parse(value);
+  await mkdir(CONFIG_DIR, { recursive: true });
   await writeFile(
     fileFor(name),
     `${JSON.stringify(parsed, null, 2)}\n`,

@@ -1,3 +1,4 @@
+import { Pause, Play, SkipForward } from "lucide-react";
 import { Link } from "react-router-dom";
 import { formatDuration } from "../lib/format";
 import { BangerButton, LikeButton } from "../features/recent/TriageControls";
@@ -93,7 +94,11 @@ export function NowPlayingCard() {
           className="rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-500"
           aria-label={state?.isPlaying ? "Pause" : "Play"}
         >
-          {state?.isPlaying ? "⏸" : "▶"}
+          {state?.isPlaying ? (
+            <Pause className="size-4" />
+          ) : (
+            <Play className="size-4" />
+          )}
         </button>
         <button
           type="button"
@@ -101,7 +106,7 @@ export function NowPlayingCard() {
           className="rounded-md border border-neutral-700 px-3 py-1.5 text-sm hover:bg-neutral-800"
           aria-label="Next track"
         >
-          ⏭
+          <SkipForward className="size-4" />
         </button>
       </div>
     </div>

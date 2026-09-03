@@ -1,4 +1,3 @@
-import { useEffect, useRef } from "react";
 import type { TrackLyrics } from "@gatefold/shared";
 
 interface Props {
@@ -20,20 +19,12 @@ function SyncedView({
   const activeIdx = live
     ? lines.reduce((acc, l, i) => (l.timeMs <= positionMs ? i : acc), -1)
     : -1;
-  const activeRef = useRef<HTMLParagraphElement>(null);
-
-  useEffect(() => {
-    if (live && activeRef.current) {
-      activeRef.current.scrollIntoView({ block: "center", behavior: "smooth" });
-    }
-  }, [activeIdx, live]);
 
   return (
     <div className="space-y-1.5 leading-relaxed">
       {lines.map((line, i) => (
         <p
           key={`${line.timeMs}-${i}`}
-          ref={i === activeIdx ? activeRef : undefined}
           className={
             !live
               ? "text-neutral-400"

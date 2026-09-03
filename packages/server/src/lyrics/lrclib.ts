@@ -53,7 +53,10 @@ function shape(res: LrcResponse): TrackLyrics {
 }
 
 async function fetchJson<T>(url: string): Promise<T | null> {
-  const res = await fetch(url, { headers: { "user-agent": UA } });
+  const res = await fetch(url, {
+    headers: { "user-agent": UA },
+    signal: AbortSignal.timeout(8000),
+  });
   if (res.status === 404) return null;
   if (!res.ok) throw new Error(`LRCLIB ${res.status}`);
   return (await res.json()) as T;

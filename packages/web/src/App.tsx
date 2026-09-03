@@ -5,6 +5,7 @@ import { LoginGate } from "./features/auth/LoginGate";
 import { BacklogPage } from "./features/backlog/BacklogPage";
 import { NowPlayingPage } from "./features/now-playing/NowPlayingPage";
 import { RecentPage } from "./features/recent/RecentPage";
+import { ReviewsPage } from "./features/reviews/ReviewsPage";
 import { RevisitPage } from "./features/revisit/RevisitPage";
 import { SettingsPage } from "./features/settings/SettingsPage";
 import { NotFoundPage } from "./routes/pages";
@@ -20,6 +21,7 @@ const router = createBrowserRouter([
       { path: "recent", element: <RecentPage /> },
       { path: "album/:id", element: <AlbumPage /> },
       { path: "revisit", element: <RevisitPage /> },
+      { path: "reviews", element: <ReviewsPage /> },
       { path: "settings", element: <SettingsPage /> },
       { path: "*", element: <NotFoundPage /> },
     ],

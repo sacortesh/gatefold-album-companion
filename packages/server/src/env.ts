@@ -1,9 +1,9 @@
-import path from "node:path";
-import { config as loadDotenv } from "dotenv";
 import { z } from "zod";
-import { ROOT } from "./paths.js";
 
-loadDotenv({ path: path.join(ROOT, ".env") });
+// paths.ts loads .env as a side effect of computing CONFIG_DIR — import it
+// first (even though only DATA_DIR etc. are used elsewhere) so process.env
+// is populated before the parse below.
+import "./paths.js";
 
 const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(8888),

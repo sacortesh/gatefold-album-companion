@@ -27,6 +27,15 @@ const gate = new Semaphore(4);
 const MAX_RETRIES = 3;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+/** Only auto-retry a 429 if Spotify's backoff is short — a real rate-limit
+ *  quota penalty can carry a `Retry-After` in the thousands of seconds, and
+ *  no live request should ever legitimately block a caller that long. */
+const MAX_AUTO_RETRY_WAIT_SECONDS = 5;
+
+/** A stalled response (no timeout, no retry) would otherwise hang forever
+ *  and permanently pin one of the 4 concurrency slots above. */
+const REQUEST_TIMEOUT_MS = 15_000;
+
 export interface SpotifyRequest {
   method?: string;
   /** Path under `/v1`, e.g. `/me` or `/me/player`. */
@@ -61,23 +70,44 @@ async function attempt<T>(
   }
 
   const token = await getAccessToken(forceRefresh);
-  const res = await fetch(url, {
-    method: req.method ?? "GET",
-    headers: {
-      authorization: `Bearer ${token}`,
-      ...(req.body !== undefined ? { "content-type": "application/json" } : {}),
-    },
-    body: req.body !== undefined ? JSON.stringify(req.body) : undefined,
-  });
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: req.method ?? "GET",
+      headers: {
+        authorization: `Bearer ${token}`,
+        ...(req.body !== undefined ? { "content-type": "application/json" } : {}),
+      },
+      body: req.body !== undefined ? JSON.stringify(req.body) : undefined,
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    });
+  } catch (err) {
+    if (err instanceof Error && err.name === "TimeoutError") {
+      throw new AppError(
+        "spotify_timeout",
+        `Spotify ${req.method ?? "GET"} ${req.path} timed out after ${REQUEST_TIMEOUT_MS / 1000}s`,
+        504,
+      );
+    }
+    throw err;
+  }
 
   if (res.status === 401 && retry === 0) {
     return attempt<T>(req, retry + 1, true);
   }
 
-  if (res.status === 429 && retry < MAX_RETRIES) {
-    const wait = Number(res.headers.get("retry-after") ?? "1");
-    await sleep((Number.isFinite(wait) ? wait : 1) * 1000);
-    return attempt<T>(req, retry + 1, false);
+  if (res.status === 429) {
+    const raw = Number(res.headers.get("retry-after") ?? "1");
+    const wait = Number.isFinite(raw) ? raw : 1;
+    if (retry < MAX_RETRIES && wait <= MAX_AUTO_RETRY_WAIT_SECONDS) {
+      await sleep(wait * 1000);
+      return attempt<T>(req, retry + 1, false);
+    }
+    throw new AppError(
+      "spotify_rate_limited",
+      `Spotify rate-limited this app — try again in ${wait}s.`,
+      429,
+    );
   }
 
   const text = await res.text();

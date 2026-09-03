@@ -1,4 +1,5 @@
 import { type MouseEvent } from "react";
+import { SkipBack, SkipForward, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { Device } from "@gatefold/shared";
 import { formatDuration } from "../../lib/format";
@@ -160,7 +161,7 @@ export function NowPlayingPage() {
             className="rounded-md border border-neutral-700 px-4 py-2 text-sm hover:bg-neutral-800"
             aria-label="Previous track"
           >
-            ⏮
+            <SkipBack className="size-4" />
           </button>
           <button
             type="button"
@@ -175,7 +176,7 @@ export function NowPlayingPage() {
             className="rounded-md border border-neutral-700 px-4 py-2 text-sm hover:bg-neutral-800"
             aria-label="Next track"
           >
-            ⏭
+            <SkipForward className="size-4" />
           </button>
 
           <span className="mx-1 h-6 w-px bg-neutral-800" />
@@ -209,7 +210,7 @@ export function NowPlayingPage() {
               className="text-red-400 hover:text-red-200"
               aria-label="Dismiss"
             >
-              ✕
+              <X className="size-4" />
             </button>
           </div>
         )}

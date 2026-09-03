@@ -1,0 +1,21 @@
+node_modules
+**/node_modules
+**/dist
+.git
+.github
+
+# personal runtime state — never bake this into an image
+data
+
+# secrets / local env
+.env
+.env.local
+
+# not needed in the image
+docs
+brand/source
+*.md
+.DS_Store
+*.log
+.vscode
+.idea

@@ -1,3 +1,5 @@
+import { Check, HandMetal, Heart } from "lucide-react";
+
 interface LikeProps {
   liked: boolean;
   onToggle: () => void;
@@ -28,7 +30,10 @@ export function LikeButton({ liked, onToggle, pending, size = "sm" }: LikeProps)
             }`
       }
     >
-      {liked ? "♥" : "♡"}
+      <Heart
+        className="inline size-4"
+        fill={liked ? "currentColor" : "none"}
+      />
       {big ? <span className="ml-2">{liked ? "Liked" : "Like"}</span> : null}
     </button>
   );
@@ -72,7 +77,15 @@ export function BangerButton({
             }`
       }
     >
-      {inBanger ? `✓ ${label}` : label}
+      {inBanger ? (
+        <>
+          <Check className="inline size-4" /> {label}
+        </>
+      ) : (
+        <>
+          <HandMetal className="inline size-4" /> {label}
+        </>
+      )}
     </button>
   );
 }
