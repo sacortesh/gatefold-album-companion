@@ -709,12 +709,15 @@ tags) but list rows use the lighter `AlbumSummary` DTO, which has none.
 
 ### 10.7 — Album page background art
 
-- [ ] `AlbumPage.tsx` header — use the same `a.image` already fetched and
+- [x] `AlbumPage.tsx` header — use the same `a.image` already fetched and
       rendered as the small cover (no new API dependency) as a blurred/
       dimmed full-bleed background behind the header block, à la Spotify's
       own web player. Note for the record: this does **not** need Discogs —
       the earlier assumption that it did was wrong; the cover art is
-      already coming from Spotify's own album response.
+      already coming from Spotify's own album response. Landed as the
+      `AlbumHero` organism during the visual redesign (`blur-2xl`, full-bleed,
+      `aria-hidden` decorative background) — checkbox was never ticked here
+      even though the work shipped under a different tracking doc (`DESIGN.md`).
 
 ### 10.8 — Device picker when playback has nowhere to go
 
@@ -763,12 +766,14 @@ this app — but that one works by never echoing the value back at all
 (write-only fields). The API key is different: the UI legitimately needs to
 *display* it (for copy/paste into a script), just not by default.
 
-- [ ] Add a show/hide toggle to the API-key `CopyField` that swaps the
+- [x] Add a show/hide toggle to the API-key `CopyField` that swaps the
       *displayed* string for a fixed-width mask (e.g. `••••••••`) client-side
       — the real value stays in the input's `value` for copy, it's just not
       rendered. Keep `type="text"` throughout; **do not** switch to
       `type="password"`, which is exactly what triggers the browser
-      credential-manager prompts this request is trying to avoid.
+      credential-manager prompts this request is trying to avoid. Landed as
+      a side effect of the redesign's `CopyField` molecule (`masked` prop) —
+      checkbox was never ticked here even though the work shipped.
 
 ### 10.11 — Encyclopaedia Metallum + Rate Your Music + Last.fm links
 
