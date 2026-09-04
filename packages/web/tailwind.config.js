@@ -20,6 +20,11 @@ export default {
       },
       fontFamily: {
         display: ["Spectral", "serif"],
+        // The one deliberate bold moment (DESIGN.md Motion/Theme): the
+        // album-hero title and the brand wordmark only — a worn/distressed
+        // treatment reads right once, not repeated across every dense list
+        // row. Single-weight, no italic — never pair with font-semibold.
+        distressed: ["Rubik Distressed", "cursive"],
         sans: ["Public Sans", "system-ui", "sans-serif"],
       },
       fontSize: {

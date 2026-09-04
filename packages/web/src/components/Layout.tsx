@@ -86,7 +86,7 @@ export function Layout() {
         <header className="flex flex-wrap items-center gap-x-6 gap-y-2 border-b border-border py-3">
           <Link
             to="/"
-            className="flex items-center gap-1.5 font-display text-sm font-semibold tracking-tight text-ink"
+            className="flex items-center gap-1.5 font-distressed text-base tracking-tight text-ink"
           >
             <GatefoldMark /> Gatefold
           </Link>

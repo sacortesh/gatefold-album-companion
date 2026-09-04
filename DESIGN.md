@@ -128,15 +128,41 @@ this discipline already holds, just with different hues).
 
 ### Type
 
-Two clearly distinct families, neither a default reach:
+**Revised**: "Spectral" wasn't on the taste-checklist's two explicitly
+banned display serifs (Fraunces, Instrument Serif), but the user flagged
+it the same way as the earlier copper accent — not a mechanical-checklist
+failure, a "I've seen this specific font in AI-generated output enough
+times to recognize it" reaction, which the checklist itself documents as
+its own known limitation. Rather than swap to another safe editorial
+serif, the user proposed "Rubik Distressed" — a worn/eroded texture that
+literally reads as a record sleeve stored too long, a much more specific
+and load-bearing justification than any clean serif could carry. Real
+constraint found while wiring it in: it ships as a single weight (400,
+no italic) — verified against the actual @font-face metadata, not
+assumed — which rules out using it as a universal replacement (DESIGN.md's
+own type system needs 500/600 and an italic elsewhere). Landed as the
+**one deliberate bold moment** already called out under Motion below: the
+album-hero title and the brand wordmark only. Spectral stays for
+everything it already did elsewhere (page h1s, the artist-line italic) —
+its "seen it before" risk was specifically about it being the loudest,
+most-repeated element; demoted to a secondary role, that risk mostly
+goes away.
+
+Three families now, each with a narrow, specific job:
 
 ```
-Display: "Spectral", serif — weights 500/600, used for h1/h2 (album title,
-  section headers) and italic for artist/attribution lines. Justified here,
-  not a premium-vibe reach: gatefold liner notes are a genuinely
-  print/editorial artifact, which is the specific condition
-  taste-checklist.md requires before reaching for serif. Neither of the two
-  banned defaults (Fraunces, Instrument Serif).
+Distressed: "Rubik Distressed" — single weight, no italic, latin-ext/
+  cyrillic/hebrew coverage. Used *only* for the AlbumHero `<h1>` title and
+  the `Layout` brand wordmark ("Gatefold") — the two most visible,
+  least-repeated spots, matching the theme's own "one deliberate bold
+  moment, everything else quiet" rule. Never paired with a weight utility
+  (font-semibold etc.) — the font has one weight, synthetic-bold would
+  fight the texture.
+Display: "Spectral", serif — weights 500/600, used for page h1s (Backlog,
+  Reviews, Revisit, Settings, Recent) and italic for artist/attribution
+  lines. Justified here, not a premium-vibe reach: gatefold liner notes
+  are a genuinely print/editorial artifact, which is the specific
+  condition taste-checklist.md requires before reaching for serif.
 Body: "Public Sans", sans — weights 400/500/600, used for everything else
   (tracklists, lists, forms, UI chrome). Chosen over Inter/Roboto/Arial/
   Space Grotesk specifically to avoid the declared-but-never-loaded Inter

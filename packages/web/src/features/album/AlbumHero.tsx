@@ -54,7 +54,7 @@ export function AlbumHero({
           )}
         </div>
         <div className="min-w-0 space-y-1.5">
-          <h1 className="text-3xl text-balance font-display font-semibold leading-tight text-ink">
+          <h1 className="text-3xl text-balance font-distressed leading-tight text-ink">
             {name}
           </h1>
           <p className="font-display text-lg italic text-ink-muted">
