@@ -214,6 +214,7 @@ tell.
 - MetaLine — the `·`-joined metadata line (year · tracks · duration · label), one component instead of ad hoc string-joining per screen; capped at one `·`-joined line per Vercel/taste-checklist copy discipline.
 - SearchField — existing `AlbumSearch` input, unchanged in behavior, restyled onto the Input atom.
 - DeviceList — added Phase 10.8: the device rows (radio + "Play here"), extracted out of `DevicePicker` so the Settings-page section and the new `DevicePickerPrompt` modal render the identical list off one `useDevices` hook instead of two hand-rolled copies.
+- GenreChips — added Phase 10.6: genre `Badge`s for a list row, capped at 3 + a `+N` overflow chip (Miller's Law — one heavily-tagged album shouldn't blow out a row's height against its neighbors). One component shared by Backlog/Revisit/Reviews rather than three ad hoc renderings; renders nothing when the album has no cached genres yet, matching every other optional list-row field's empty-state discipline.
 
 ### Organisms
 - AppHeader — logo, health indicator, primary nav (6 → 5 after Phase 10.4) — appears on: all pages. Taste-checklist flags navs over 80px tall / not on one line at desktop: the current two-row layout (logo row, then a separate nav-pill row) likely exceeds that — collapse to one row at desktop width as part of the restyle, wrap to a second row only below the existing documented ~360px overflow breakpoint.

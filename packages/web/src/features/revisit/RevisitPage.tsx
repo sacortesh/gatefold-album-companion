@@ -4,6 +4,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import type { RevisitEntry } from "@gatefold/shared";
 import { api, ApiRequestError } from "../../api/client";
 import { Button } from "../../components/ui/button";
+import { GenreChips } from "../../components/GenreChips";
 import { Input } from "../../components/ui/input";
 import { useDevicePickerPrompt } from "../playback/DevicePickerPrompt";
 
@@ -40,6 +41,7 @@ function Row({ entry }: { entry: RevisitEntry }) {
           {a?.name ?? entry.albumId}
         </Link>
         <p className="truncate text-sm text-ink-muted">{a?.artists.join(", ")}</p>
+        {a && <GenreChips genres={a.genres} />}
         {r && (
           <p className="mt-1 text-xs text-ink-muted">
             reviewed {r.listenedOn}

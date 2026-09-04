@@ -256,6 +256,10 @@ export const albumSummarySchema = z.object({
   totalTracks: z.number(),
   /** Sum of known track durations; null when not available (search results). */
   durationMs: z.number().nullable(),
+  /** From the context cache (MusicBrainz/Discogs), when already fetched for
+   *  this album — never triggers a fresh lookup just to populate a list row.
+   *  Empty when nothing's cached yet. */
+  genres: z.array(z.string()),
 });
 export type AlbumSummary = z.infer<typeof albumSummarySchema>;
 

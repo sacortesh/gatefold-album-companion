@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import type { Review, Verdict } from "@gatefold/shared";
+import type { ReviewListItem, Verdict } from "@gatefold/shared";
 import { api, ApiRequestError } from "../../api/client";
 import { Button } from "../../components/ui/button";
+import { GenreChips } from "../../components/GenreChips";
 import { Input } from "../../components/ui/input";
 import { useDevicePickerPrompt } from "../playback/DevicePickerPrompt";
 
@@ -22,7 +23,7 @@ const FILTERS: Array<{ value: Verdict | "all"; label: string }> = [
   { value: "delete", label: "Delete" },
 ];
 
-function Row({ review }: { review: Review }) {
+function Row({ review }: { review: ReviewListItem }) {
   const { requestDevice } = useDevicePickerPrompt();
   const play = useMutation({
     mutationFn: () => api.play({ contextUri: `spotify:album:${review.albumId}` }),
@@ -44,6 +45,7 @@ function Row({ review }: { review: Review }) {
             {review.album}
           </Link>
           <p className="truncate text-sm text-ink-muted">{review.artist}</p>
+          <GenreChips genres={review.genres} />
         </div>
         <span
           className={`shrink-0 rounded-full border px-2 py-0.5 text-xs capitalize ${VERDICT_STYLE[review.verdict]}`}

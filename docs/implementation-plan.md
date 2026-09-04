@@ -697,15 +697,23 @@ tags) but list rows use the lighter `AlbumSummary` DTO, which has none.
   The richer source is the context pipeline (`server/src/context/` —
   MusicBrainz + Discogs, already merged into `AlbumContext.facts.genres`
   and cached 30 days per album).
-- [ ] Add `genres: string[]` to `albumSummarySchema` (`shared/src/dto.ts`),
+- [x] Add `genres: string[]` to `albumSummarySchema` (`shared/src/dto.ts`),
       populated **only from what's already cached** in the context store —
       don't trigger a fresh MusicBrainz/Discogs lookup just to render a
       list row (that's N network calls for one page load). If nothing's
       cached yet for an album, show no genre chip rather than blocking or
-      fetching.
-- [ ] `BacklogPage.tsx` `Card`, `RevisitPage.tsx` `Row`, `ReviewsPage.tsx`
+      fetching. Landed as `context/index.ts`'s `getCachedGenres()` — a pure
+      cache peek (`cache.get`, no fetch), shared by `backlog.ts`'s `enrich()`
+      and `verdict.ts`'s `/revisit` and `/reviews` handlers. Reviews don't
+      carry an `AlbumSummary` at all (persisted as flat `artist`/`album`
+      strings), so genres land there via a new `ReviewListItem` response
+      type instead of touching the stored review-file schema.
+- [x] `BacklogPage.tsx` `Card`, `RevisitPage.tsx` `Row`, `ReviewsPage.tsx`
       `Row` — render the genre chip(s) when present, same treatment as the
-      existing meta line (year · tracks · duration).
+      existing meta line (year · tracks · duration). Landed as a shared
+      `GenreChips` molecule (`Badge` atom, capped at 3 + a `+N` overflow —
+      Miller's Law, so one heavily-tagged album doesn't blow out a row's
+      height against its neighbors), used identically across all three.
 
 ### 10.7 — Album page background art
 

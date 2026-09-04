@@ -4,6 +4,7 @@ import type { BacklogEntry } from "@gatefold/shared";
 import { ApiRequestError } from "../../api/client";
 import { formatDuration } from "../../lib/format";
 import { Button } from "../../components/ui/button";
+import { GenreChips } from "../../components/GenreChips";
 import { Input } from "../../components/ui/input";
 import { AlbumSearch } from "./AlbumSearch";
 import { PlaylistImport } from "./PlaylistImport";
@@ -59,6 +60,7 @@ function Card({
           {a?.artists.join(", ")}
         </p>
         <p className="truncate text-xs text-ink-muted">{meta}</p>
+        {a && <GenreChips genres={a.genres} />}
       </div>
 
       <div

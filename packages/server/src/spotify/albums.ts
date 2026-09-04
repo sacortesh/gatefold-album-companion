@@ -46,6 +46,10 @@ const durationOf = (raw: RawAlbum): number | null => {
   return items.reduce((sum, t) => sum + t.duration_ms, 0);
 };
 
+/** `genres` defaults empty — callers that want the context-cache genres
+ *  (Backlog/Revisit list rows) overlay them separately via
+ *  `context/index.ts`'s `getCachedGenres`; this stays a pure, sync mapper
+ *  so call sites like `searchAlbums` don't pay for a cache read per result. */
 export function toAlbumSummary(raw: RawAlbum): AlbumSummary {
   return {
     id: raw.id,
@@ -56,6 +60,7 @@ export function toAlbumSummary(raw: RawAlbum): AlbumSummary {
     year: yearOf(raw.release_date),
     totalTracks: raw.total_tracks,
     durationMs: durationOf(raw),
+    genres: [],
   };
 }
 

@@ -12,6 +12,7 @@ import {
   type VerdictResponse,
 } from "@gatefold/shared";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
+import { getCachedGenres } from "../context/index.js";
 import { AppError } from "../errors.js";
 import { getAlbum, getAlbums, toAlbumSummary } from "../spotify/albums.js";
 import {
@@ -114,7 +115,17 @@ export async function verdictRoutes(app: FastifyInstance): Promise<void> {
   typed.get(
     "/reviews",
     { schema: { response: { 200: reviewsResponseSchema } } },
-    async () => ({ reviews: await readAllReviews() }),
+    async () => {
+      const reviews = await readAllReviews();
+      return {
+        reviews: await Promise.all(
+          reviews.map(async (r) => ({
+            ...r,
+            genres: await getCachedGenres(r.artist, r.album),
+          })),
+        ),
+      };
+    },
   );
 
   typed.get(
@@ -149,15 +160,27 @@ export async function verdictRoutes(app: FastifyInstance): Promise<void> {
       ]);
 
       return {
-        items: items.map((i) => {
-          const raw = albums.get(i.albumId);
-          return {
-            albumId: i.albumId,
-            addedAt: i.addedAt,
-            album: raw ? toAlbumSummary(raw) : null,
-            review: reviews.find((r) => r.albumId === i.albumId) ?? null,
-          };
-        }),
+        items: await Promise.all(
+          items.map(async (i) => {
+            const raw = albums.get(i.albumId);
+            const summary = raw ? toAlbumSummary(raw) : null;
+            const album = summary
+              ? {
+                  ...summary,
+                  genres: await getCachedGenres(
+                    summary.artists[0] ?? "",
+                    summary.name,
+                  ),
+                }
+              : null;
+            return {
+              albumId: i.albumId,
+              addedAt: i.addedAt,
+              album,
+              review: reviews.find((r) => r.albumId === i.albumId) ?? null,
+            };
+          }),
+        ),
       };
     },
   );

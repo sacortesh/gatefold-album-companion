@@ -16,10 +16,24 @@ const TYPE_ORDER: Record<AlbumContextImage["type"], number> = {
 const cache = makeCache("context");
 const TTL_MS = 30 * 24 * 3600_000;
 
+const cacheKey = (artist: string, album: string): string =>
+  `ctx:${artist}::${album}`.toLowerCase();
+
 export interface AlbumContextInput {
   artist: string;
   album: string;
   year: string | null;
+}
+
+/** A cache-only peek for list rows (Phase 10.6, Backlog/Revisit/Reviews) —
+ *  never fetches: returns `[]` when nothing's cached yet for this album
+ *  rather than triggering a fresh MusicBrainz/Discogs lookup per row. */
+export async function getCachedGenres(
+  artist: string,
+  album: string,
+): Promise<string[]> {
+  const cached = await cache.get<AlbumContext>(cacheKey(artist, album), TTL_MS);
+  return cached?.facts.genres ?? [];
 }
 
 export async function getAlbumContext(
@@ -28,7 +42,7 @@ export async function getAlbumContext(
   const { discogsConsumerKey, discogsConsumerSecret } = await getAppConfig();
   const discogsConfigured = Boolean(discogsConsumerKey && discogsConsumerSecret);
 
-  const key = `ctx:${input.artist}::${input.album}`.toLowerCase();
+  const key = cacheKey(input.artist, input.album);
   const cached = await cache.get<AlbumContext>(key, TTL_MS);
   // `images`, `images[].label`, and `credits[].discogsUrl` were all added
   // after this cache started filling up — a pre-existing 30-day entry won't

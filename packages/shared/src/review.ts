@@ -42,7 +42,15 @@ export const verdictResponseSchema = z.object({
 });
 export type VerdictResponse = z.infer<typeof verdictResponseSchema>;
 
+/** A review plus genres from the context cache (Phase 10.6) — kept separate
+ *  from `reviewSchema` since genres are a derived, cache-sourced fact, not
+ *  something that belongs baked into the persisted review file. */
+export const reviewListItemSchema = reviewSchema.extend({
+  genres: z.array(z.string()),
+});
+export type ReviewListItem = z.infer<typeof reviewListItemSchema>;
+
 export const reviewsResponseSchema = z.object({
-  reviews: z.array(reviewSchema),
+  reviews: z.array(reviewListItemSchema),
 });
 export type ReviewsResponse = z.infer<typeof reviewsResponseSchema>;

@@ -15,6 +15,7 @@ import {
   type PlaylistAlbumsResponse,
 } from "@gatefold/shared";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
+import { getCachedGenres } from "../context/index.js";
 import { AppError } from "../errors.js";
 import {
   getAlbum,
@@ -38,10 +39,18 @@ async function enrich(items: BacklogItem[]): Promise<BacklogEntry[]> {
   const albums = ordered.length
     ? await getAlbums(ordered.map((i) => i.albumId))
     : new Map();
-  return ordered.map((i) => {
-    const raw = albums.get(i.albumId);
-    return { ...i, album: raw ? toAlbumSummary(raw) : null };
-  });
+  return Promise.all(
+    ordered.map(async (i) => {
+      const raw = albums.get(i.albumId);
+      if (!raw) return { ...i, album: null };
+      const summary = toAlbumSummary(raw);
+      const genres = await getCachedGenres(
+        summary.artists[0] ?? "",
+        summary.name,
+      );
+      return { ...i, album: { ...summary, genres } };
+    }),
+  );
 }
 
 export async function backlogRoutes(app: FastifyInstance): Promise<void> {

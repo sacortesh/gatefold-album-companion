@@ -95,6 +95,9 @@ export async function getPlaylistAlbums(
           year: raw.release_date?.slice(0, 4) ?? null,
           totalTracks: raw.total_tracks ?? 0,
           durationMs: null,
+          // Playlist-import is a search-like flow, not a persistent list
+          // view — out of Phase 10.6's scope, same as `searchAlbums`.
+          genres: [],
         },
       });
     }
