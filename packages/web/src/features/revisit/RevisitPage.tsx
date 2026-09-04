@@ -1,8 +1,10 @@
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type { RevisitEntry } from "@gatefold/shared";
 import { api, ApiRequestError } from "../../api/client";
 import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
 
 function Row({ entry }: { entry: RevisitEntry }) {
   const play = useMutation({
@@ -84,10 +86,32 @@ export function RevisitPage() {
   }
 
   const items = query.data?.items ?? [];
+  const [filter, setFilter] = useState("");
+
+  const filtered = useMemo(() => {
+    const q = filter.trim().toLowerCase();
+    if (!q) return items;
+    return items.filter((entry) => {
+      const a = entry.album;
+      return (
+        a?.name.toLowerCase().includes(q) ||
+        a?.artists.some((artist) => artist.toLowerCase().includes(q)) ||
+        entry.review?.notes?.toLowerCase().includes(q)
+      );
+    });
+  }, [items, filter]);
 
   return (
     <section className="space-y-4">
-      <h1 className="font-display text-2xl font-semibold">Revisit</h1>
+      <div className="flex items-baseline justify-between">
+        <h1 className="font-display text-2xl font-semibold">Revisit</h1>
+        {query.isSuccess && items.length > 0 && (
+          <span className="text-sm text-ink-muted">
+            {filter ? `${filtered.length} of ${items.length}` : items.length}{" "}
+            album{items.length === 1 ? "" : "s"}
+          </span>
+        )}
+      </div>
       <p className="text-sm text-ink-muted">
         Albums you weren&apos;t sure about. Play one, then update its review
         from the album page.
@@ -103,8 +127,19 @@ export function RevisitPage() {
         </p>
       )}
 
+      {items.length > 0 && (
+        <Input
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+          placeholder="Filter by album, artist, or notes…"
+        />
+      )}
+      {query.isSuccess && items.length > 0 && filtered.length === 0 && (
+        <p className="text-sm text-ink-muted">No albums match that filter.</p>
+      )}
+
       <ul className="space-y-2">
-        {items.map((entry) => (
+        {filtered.map((entry) => (
           <Row key={entry.albumId} entry={entry} />
         ))}
       </ul>

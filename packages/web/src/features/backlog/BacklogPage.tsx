@@ -1,7 +1,9 @@
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import type { BacklogEntry } from "@gatefold/shared";
 import { formatDuration } from "../../lib/format";
 import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
 import { AlbumSearch } from "./AlbumSearch";
 import { PlaylistImport } from "./PlaylistImport";
 import { useBacklog } from "./useBacklog";
@@ -10,6 +12,7 @@ function Card({
   entry,
   first,
   last,
+  reorderable,
   onPlay,
   onRemove,
   onMove,
@@ -17,6 +20,7 @@ function Card({
   entry: BacklogEntry;
   first: boolean;
   last: boolean;
+  reorderable: boolean;
   onPlay: () => void;
   onRemove: () => void;
   onMove: (dir: -1 | 1) => void;
@@ -56,12 +60,15 @@ function Card({
         <p className="truncate text-xs text-ink-muted">{meta}</p>
       </div>
 
-      <div className="flex shrink-0 flex-col text-ink-muted">
+      <div
+        className="flex shrink-0 flex-col text-ink-muted"
+        title={reorderable ? undefined : "Clear the filter to reorder"}
+      >
         <button
           type="button"
           onClick={() => onMove(-1)}
-          disabled={first}
-          className="px-1 leading-none hover:text-ink disabled:opacity-20"
+          disabled={!reorderable || first}
+          className="flex h-8 w-8 items-center justify-center rounded hover:bg-surface-2 hover:text-ink disabled:opacity-20 disabled:hover:bg-transparent"
           aria-label="Move up"
         >
           ▲
@@ -69,8 +76,8 @@ function Card({
         <button
           type="button"
           onClick={() => onMove(1)}
-          disabled={last}
-          className="px-1 leading-none hover:text-ink disabled:opacity-20"
+          disabled={!reorderable || last}
+          className="flex h-8 w-8 items-center justify-center rounded hover:bg-surface-2 hover:text-ink disabled:opacity-20 disabled:hover:bg-transparent"
           aria-label="Move down"
         >
           ▼
@@ -90,6 +97,19 @@ function Card({
 export function BacklogPage() {
   const { query, notConnected, items, add, remove, playAlbum, move } =
     useBacklog();
+  const [filter, setFilter] = useState("");
+
+  const filtered = useMemo(() => {
+    const q = filter.trim().toLowerCase();
+    if (!q) return items;
+    return items.filter((entry) => {
+      const a = entry.album;
+      return (
+        a?.name.toLowerCase().includes(q) ||
+        a?.artists.some((artist) => artist.toLowerCase().includes(q))
+      );
+    });
+  }, [items, filter]);
 
   if (notConnected) {
     return (
@@ -111,7 +131,8 @@ export function BacklogPage() {
       <div className="flex items-baseline justify-between">
         <h1 className="font-display text-2xl font-semibold">Backlog</h1>
         <span className="text-sm text-ink-muted">
-          {items.length} album{items.length === 1 ? "" : "s"}
+          {filter ? `${filtered.length} of ${items.length}` : items.length}{" "}
+          album{items.length === 1 ? "" : "s"}
         </span>
       </div>
 
@@ -140,18 +161,35 @@ export function BacklogPage() {
         </p>
       )}
 
+      {items.length > 0 && (
+        <Input
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+          placeholder="Filter your backlog by album or artist…"
+        />
+      )}
+      {query.isSuccess &&
+        items.length > 0 &&
+        filtered.length === 0 && (
+          <p className="text-sm text-ink-muted">No albums match that filter.</p>
+        )}
+
       <ul className="space-y-2">
-        {items.map((entry, i) => (
-          <Card
-            key={entry.albumId}
-            entry={entry}
-            first={i === 0}
-            last={i === items.length - 1}
-            onPlay={() => playAlbum.mutate(entry.uri)}
-            onRemove={() => remove.mutate(entry.albumId)}
-            onMove={(dir) => move(entry.albumId, dir)}
-          />
-        ))}
+        {filtered.map((entry) => {
+          const index = items.indexOf(entry);
+          return (
+            <Card
+              key={entry.albumId}
+              entry={entry}
+              first={index === 0}
+              last={index === items.length - 1}
+              reorderable={!filter}
+              onPlay={() => playAlbum.mutate(entry.uri)}
+              onRemove={() => remove.mutate(entry.albumId)}
+              onMove={(dir) => move(entry.albumId, dir)}
+            />
+          );
+        })}
       </ul>
     </section>
   );
