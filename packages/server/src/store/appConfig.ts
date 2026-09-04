@@ -38,8 +38,6 @@ type AppConfigFile = z.infer<typeof fileSchema>;
 export interface AppConfig extends AppConfigFile {
   /** The redirect URI to register in the Spotify dashboard. */
   redirectUri: string;
-  /** Base URL for post-OAuth browser redirects. */
-  webOrigin: string;
   /** Fields pinned by an env var — writes to them are ignored, UI shows read-only. */
   envLocked: {
     spotifyClientId: boolean;
@@ -140,7 +138,6 @@ export async function getAppConfig(): Promise<AppConfig> {
     discogsConsumerSecret,
     publicUrl,
     redirectUri,
-    webOrigin: publicUrl || env.WEB_ORIGIN,
     envLocked: {
       spotifyClientId: Boolean(env.SPOTIFY_CLIENT_ID),
       publicUrl: Boolean(env.PUBLIC_URL),

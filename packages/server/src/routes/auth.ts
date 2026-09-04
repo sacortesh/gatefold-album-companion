@@ -39,9 +39,17 @@ import {
 const SESSION_COOKIE = "gatefold_session";
 const SESSION_MAX_AGE_SECONDS = 30 * 24 * 60 * 60; // 30 days
 
+/** Where to send the browser after the OAuth round-trip. `publicUrl` wins
+ *  when set (reverse-proxy / remote deployments). Otherwise: a relative
+ *  redirect in production, so it lands back on whatever host:port the user
+ *  actually reached the app on (the server serves the SPA itself there) —
+ *  and `WEB_ORIGIN` (the Vite dev server) in development, where the API and
+ *  the SPA run on different ports. Getting this wrong in production sends a
+ *  successful login to a dead port that nothing is listening on. */
 async function settingsUrl(params: string): Promise<string> {
-  const { webOrigin } = await getAppConfig();
-  return `${webOrigin}/settings?${params}`;
+  const { publicUrl } = await getAppConfig();
+  const base = publicUrl || (env.NODE_ENV === "production" ? "" : env.WEB_ORIGIN);
+  return `${base}/settings?${params}`;
 }
 
 function disconnected(configured: boolean, redirectUri: string): AuthStatus {

@@ -16,3 +16,19 @@ try {
   app.log.error(err);
   process.exit(1);
 }
+
+// Without this, `docker stop` / `compose down` / a k8s pod termination kills
+// the process outright (exit 143) with in-flight requests dropped mid-flight.
+// `app.close()` stops accepting new connections and drains what's in flight.
+for (const sig of ["SIGTERM", "SIGINT"] as const) {
+  process.once(sig, () => {
+    app.log.info({ sig }, "shutting down");
+    app.close().then(
+      () => process.exit(0),
+      (err: unknown) => {
+        app.log.error(err, "error during shutdown");
+        process.exit(1);
+      },
+    );
+  });
+}

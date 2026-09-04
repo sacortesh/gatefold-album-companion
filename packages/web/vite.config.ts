@@ -17,6 +17,9 @@ export default defineConfig({
   },
   build: {
     outDir: "dist",
-    sourcemap: true,
+    // Never ship a source map in the served build — packages/web/dist is
+    // served as-is by @fastify/static, so a map here is publicly fetchable
+    // and reconstructs the pre-minification source.
+    sourcemap: false,
   },
 });

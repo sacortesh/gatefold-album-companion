@@ -596,15 +596,15 @@ user: it makes a *successful* Connect Spotify look like a failure.
 
 | # | Title | Recommendation |
 |---|---|---|
-| 8 | Post-OAuth redirect goes to `127.0.0.1:5173` when `PUBLIC_URL` unset | **Fix before next tag.** Single most common first-run failure — every default (`docker-compose.yml` as shipped) hits it on first connect. Fix is small (relative redirect in `auth.ts`'s `settingsUrl`, per the issue's own patch). |
-| 6 | Prod web bundle ships a `.js.map` publicly | **Fix before next tag.** One-line Vite config change (`build.sourcemap: false`), zero behavior risk. |
-| 5 | No `SIGTERM` handler, exits 143 | **Fix before next tag.** Small, safe, and `docker compose down` / any orchestrator restart currently drops in-flight requests. |
-| 4 | Container fails under `--user` / `runAsUser` | **Fix before next tag.** One `id -u` branch in `docker-entrypoint.sh`. Anyone hardening their compose/k8s setup — a reasonable thing to do right after reading #6 — hits this immediately. |
-| 2 | Base image OpenSSL 2 HIGH CVEs | **Fix before next tag** — `RUN apk upgrade --no-cache` in the final stage. Trivial, and "0 critical/high" is the kind of thing that gets screenshotted into a GitHub issue by the next person who scans the image. |
-| 1 | Bundled npm/yarn → 1 CRITICAL + 10 HIGH CVEs | **Fix before next tag** if convenient, else first patch after. Not reachable at runtime, but it's the finding most likely to make someone bounce off the project before reading far enough to learn that. `npm prune --omit=dev` already runs (Dockerfile line 38) — this needs an explicit `rm -rf` of the global npm/yarn install, not the workspace's own deps. |
-| 3 | No OCI labels / SBOM on the image | Nice-to-have, not blocking. Do it in the release workflow (`docker/metadata-action`) since that's already the multi-arch build step. |
-| 7 | Grab-bag: unconditional `chown -R`, dupe entrypoint script, `package.json main` pointing at unshipped `src/`, `@types/node` in runtime `node_modules`, `VOLUME /config` | Batch into the same pass as #4 (same file). None individually urgent; the unconditional `chown -R` is the one with a real user-facing cost (startup latency on a large bind-mounted `/config`). |
-| 9 | Document the LAN / no-public-domain path | **Do this one — it's the other half of "make it accessible from external sources."** The key fact (Spotify token is server-side and single-user; only the *one-time* Connect needs loopback/HTTPS, everyone else just hits `http://<host>:8888` forever) isn't stated anywhere today. Add as a third tier in `docs/self-hosting.md` alongside Local-only / Remote, per the issue's own writeup. This is docs-only, no code risk — do it any time, doesn't need to wait for a tag. |
+| 8 | Post-OAuth redirect goes to `127.0.0.1:5173` when `PUBLIC_URL` unset | ✅ **Done (2026-09-04).** `settingsUrl` in `auth.ts` now redirects relative in production when `publicUrl` is unset (absolute to `publicUrl` when it is set); `WEB_ORIGIN`'s `:5173` default only applies outside production, preserving the dev flow. Verified against the real built image: `curl .../callback?error=access_denied` → `location: /settings?auth=denied`, not `:5173`. |
+| 6 | Prod web bundle ships a `.js.map` publicly | ✅ **Done (2026-09-04).** `vite.config.ts` `build.sourcemap: false`. Verified: `packages/web/dist` has zero `.map` files, in the local build and inside the built image. |
+| 5 | No `SIGTERM` handler, exits 143 | ✅ **Done (2026-09-04).** `index.ts` closes Fastify on `SIGTERM`/`SIGINT` and exits 0. Verified against the built image: `docker kill --signal=TERM` → `docker wait` → exit `0`, with a "shutting down" log line. |
+| 4 | Container fails under `--user` / `runAsUser` | ✅ **Done (2026-09-04).** `docker-entrypoint.sh` now branches on `id -u`: root does the chown + `su-exec` drop as before, already-unprivileged just `exec`s. Verified: `docker run --user 1000:1000 gatefold ... node -e '...'` starts and runs. |
+| 2 | Base image OpenSSL 2 HIGH CVEs | ✅ **Done (2026-09-04).** `RUN apk upgrade --no-cache` added to the runtime stage. Verified: `libssl3`/`libcrypto3` now `3.5.8-r0` in the built image (was `3.5.7-r0`). |
+| 1 | Bundled npm/yarn → 1 CRITICAL + 10 HIGH CVEs | Not done this pass. Not reachable at runtime, but it's the finding most likely to make someone bounce off the project before reading far enough to learn that. `npm prune --omit=dev` already runs (Dockerfile) — this needs an explicit `rm -rf` of the global npm/yarn install, not the workspace's own deps. |
+| 3 | No OCI labels / SBOM on the image | Not done this pass — nice-to-have, not blocking. Belongs in the release workflow (`docker/metadata-action`), not the Dockerfile itself, since that's already the multi-arch build step. |
+| 7 | Grab-bag: unconditional `chown -R`, dupe entrypoint script, `package.json main` pointing at unshipped `src/`, `@types/node` in runtime `node_modules`, `VOLUME /config` | **Partially done (2026-09-04).** Landed alongside #4/#2 since they're the same files: the unconditional `chown -R` is now `find /config \! -user node -exec chown ...` (only touches what needs it), and the base image's dead `/usr/local/bin/docker-entrypoint.sh` is removed. **Deliberately left alone:** `package.json` `main`/`start` — fixing it properly means also changing the root `build` script to build the server package, and risks breaking the documented local `npm run build && npm start` flow (which currently runs the server via `tsx` from source, not `dist/`); needs its own pass, not a drive-by. `VOLUME /config` — removing it trades "anonymous-volume clutter for `docker run` users who forget `-v`" for "silent data loss for that same group on `docker rm`" — net negative, not obviously worth it. `@types/node` in runtime `node_modules` — not re-checked this pass. |
+| 9 | Document the LAN / no-public-domain path | Not done this pass — still worth doing, docs-only, no code risk, doesn't need to wait for a tag. The key fact (Spotify token is server-side and single-user; only the *one-time* Connect needs loopback/HTTPS, everyone else just hits `http://<host>:8888` forever) isn't stated anywhere today. Add as a third tier in `docs/self-hosting.md` alongside Local-only / Remote, per the issue's own writeup. |
 
 **Why this framing:** issues #1–#8 all came out of *auditing* the exact
 image the user just fought with, and #8 in particular explains the "quite a
@@ -613,11 +613,15 @@ a connection-refused error. Fixing #8 + writing #9 addresses the actual
 reported pain; the rest is opportunistic hardening while the image is
 already being touched for #8.
 
-**AC:** `docker run --user 1000:1000 ...` starts; `docker kill --signal=TERM`
-exits 0; a fresh `docker compose up -d` → Connect Spotify → browser lands
-back on `/settings?auth=connected` on the *same* host:port, not `:5173`;
-`docs/self-hosting.md` has a LAN-only tier; a Trivy scan shows 0
-CRITICAL/HIGH.
+**AC:** `docker run --user 1000:1000 ...` starts ✅; `docker kill --signal=TERM`
+exits 0 ✅; a fresh `docker compose up -d` → Connect Spotify → browser lands
+back on `/settings?auth=connected` on the *same* host:port, not `:5173` ✅
+(verified via the `?error=` path against the real built image — the full
+OAuth round-trip itself needs a real Spotify account to exercise end to end);
+`docs/self-hosting.md` has a LAN-only tier — **not done** (issue #9, still
+open); a Trivy scan shows 0 CRITICAL/HIGH — **not yet**: the OS-package CVEs
+(#2) are fixed, but the bundled npm/yarn CVEs (#1) are still in the image,
+so a full scan isn't clean yet.
 
 ### 10.2 — Instructions for agents
 

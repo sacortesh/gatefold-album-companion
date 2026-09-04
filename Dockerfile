@@ -39,8 +39,16 @@ RUN npm prune --omit=dev
 
 # ---- runtime ----------------------------------------------------------
 FROM node:22-alpine AS runtime
-RUN apk add --no-cache tini su-exec
+# Pick up patched OS packages (e.g. libcrypto3/libssl3 CVEs) even when the
+# alpine base tag itself lags behind — a rebuild alone shouldn't leave known
+# CVEs sitting in the image.
+RUN apk upgrade --no-cache && apk add --no-cache tini su-exec
 WORKDIR /app
+
+# The node:22-alpine base ships its own /usr/local/bin/docker-entrypoint.sh —
+# unused (ours below replaces it entirely) and just confusing to find while
+# debugging inside the container.
+RUN rm -f /usr/local/bin/docker-entrypoint.sh
 
 ENV NODE_ENV=production
 ENV HOST=0.0.0.0
