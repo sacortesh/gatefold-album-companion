@@ -105,22 +105,24 @@ export function DiscogsSetup() {
         <p className="text-sm text-danger">{(save.error as Error).message}</p>
       )}
 
-      <Button
-        variant="primary"
-        onClick={() => save.mutate()}
-        disabled={!dirty || s.envLocked.discogs || save.isPending}
-      >
-        {save.isPending ? "Saving…" : "Save"}
-      </Button>
+      <div className="flex items-center gap-3">
+        <Button
+          variant="primary"
+          onClick={() => save.mutate()}
+          disabled={!dirty || s.envLocked.discogs || save.isPending}
+        >
+          {save.isPending ? "Saving…" : "Save"}
+        </Button>
 
-      <a
-        href="https://github.com/sacortesh/gatefold-album-companion/blob/main/docs/self-hosting.md#discogs-optional"
-        target="_blank"
-        rel="noreferrer"
-        className="inline-block text-xs text-primary hover:underline"
-      >
-        Full setup guide →
-      </a>
+        <a
+          href="https://github.com/sacortesh/gatefold-album-companion/blob/main/docs/self-hosting.md#discogs-optional"
+          target="_blank"
+          rel="noreferrer"
+          className="text-xs text-primary hover:underline"
+        >
+          Full setup guide →
+        </a>
+      </div>
     </div>
   );
 }
