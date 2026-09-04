@@ -6,6 +6,13 @@ theme and components are a deliberate visual redesign on top of them. See
 `ARCHITECTURE.md` for the frontend/styling engineering decisions this feeds
 into.
 
+**Status**: the redesign below has been rolled out app-wide — every route
+(Backlog, Now Playing, Recent, Album, Revisit, Reviews, Settings), the
+shared chrome (`Layout`, `NowPlayingCard`), and the one modal (`VerdictDialog`)
+all run on these tokens/components. Not part of this pass: no new
+functionality was added (that's Phase 10 in `docs/implementation-plan.md`,
+a separate track) — this was a visual-only pass over existing screens.
+
 ## Requirements
 
 Reverse-engineered from the existing build, not re-derived from scratch
@@ -215,7 +222,7 @@ tell.
 - LyricsPanel — unchanged structurally (already well-scoped: 4 props, 2 boolean, under the proliferation threshold), restyled onto the new type scale.
 - BacklogList / RecentList / RevisitList / ReviewsList — the four list-page organisms, unified onto one internal `ListRow` molecule (currently four separately hand-rolled `Row`/`Card` locals per the audit) so the four pages stop drifting from each other visually.
 - SettingsPanel — the settings-card shape (`AboutSettings`, `DiscogsSetup`, `SecuritySettings`, `SpotifySetup`, `BangerPlaylistPicker`) — this is where a real card border *is* justified (Card discipline above), since each is a genuinely separate configuration unit.
-- DevicePicker / VerdictDialog / PlaylistImport picker — modal organisms, migrated onto shadcn/ui's `Dialog` primitive (see `ARCHITECTURE.md`) for built-in focus-trap, `Escape`-to-close, and `aria-*` wiring instead of hand-built modal behavior.
+- VerdictDialog — the one true modal organism; migrated onto shadcn/ui's `Dialog` primitive (see `ARCHITECTURE.md`) for built-in focus-trap, `Escape`-to-close, and `aria-*` wiring instead of hand-built overlay/backdrop-click logic. DevicePicker and PlaylistImport are inline panels (a settings-page list and a `<details>` disclosure respectively), not modals — corrected from an earlier pass of this doc that miscategorized them.
 
 ### Compound families
 - none identified — the app has no tabs/accordion-with-multiple-panels/menu structure that needs a shared-context compound component; `AlbumContextPanel`'s single `<details>` doesn't need one.

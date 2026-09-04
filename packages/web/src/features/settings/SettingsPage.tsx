@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, startSpotifyLogin } from "../../api/client";
+import { Button } from "../../components/ui/button";
 import { AboutSettings } from "./AboutSettings";
 import { BangerPlaylistPicker } from "./BangerPlaylistPicker";
 import { DevicePicker } from "./DevicePicker";
@@ -27,8 +28,8 @@ function Banner({ kind }: { kind: string }) {
     <div
       className={`rounded-md border px-3 py-2 text-sm ${
         msg.tone === "ok"
-          ? "border-emerald-800 bg-emerald-950 text-emerald-200"
-          : "border-red-800 bg-red-950 text-red-200"
+          ? "border-primary/40 bg-primary/10 text-primary"
+          : "border-danger/40 bg-danger/10 text-danger"
       }`}
     >
       {msg.text}
@@ -71,49 +72,45 @@ export function SettingsPage() {
 
   return (
     <section className="max-w-xl space-y-6">
-      <h1 className="text-2xl font-semibold">Settings</h1>
+      <h1 className="font-display text-2xl font-semibold">Settings</h1>
 
       {banner && <Banner kind={banner} />}
 
-      <div className="space-y-3 rounded-lg border border-neutral-800 p-4">
-        <h2 className="text-sm font-medium text-neutral-300">Spotify</h2>
+      <div className="space-y-3 rounded-lg border border-border p-4">
+        <h2 className="text-sm font-medium text-ink">Spotify</h2>
 
         {status.isLoading && (
-          <p className="text-sm text-neutral-500">Checking connection…</p>
+          <p className="text-sm text-ink-muted">Checking connection…</p>
         )}
 
         {status.isError && (
-          <p className="text-sm text-red-400">
+          <p className="text-sm text-danger">
             Couldn&apos;t reach the server: {(status.error as Error).message}
           </p>
         )}
 
         {s && !s.configured && (
-          <p className="text-sm text-neutral-400">
+          <p className="text-sm text-ink-muted">
             Not configured yet — set a client ID below.
           </p>
         )}
 
         {s?.configured && !s.connected && (
           <div className="space-y-3">
-            <p className="text-sm text-neutral-400">Not connected.</p>
-            <button
-              type="button"
-              onClick={startSpotifyLogin}
-              className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500"
-            >
+            <p className="text-sm text-ink-muted">Not connected.</p>
+            <Button variant="primary" onClick={startSpotifyLogin}>
               Connect Spotify
-            </button>
+            </Button>
           </div>
         )}
 
         {s?.connected && (
           <div className="space-y-3 text-sm">
-            <p className="flex items-center gap-2 text-emerald-400">
-              <span className="h-2 w-2 rounded-full bg-emerald-500" />
+            <p className="flex items-center gap-2 text-primary">
+              <span className="h-2 w-2 rounded-full bg-primary" />
               Connected{s.user?.displayName ? ` as ${s.user.displayName}` : ""}
             </p>
-            <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-neutral-400">
+            <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-ink-muted">
               <dt>Scopes</dt>
               <dd>{s.scopes.length} granted</dd>
               <dt>Token expires</dt>
@@ -123,14 +120,13 @@ export function SettingsPage() {
                   : "refreshing on next call"}
               </dd>
             </dl>
-            <button
-              type="button"
+            <Button
+              variant="secondary"
               onClick={() => disconnect.mutate()}
               disabled={disconnect.isPending}
-              className="rounded-md border border-neutral-700 px-4 py-2 text-sm font-medium text-neutral-200 hover:bg-neutral-800 disabled:opacity-50"
             >
               Disconnect
-            </button>
+            </Button>
           </div>
         )}
       </div>
@@ -148,29 +144,21 @@ export function SettingsPage() {
       <AboutSettings />
 
       {import.meta.env.DEV && s?.connected && (
-        <div className="space-y-2 rounded-lg border border-dashed border-neutral-800 p-4">
-          <h2 className="text-sm font-medium text-neutral-400">
+        <div className="space-y-2 rounded-lg border border-dashed border-border p-4">
+          <h2 className="text-sm font-medium text-ink-muted">
             Developer — token refresh
           </h2>
-          <p className="text-xs text-neutral-500">
+          <p className="text-xs text-ink-muted">
             Then reload the status above; the next Spotify call should recover
             transparently.
           </p>
           <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => debug.mutate("expire")}
-              className="rounded border border-neutral-700 px-3 py-1 text-xs hover:bg-neutral-800"
-            >
+            <Button variant="secondary" size="sm" onClick={() => debug.mutate("expire")}>
               Expire access token
-            </button>
-            <button
-              type="button"
-              onClick={() => debug.mutate("corrupt")}
-              className="rounded border border-neutral-700 px-3 py-1 text-xs hover:bg-neutral-800"
-            >
+            </Button>
+            <Button variant="secondary" size="sm" onClick={() => debug.mutate("corrupt")}>
               Corrupt access token (force 401)
-            </button>
+            </Button>
           </div>
         </div>
       )}

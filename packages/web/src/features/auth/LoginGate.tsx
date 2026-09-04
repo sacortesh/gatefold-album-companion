@@ -2,6 +2,8 @@ import { type FormEvent, type ReactNode, useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, setApiKey, setOnUnauthorized } from "../../api/client";
 import { GatefoldMark } from "../../components/GatefoldMark";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
 
 function LoginForm({ onSuccess }: { onSuccess: () => void }) {
   const [username, setUsername] = useState("");
@@ -25,39 +27,38 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
 
   return (
     <div className="mx-auto mt-24 max-w-sm space-y-4 px-6">
-      <h1 className="text-center text-lg font-semibold text-neutral-100">
+      <h1 className="flex items-center justify-center gap-1.5 text-center font-display text-lg font-semibold text-ink">
         <GatefoldMark className="size-5" /> Gatefold
       </h1>
       <form
         onSubmit={submit}
-        className="space-y-3 rounded-lg border border-neutral-800 p-4"
+        className="space-y-3 rounded-lg border border-border p-4"
       >
         <div className="space-y-1">
-          <label className="text-xs text-neutral-400">Username</label>
-          <input
+          <label className="text-xs text-ink-muted">Username</label>
+          <Input
             autoFocus
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            className="w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm"
           />
         </div>
         <div className="space-y-1">
-          <label className="text-xs text-neutral-400">Password</label>
-          <input
+          <label className="text-xs text-ink-muted">Password</label>
+          <Input
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm"
           />
         </div>
-        {error && <p className="text-sm text-red-400">{error}</p>}
-        <button
+        {error && <p className="text-sm text-danger">{error}</p>}
+        <Button
           type="submit"
+          variant="primary"
           disabled={pending || !username || !password}
-          className="w-full rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-50"
+          className="w-full"
         >
           {pending ? "Signing in…" : "Sign in"}
-        </button>
+        </Button>
       </form>
     </div>
   );
@@ -65,7 +66,7 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
 
 function CenterMessage({ text }: { text: string }) {
   return (
-    <p className="mx-auto mt-24 max-w-sm px-6 text-center text-sm text-neutral-500">
+    <p className="mx-auto mt-24 max-w-sm px-6 text-center text-sm text-ink-muted">
       {text}
     </p>
   );

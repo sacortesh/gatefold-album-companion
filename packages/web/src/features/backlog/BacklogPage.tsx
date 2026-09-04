@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import type { BacklogEntry } from "@gatefold/shared";
 import { formatDuration } from "../../lib/format";
+import { Button } from "../../components/ui/button";
 import { AlbumSearch } from "./AlbumSearch";
 import { PlaylistImport } from "./PlaylistImport";
 import { useBacklog } from "./useBacklog";
@@ -32,10 +33,10 @@ function Card({
     : "album unavailable";
 
   return (
-    <li className="flex items-center gap-4 rounded-lg border border-neutral-800 p-3">
+    <li className="flex items-center gap-4 rounded-lg border border-border p-3">
       <Link
         to={`/album/${entry.albumId}`}
-        className="h-16 w-16 shrink-0 overflow-hidden rounded bg-neutral-800"
+        className="h-16 w-16 shrink-0 overflow-hidden rounded bg-surface-2"
       >
         {a?.image && (
           <img src={a.image} alt="" className="h-full w-full object-cover" />
@@ -49,18 +50,18 @@ function Card({
         >
           {a?.name ?? entry.albumId}
         </Link>
-        <p className="truncate text-sm text-neutral-400">
+        <p className="truncate text-sm text-ink-muted">
           {a?.artists.join(", ")}
         </p>
-        <p className="truncate text-xs text-neutral-600">{meta}</p>
+        <p className="truncate text-xs text-ink-muted">{meta}</p>
       </div>
 
-      <div className="flex shrink-0 flex-col text-neutral-500">
+      <div className="flex shrink-0 flex-col text-ink-muted">
         <button
           type="button"
           onClick={() => onMove(-1)}
           disabled={first}
-          className="px-1 leading-none hover:text-neutral-200 disabled:opacity-20"
+          className="px-1 leading-none hover:text-ink disabled:opacity-20"
           aria-label="Move up"
         >
           ▲
@@ -69,27 +70,19 @@ function Card({
           type="button"
           onClick={() => onMove(1)}
           disabled={last}
-          className="px-1 leading-none hover:text-neutral-200 disabled:opacity-20"
+          className="px-1 leading-none hover:text-ink disabled:opacity-20"
           aria-label="Move down"
         >
           ▼
         </button>
       </div>
 
-      <button
-        type="button"
-        onClick={onPlay}
-        className="shrink-0 rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500"
-      >
+      <Button variant="primary" onClick={onPlay} className="shrink-0">
         Play album
-      </button>
-      <button
-        type="button"
-        onClick={onRemove}
-        className="shrink-0 rounded-md border border-neutral-700 px-3 py-2 text-sm text-neutral-300 hover:bg-neutral-800"
-      >
+      </Button>
+      <Button variant="secondary" onClick={onRemove} className="shrink-0">
         Remove
-      </button>
+      </Button>
     </li>
   );
 }
@@ -101,10 +94,10 @@ export function BacklogPage() {
   if (notConnected) {
     return (
       <section className="space-y-3">
-        <h1 className="text-2xl font-semibold">Backlog</h1>
-        <p className="text-sm text-neutral-400">
+        <h1 className="font-display text-2xl font-semibold">Backlog</h1>
+        <p className="text-sm text-ink-muted">
           Spotify isn&apos;t connected.{" "}
-          <Link to="/settings" className="text-emerald-400 hover:underline">
+          <Link to="/settings" className="text-primary hover:underline">
             Connect in Settings
           </Link>
           .
@@ -116,8 +109,8 @@ export function BacklogPage() {
   return (
     <section className="space-y-6">
       <div className="flex items-baseline justify-between">
-        <h1 className="text-2xl font-semibold">Backlog</h1>
-        <span className="text-sm text-neutral-500">
+        <h1 className="font-display text-2xl font-semibold">Backlog</h1>
+        <span className="text-sm text-ink-muted">
           {items.length} album{items.length === 1 ? "" : "s"}
         </span>
       </div>
@@ -132,19 +125,17 @@ export function BacklogPage() {
       <PlaylistImport />
 
       {playAlbum.isError && (
-        <p className="text-sm text-red-400">
+        <p className="text-sm text-danger">
           Couldn&apos;t start playback: {(playAlbum.error as Error).message}
         </p>
       )}
 
-      {query.isLoading && (
-        <p className="text-sm text-neutral-500">Loading…</p>
-      )}
+      {query.isLoading && <p className="text-sm text-ink-muted">Loading…</p>}
       {query.isError && (
-        <p className="text-sm text-red-400">{query.error.message}</p>
+        <p className="text-sm text-danger">{query.error.message}</p>
       )}
       {query.isSuccess && items.length === 0 && (
-        <p className="text-sm text-neutral-500">
+        <p className="text-sm text-ink-muted">
           Nothing queued. Search above to add an album.
         </p>
       )}

@@ -1,4 +1,5 @@
 import type { ButtonHTMLAttributes } from "react";
+import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "../../lib/cn";
 
@@ -28,7 +29,12 @@ const buttonVariants = cva(
 
 export interface ButtonProps
   extends ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {}
+    VariantProps<typeof buttonVariants> {
+  /** Render the child element (e.g. a router `Link`) styled as this button,
+   * instead of a `<button>` wrapping it — avoids nesting interactive
+   * elements. */
+  asChild?: boolean;
+}
 
 // React 19: ref is a plain prop, no forwardRef needed.
 export function Button({
@@ -36,9 +42,19 @@ export function Button({
   variant,
   size,
   type = "button",
+  asChild,
   ref,
   ...props
 }: ButtonProps & { ref?: React.Ref<HTMLButtonElement> }) {
+  if (asChild) {
+    return (
+      <Slot
+        ref={ref}
+        className={cn(buttonVariants({ variant, size }), className)}
+        {...props}
+      />
+    );
+  }
   return (
     <button
       ref={ref}

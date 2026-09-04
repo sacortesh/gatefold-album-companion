@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { Review, Verdict } from "@gatefold/shared";
 import { api } from "../../api/client";
+import { Button } from "../../components/ui/button";
+import { Dialog, DialogContent, DialogTitle } from "../../components/ui/dialog";
 import { useSubmitVerdict } from "./useVerdict";
 
 const VERDICTS: Array<{ value: Verdict; label: string; hint: string }> = [
@@ -55,12 +57,6 @@ export function VerdictDialog({ albumId, albumName, existing, onClose }: Props) 
     setTags([...current, tag].join(", "));
   };
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
-
   const save = () => {
     submit.mutate(
       {
@@ -75,19 +71,13 @@ export function VerdictDialog({ albumId, albumName, existing, onClose }: Props) 
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 p-4 py-10"
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-lg space-y-5 rounded-xl border border-neutral-800 bg-neutral-950 p-6"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="space-y-5">
         <div>
-          <h2 className="text-lg font-semibold">
+          <DialogTitle>
             {existing ? "Update review" : "Finish"} — {albumName}
-          </h2>
-          <p className="text-xs text-neutral-500">
+          </DialogTitle>
+          <p className="text-xs text-ink-muted">
             Records a review and clears the album from your backlog.
           </p>
         </div>
@@ -98,20 +88,20 @@ export function VerdictDialog({ albumId, albumName, existing, onClose }: Props) 
               key={v.value}
               type="button"
               onClick={() => setVerdict(v.value)}
-              className={`rounded-lg border p-3 text-left transition ${
+              className={`rounded-lg border p-3 text-left transition-colors ${
                 verdict === v.value
-                  ? "border-emerald-600 bg-emerald-950/50"
-                  : "border-neutral-800 hover:border-neutral-700"
+                  ? "border-primary bg-primary/10"
+                  : "border-border hover:border-ink-muted"
               }`}
             >
               <div className="text-sm font-medium">{v.label}</div>
-              <div className="text-xs text-neutral-500">{v.hint}</div>
+              <div className="text-xs text-ink-muted">{v.hint}</div>
             </button>
           ))}
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-xs text-neutral-400">Rating (optional)</label>
+          <label className="text-xs text-ink-muted">Rating (optional)</label>
           <div className="flex flex-wrap gap-1">
             {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
               <button
@@ -120,8 +110,8 @@ export function VerdictDialog({ albumId, albumName, existing, onClose }: Props) 
                 onClick={() => setRating(rating === n ? undefined : n)}
                 className={`h-8 w-8 rounded text-sm ${
                   rating === n
-                    ? "bg-emerald-600 text-white"
-                    : "border border-neutral-800 text-neutral-400 hover:bg-neutral-800"
+                    ? "bg-primary text-primary-ink"
+                    : "border border-border text-ink-muted hover:bg-surface-2"
                 }`}
               >
                 {n}
@@ -131,15 +121,15 @@ export function VerdictDialog({ albumId, albumName, existing, onClose }: Props) 
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-xs text-neutral-400">
+          <label className="text-xs text-ink-muted">
             Genre, mood, how it made you feel{" "}
-            <span className="text-neutral-600">— optional</span>
+            <span className="text-ink-muted">— optional</span>
           </label>
           <input
             value={tags}
             onChange={(e) => setTags(e.target.value)}
             placeholder="blackgaze, 2013, night-driving"
-            className="w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm"
+            className="h-9 w-full rounded-md border border-border bg-surface px-3 text-sm text-ink"
           />
           <div className="flex flex-wrap gap-1.5 pt-0.5">
             {SUGGESTED_TAGS.filter(
@@ -149,7 +139,7 @@ export function VerdictDialog({ albumId, albumName, existing, onClose }: Props) 
                 key={t}
                 type="button"
                 onClick={() => addTag(t)}
-                className="rounded-full border border-neutral-800 px-2 py-0.5 text-xs text-neutral-400 hover:border-neutral-600 hover:text-neutral-200"
+                className="rounded-full border border-border px-2 py-0.5 text-xs text-ink-muted hover:border-ink-muted hover:text-ink"
               >
                 + {t}
               </button>
@@ -159,12 +149,12 @@ export function VerdictDialog({ albumId, albumName, existing, onClose }: Props) 
 
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
-            <label className="text-xs text-neutral-400">Notes</label>
+            <label className="text-xs text-ink-muted">Notes</label>
             {template.data && !notes.trim() && (
               <button
                 type="button"
                 onClick={() => setNotes(template.data.template.trimEnd() + "\n")}
-                className="text-xs text-emerald-400 hover:text-emerald-300"
+                className="text-xs text-primary hover:opacity-80"
               >
                 Insert review template
               </button>
@@ -174,34 +164,25 @@ export function VerdictDialog({ albumId, albumName, existing, onClose }: Props) 
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={notes.trim() ? 12 : 5}
-            className="w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm"
+            className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-ink"
           />
         </div>
 
         {submit.isError && (
-          <p className="text-sm text-red-400">
+          <p className="text-sm text-danger">
             {(submit.error as Error).message}
           </p>
         )}
 
         <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-md border border-neutral-700 px-4 py-2 text-sm hover:bg-neutral-800"
-          >
+          <Button variant="secondary" onClick={onClose}>
             Cancel
-          </button>
-          <button
-            type="button"
-            onClick={save}
-            disabled={submit.isPending}
-            className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-50"
-          >
+          </Button>
+          <Button variant="primary" onClick={save} disabled={submit.isPending}>
             {submit.isPending ? "Saving…" : "Save & clear"}
-          </button>
+          </Button>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

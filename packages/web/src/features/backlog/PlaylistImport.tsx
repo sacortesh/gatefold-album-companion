@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../../api/client";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
 import { useBacklog } from "./useBacklog";
 
 export function PlaylistImport() {
@@ -52,12 +54,12 @@ export function PlaylistImport() {
   };
 
   return (
-    <details className="rounded-lg border border-neutral-800 bg-neutral-900/40">
-      <summary className="cursor-pointer list-none px-4 py-2.5 text-sm font-medium text-neutral-300">
+    <details className="rounded-lg border border-border bg-surface/40">
+      <summary className="cursor-pointer list-none px-4 py-2.5 text-sm font-medium text-ink">
         Import albums from a playlist
       </summary>
 
-      <div className="space-y-3 border-t border-neutral-800 px-4 py-3">
+      <div className="space-y-3 border-t border-border px-4 py-3">
         <form
           className="flex gap-2"
           onSubmit={(e) => {
@@ -65,27 +67,23 @@ export function PlaylistImport() {
             if (link.trim()) setSubmitted(link.trim());
           }}
         >
-          <input
+          <Input
             value={link}
             onChange={(e) => setLink(e.target.value)}
             placeholder="Paste a Spotify playlist link"
-            className="flex-1 rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm"
+            className="flex-1"
           />
-          <button
-            type="submit"
-            disabled={!link.trim() || q.isFetching}
-            className="rounded-md border border-neutral-700 px-3 py-2 text-sm hover:bg-neutral-800 disabled:opacity-50"
-          >
+          <Button type="submit" variant="secondary" disabled={!link.trim() || q.isFetching}>
             {q.isFetching ? "Reading…" : "Read"}
-          </button>
+          </Button>
         </form>
 
         {q.isError && (
-          <p className="text-sm text-red-400">{(q.error as Error).message}</p>
+          <p className="text-sm text-danger">{(q.error as Error).message}</p>
         )}
 
         {q.isSuccess && albums.length === 0 && (
-          <p className="text-sm text-neutral-500">
+          <p className="text-sm text-ink-muted">
             No full albums in “{q.data.playlistName}” — it&apos;s probably all
             singles.
           </p>
@@ -93,7 +91,7 @@ export function PlaylistImport() {
 
         {q.isSuccess && albums.length > 0 && (
           <>
-            <div className="flex items-center justify-between text-xs text-neutral-500">
+            <div className="flex items-center justify-between text-xs text-ink-muted">
               <span>
                 {albums.length} album{albums.length === 1 ? "" : "s"} in “
                 {q.data.playlistName}”
@@ -103,7 +101,7 @@ export function PlaylistImport() {
                 onClick={() =>
                   setPicked(allPicked ? new Set() : new Set(selectable))
                 }
-                className="hover:text-neutral-200"
+                className="hover:text-ink"
               >
                 {allPicked ? "Select none" : "Select all new"}
               </button>
@@ -114,9 +112,7 @@ export function PlaylistImport() {
                 <li key={album.id}>
                   <label
                     className={`flex items-center gap-3 rounded-md px-2 py-1.5 ${
-                      inBacklog
-                        ? "opacity-40"
-                        : "cursor-pointer hover:bg-neutral-900"
+                      inBacklog ? "opacity-40" : "cursor-pointer hover:bg-surface"
                     }`}
                   >
                     <input
@@ -124,8 +120,9 @@ export function PlaylistImport() {
                       disabled={inBacklog}
                       checked={inBacklog || picked.has(album.id)}
                       onChange={() => toggle(album.id)}
+                      className="h-4 w-4 rounded border-border bg-surface accent-primary"
                     />
-                    <div className="h-9 w-9 shrink-0 overflow-hidden rounded bg-neutral-800">
+                    <div className="h-9 w-9 shrink-0 overflow-hidden rounded bg-surface-2">
                       {album.image && (
                         <img
                           src={album.image}
@@ -136,12 +133,12 @@ export function PlaylistImport() {
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm">{album.name}</p>
-                      <p className="truncate text-xs text-neutral-500">
+                      <p className="truncate text-xs text-ink-muted">
                         {album.artists.join(", ")}
                         {album.year ? ` · ${album.year}` : ""}
                       </p>
                     </div>
-                    <span className="shrink-0 text-xs text-neutral-600">
+                    <span className="shrink-0 text-xs text-ink-muted">
                       {inBacklog
                         ? "in backlog"
                         : `${trackCount} track${trackCount === 1 ? "" : "s"}`}
@@ -152,21 +149,20 @@ export function PlaylistImport() {
             </ul>
 
             {importAlbums.isError && (
-              <p className="text-sm text-red-400">
+              <p className="text-sm text-danger">
                 {(importAlbums.error as Error).message}
               </p>
             )}
 
-            <button
-              type="button"
+            <Button
+              variant="primary"
               onClick={runImport}
               disabled={picked.size === 0 || importAlbums.isPending}
-              className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-50"
             >
               {importAlbums.isPending
                 ? "Adding…"
                 : `Add ${picked.size} to backlog`}
-            </button>
+            </Button>
           </>
         )}
       </div>

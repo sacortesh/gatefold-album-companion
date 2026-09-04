@@ -1,5 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../api/client";
+import { Badge } from "../../components/ui/badge";
+import { Button } from "../../components/ui/button";
 import { PLAYBACK_KEY } from "../now-playing/usePlayback";
 
 export function DevicePicker() {
@@ -38,28 +40,28 @@ export function DevicePicker() {
   const list = devices.data?.devices ?? [];
 
   return (
-    <div className="space-y-3 rounded-lg border border-neutral-800 p-4">
+    <div className="space-y-3 rounded-lg border border-border p-4">
       <div className="flex items-baseline justify-between">
-        <h2 className="text-sm font-medium text-neutral-300">Playback device</h2>
+        <h2 className="text-sm font-medium text-ink">Playback device</h2>
         <button
           type="button"
           onClick={() => devices.refetch()}
-          className="text-xs text-neutral-500 hover:text-neutral-300"
+          className="text-xs text-ink-muted hover:text-ink"
         >
           Refresh
         </button>
       </div>
 
-      <p className="text-xs text-neutral-500">
+      <p className="text-xs text-ink-muted">
         The preferred device is used when nothing is already playing.
       </p>
 
       {devices.isLoading && (
-        <p className="text-sm text-neutral-500">Looking for devices…</p>
+        <p className="text-sm text-ink-muted">Looking for devices…</p>
       )}
 
       {devices.isSuccess && list.length === 0 && (
-        <p className="text-sm text-neutral-500">
+        <p className="text-sm text-ink-muted">
           No Spotify devices found. Open Spotify on a phone, desktop, or speaker.
         </p>
       )}
@@ -68,7 +70,7 @@ export function DevicePicker() {
         {list.map((d) => (
           <li
             key={d.id}
-            className="flex items-center justify-between gap-3 rounded-md px-2 py-1.5 hover:bg-neutral-900"
+            className="flex items-center justify-between gap-3 rounded-md px-2 py-1.5 hover:bg-surface"
           >
             <label className="flex items-center gap-2 text-sm">
               <input
@@ -76,24 +78,21 @@ export function DevicePicker() {
                 name="preferred-device"
                 checked={preferred === d.id}
                 onChange={() => savePreferred.mutate(d.id)}
+                className="accent-primary"
               />
               <span>{d.name}</span>
-              <span className="text-xs text-neutral-500">{d.type}</span>
-              {d.isActive && (
-                <span className="rounded bg-emerald-950 px-1.5 py-0.5 text-[10px] font-medium text-emerald-300">
-                  active
-                </span>
-              )}
+              <span className="text-xs text-ink-muted">{d.type}</span>
+              {d.isActive && <Badge variant="now-playing">active</Badge>}
             </label>
             {!d.isActive && (
-              <button
-                type="button"
+              <Button
+                variant="secondary"
+                size="sm"
                 onClick={() => transfer.mutate(d.id)}
                 disabled={transfer.isPending}
-                className="rounded border border-neutral-700 px-2 py-0.5 text-xs hover:bg-neutral-800 disabled:opacity-50"
               >
                 Play here
-              </button>
+              </Button>
             )}
           </li>
         ))}
@@ -103,7 +102,7 @@ export function DevicePicker() {
         <button
           type="button"
           onClick={() => savePreferred.mutate(null)}
-          className="text-xs text-neutral-500 hover:text-neutral-300"
+          className="text-xs text-ink-muted hover:text-ink"
         >
           Clear preferred device
         </button>

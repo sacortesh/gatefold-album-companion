@@ -36,19 +36,19 @@ export function BangerPlaylistPicker() {
   const list = playlists.data?.playlists ?? [];
 
   return (
-    <div className="space-y-3 rounded-lg border border-neutral-800 p-4">
-      <h2 className="text-sm font-medium text-neutral-300">Banger playlist</h2>
-      <p className="text-xs text-neutral-500">
-        The <span className="text-amber-400">Banger</span> button adds the track
+    <div className="space-y-3 rounded-lg border border-border p-4">
+      <h2 className="text-sm font-medium text-ink">Banger playlist</h2>
+      <p className="text-xs text-ink-muted">
+        The <span className="text-banger">Banger</span> button adds the track
         here
         {buttons.data?.banger.autoLike ? " and to Liked Songs" : ""}.
       </p>
 
       {playlists.isLoading && (
-        <p className="text-sm text-neutral-500">Loading your playlists…</p>
+        <p className="text-sm text-ink-muted">Loading your playlists…</p>
       )}
       {playlists.isError && (
-        <p className="text-sm text-red-400">
+        <p className="text-sm text-danger">
           Couldn&apos;t load playlists: {(playlists.error as Error).message}
         </p>
       )}
@@ -57,7 +57,7 @@ export function BangerPlaylistPicker() {
         <select
           value={list.some((p) => p.id === selected) ? selected : ""}
           onChange={(e) => e.target.value && save.mutate(e.target.value)}
-          className="w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm"
+          className="h-9 w-full rounded-md border border-border bg-surface px-3 text-sm text-ink"
         >
           <option value="" disabled>
             {selected ? "(current selection not in your editable playlists)" : "Choose a playlist…"}
@@ -71,7 +71,7 @@ export function BangerPlaylistPicker() {
       )}
 
       {save.isError && (
-        <p className="text-sm text-red-400">
+        <p className="text-sm text-danger">
           Couldn&apos;t save: {(save.error as Error).message}
         </p>
       )}
@@ -80,7 +80,7 @@ export function BangerPlaylistPicker() {
           href={`https://open.spotify.com/playlist/${selected}`}
           target="_blank"
           rel="noreferrer"
-          className="inline-flex items-center gap-1 text-xs text-neutral-500 hover:text-neutral-300"
+          className="inline-flex items-center gap-1 text-xs text-ink-muted hover:text-ink"
         >
           Open current playlist in Spotify <ExternalLink className="size-3" />
         </a>

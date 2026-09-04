@@ -3,8 +3,9 @@ import { SkipBack, SkipForward, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { Device } from "@gatefold/shared";
 import { formatDuration } from "../../lib/format";
+import { Button } from "../../components/ui/button";
+import { TriageButton } from "../../components/TriageButton";
 import { RecentPage } from "../recent/RecentPage";
-import { BangerButton, LikeButton } from "../recent/TriageControls";
 import { useRecent } from "../recent/useRecent";
 import { useTriageHotkeys } from "../triage/useTriageHotkeys";
 import { usePlayback } from "./usePlayback";
@@ -12,8 +13,8 @@ import { usePlayback } from "./usePlayback";
 function DeviceLine({ device }: { device: Device | null }) {
   if (!device) return null;
   return (
-    <p className="text-xs text-neutral-500">
-      Playing on <span className="text-neutral-300">{device.name}</span>
+    <p className="text-xs text-ink-muted">
+      Playing on <span className="text-ink">{device.name}</span>
       {device.volumePercent !== null ? ` · vol ${device.volumePercent}%` : ""}
     </p>
   );
@@ -22,10 +23,10 @@ function DeviceLine({ device }: { device: Device | null }) {
 function ConnectPrompt() {
   return (
     <section className="space-y-3">
-      <h1 className="text-2xl font-semibold">Now Playing</h1>
-      <p className="text-sm text-neutral-400">
+      <h1 className="font-display text-2xl font-semibold">Now Playing</h1>
+      <p className="text-sm text-ink-muted">
         Spotify isn&apos;t connected.{" "}
-        <Link to="/settings" className="text-emerald-400 hover:underline">
+        <Link to="/settings" className="text-primary hover:underline">
           Connect in Settings
         </Link>
         .
@@ -54,12 +55,12 @@ export function NowPlayingPage() {
   if (notConnected) return <ConnectPrompt />;
 
   if (query.isLoading) {
-    return <p className="text-sm text-neutral-500">Loading playback…</p>;
+    return <p className="text-sm text-ink-muted">Loading playback…</p>;
   }
 
   if (query.isError) {
     return (
-      <p className="text-sm text-red-400">
+      <p className="text-sm text-danger">
         Couldn&apos;t read playback: {query.error.message}
       </p>
     );
@@ -71,11 +72,11 @@ export function NowPlayingPage() {
     return (
       <div className="space-y-10">
         <section className="space-y-3">
-          <h1 className="text-2xl font-semibold">Now Playing</h1>
-          <p className="text-sm text-neutral-400">
+          <h1 className="font-display text-2xl font-semibold">Now Playing</h1>
+          <p className="text-sm text-ink-muted">
             Nothing is playing. Start something in any Spotify app, or set a
             device in{" "}
-            <Link to="/settings" className="text-emerald-400 hover:underline">
+            <Link to="/settings" className="text-primary hover:underline">
               Settings
             </Link>
             .
@@ -103,7 +104,7 @@ export function NowPlayingPage() {
     <div className="space-y-10">
       <section className="space-y-6">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-end">
-          <div className="h-48 w-48 shrink-0 overflow-hidden rounded-lg bg-neutral-900">
+          <div className="h-48 w-48 shrink-0 overflow-hidden rounded-lg bg-surface">
             {track.album.image && (
               <img
                 src={track.album.image}
@@ -113,14 +114,16 @@ export function NowPlayingPage() {
             )}
           </div>
           <div className="min-w-0 space-y-1">
-            <h1 className="truncate text-2xl font-semibold">{track.name}</h1>
-            <p className="truncate text-neutral-300">
+            <h1 className="truncate font-display text-2xl font-semibold">
+              {track.name}
+            </h1>
+            <p className="truncate font-display italic text-ink-muted">
               {track.artists.join(", ")}
             </p>
-            <p className="truncate text-sm text-neutral-500">
+            <p className="truncate text-sm text-ink-muted">
               <Link
                 to={`/album/${track.album.id}`}
-                className="hover:text-neutral-300 hover:underline"
+                className="hover:text-ink hover:underline"
               >
                 {track.album.name}
               </Link>
@@ -141,73 +144,61 @@ export function NowPlayingPage() {
             aria-valuemin={0}
             tabIndex={0}
             onClick={onScrub}
-            className="group h-2 cursor-pointer rounded-full bg-neutral-800"
+            className="group h-2 cursor-pointer rounded-full bg-surface-2"
           >
             <div
-              className="h-full rounded-full bg-emerald-500 transition-[width] duration-500 ease-linear group-active:transition-none"
+              className="h-full rounded-full bg-primary transition-[width] duration-500 ease-linear group-active:transition-none"
               style={{ width: `${pct}%` }}
             />
           </div>
-          <div className="flex justify-between text-xs tabular-nums text-neutral-500">
+          <div className="flex justify-between text-xs tabular-nums text-ink-muted">
             <span>{formatDuration(displayMs)}</span>
             <span>{formatDuration(track.durationMs)}</span>
           </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            onClick={controls.previous}
-            className="rounded-md border border-neutral-700 px-4 py-2 text-sm hover:bg-neutral-800"
-            aria-label="Previous track"
-          >
+          <Button variant="secondary" size="lg" onClick={controls.previous} aria-label="Previous track">
             <SkipBack className="size-4" />
-          </button>
-          <button
-            type="button"
-            onClick={controls.toggle}
-            className="rounded-md bg-emerald-600 px-6 py-2 text-sm font-medium text-white hover:bg-emerald-500"
-          >
+          </Button>
+          <Button variant="primary" size="lg" onClick={controls.toggle}>
             {state?.isPlaying ? "Pause" : "Play"}
-          </button>
-          <button
-            type="button"
-            onClick={controls.next}
-            className="rounded-md border border-neutral-700 px-4 py-2 text-sm hover:bg-neutral-800"
-            aria-label="Next track"
-          >
+          </Button>
+          <Button variant="secondary" size="lg" onClick={controls.next} aria-label="Next track">
             <SkipForward className="size-4" />
-          </button>
+          </Button>
 
-          <span className="mx-1 h-6 w-px bg-neutral-800" />
+          <span className="mx-1 h-6 w-px bg-border" />
 
-          <LikeButton
+          <TriageButton
+            kind="like"
             size="lg"
-            liked={liked}
+            active={liked}
             pending={triagePending}
             onToggle={() => recent.toggleLike(track.id, liked)}
           />
-          <BangerButton
+          <TriageButton
+            kind="banger"
             size="lg"
-            inBanger={inBanger}
+            active={inBanger}
             label={recent.bangerLabel}
             pending={triagePending}
-            onFire={() => recent.fireBanger(track.id)}
+            onToggle={() => recent.fireBanger(track.id)}
           />
         </div>
 
-        <p className="text-xs text-neutral-600">
+        <p className="text-xs text-ink-muted">
           Shortcuts: <kbd>P</kbd> play/pause · <kbd>L</kbd> like · <kbd>B</kbd>{" "}
           banger · click the bar to seek
         </p>
 
         {controls.error && (
-          <div className="flex items-start justify-between gap-3 rounded-md border border-red-800 bg-red-950 px-3 py-2 text-sm text-red-200">
+          <div className="flex items-start justify-between gap-3 rounded-md border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-danger">
             <span>{controls.error}</span>
             <button
               type="button"
               onClick={controls.clearError}
-              className="text-red-400 hover:text-red-200"
+              className="text-danger hover:opacity-80"
               aria-label="Dismiss"
             >
               <X className="size-4" />
