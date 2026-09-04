@@ -758,15 +758,25 @@ this app — but that one works by never echoing the value back at all
       `type="password"`, which is exactly what triggers the browser
       credential-manager prompts this request is trying to avoid.
 
-### 10.11 — Encyclopaedia Metallum + Rate Your Music links
+### 10.11 — Encyclopaedia Metallum + Rate Your Music + Last.fm links
 
-Neither site exposes a usable public lookup API with stable ids we already
-have (unlike MusicBrainz/Discogs). Realistic scope: a **search link**, not a
-deep link — `https://www.metal-archives.com/search?searchString=<artist>` /
+Neither Metal Archives nor RYM exposes a usable public lookup API with
+stable ids we already have (unlike MusicBrainz/Discogs). Realistic scope: a
+**search link**, not a deep link — `https://www.metal-archives.com/search?searchString=<artist>` /
 RYM's search URL, URL-encoded from the album's artist + name. Good enough to
 land a human one click from the right release page; anything deeper would
 need scraping either site, which is out of scope. Feeds into 10.12 below as
 one of the default link templates rather than a special case.
+
+**Last.fm** is a genuine deep link, not a search fallback like the two
+above — Last.fm album pages sit at a predictable
+`https://www.last.fm/music/{artist}/{album}` path (spaces → underscores,
+rest URL-encoded), so a correctly-templated URL lands directly on the
+release page rather than a search results list. **Verify the exact path
+encoding against the live site when implementing** — not confirmed in this
+session, same discipline as the Song Meanings addendum below; don't
+guess-and-ship a URL pattern that 404s on real artist/album names with
+punctuation or non-Latin characters.
 
 ### 10.12 — Settings: customize "About this album" links + a lyrics-search fallback
 
@@ -780,8 +790,8 @@ elsewhere" fallback when `AlbumLyricsResponse` comes back empty for a track.
       of `{ id, label, enabled, urlTemplate }`, where `urlTemplate` supports
       `{artist}` / `{album}` placeholders (URL-encoded on substitution) —
       e.g. `https://rateyourmusic.com/search?searchterm={artist}+{album}`.
-      Ship sensible defaults (RYM, Metal Archives, a Genius lyrics search)
-      pre-populated but toggleable off, rather than starting empty.
+      Ship sensible defaults (RYM, Metal Archives, Last.fm, a Genius lyrics
+      search) pre-populated but toggleable off, rather than starting empty.
   - `GET /api/album/:id/context` merges enabled templated links (rendered
     with the album's real artist/name) alongside the existing
     provider-derived ones in the response — client stays a dumb renderer of
