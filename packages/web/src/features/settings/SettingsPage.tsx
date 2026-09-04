@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, startSpotifyLogin } from "../../api/client";
 import { Button } from "../../components/ui/button";
 import { AboutSettings } from "./AboutSettings";
+import { AttributionSettings } from "./AttributionSettings";
 import { BangerPlaylistPicker } from "./BangerPlaylistPicker";
 import { DevicePicker } from "./DevicePicker";
 import { DiscogsSetup } from "./DiscogsSetup";
@@ -142,6 +143,8 @@ export function SettingsPage() {
       {s?.connected && <BangerPlaylistPicker />}
 
       <AboutSettings />
+
+      <AttributionSettings />
 
       {import.meta.env.DEV && s?.connected && (
         <div className="space-y-2 rounded-lg border border-dashed border-border p-4">

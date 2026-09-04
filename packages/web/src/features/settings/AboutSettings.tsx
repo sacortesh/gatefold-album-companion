@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../../api/client";
 
-/** Version + update check against the project's GitHub releases (server-side, ~6h cache). */
+/** Version + update check against the project's GitHub releases (server-side, 30min cache). */
 export function AboutSettings() {
   const version = useQuery({
     queryKey: ["version"],
@@ -41,6 +41,15 @@ export function AboutSettings() {
           {v.latest ? "Up to date." : "Couldn't check for updates."}
         </p>
       )}
+
+      <a
+        href="/docs"
+        target="_blank"
+        rel="noreferrer"
+        className="inline-block text-xs text-primary hover:underline"
+      >
+        API documentation →
+      </a>
     </div>
   );
 }

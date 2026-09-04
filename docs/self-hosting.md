@@ -200,7 +200,7 @@ Restoring is the reverse: stop, extract over `config/`, start.
 
 There's no in-app self-updater (containers manage their own updates —
 same reasoning Sonarr/Radarr use). Gatefold shows an **update available**
-banner (checked against GitHub releases, ~6h cache) when a newer tag has
+banner (checked against GitHub releases, 30min cache) when a newer tag has
 shipped; act on it with:
 
 ```bash

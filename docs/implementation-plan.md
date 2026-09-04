@@ -760,10 +760,14 @@ themselves.
 
 ### 10.9 — Settings: link out to `/docs`
 
-- [ ] `AboutSettings.tsx` (or a new line in the Spotify section) — a link to
+- [x] `AboutSettings.tsx` (or a new line in the Spotify section) — a link to
       `/docs` on the running instance (relative link, no config needed —
       it's the same origin). Small, but it's the discoverability half of
       `INSTRUCTIONS_FOR_AGENTS.md` / the OpenAPI work already shipped.
+      Real bug found live: worked in production (one Fastify process serves
+      everything) but silently served the SPA shell instead of Swagger UI
+      under `npm run dev`, since Vite's dev proxy only forwarded `/api`,
+      `/auth`, `/callback` — not `/docs`. Fixed in `vite.config.ts`.
 
 ### 10.10 — Hide the API key without a `type="password"` input
 
@@ -837,20 +841,25 @@ elsewhere" fallback when `AlbumLyricsResponse` comes back empty for a track.
 or currently sitting in the **Revisit** queue gets offered again as if
 brand new, defeating the point: the user already made a call on it.
 
-- [ ] In that route, also load `readConfig("revisit")` and
+- [x] In that route, also load `readConfig("revisit")` and
       `readAllReviews()` (`store/reviews.ts` — already backs `GET
       /api/reviews`) alongside the existing backlog read, and compute a
       richer per-album status instead of a bare `inBacklog` boolean —
       e.g. `status: "new" | "in_backlog" | "in_revisit" | "reviewed"` plus
       (when `reviewed`) the verdict, so the UI can show *why* it's excluded
       ("passed" reads very differently from "kept" or "in backlog already").
-- [ ] `playlistAlbumSchema` (`shared/src/dto.ts`) — replace/extend
+      Priority when an album qualifies for more than one bucket (e.g. a
+      "revisit" verdict also sits in the revisit queue): `reviewed` wins,
+      since the verdict itself is the most informative reason.
+- [x] `playlistAlbumSchema` (`shared/src/dto.ts`) — replace/extend
       `inBacklog: boolean` with the richer status; keep it additive if
-      anything else consumes the old field.
-- [ ] `PlaylistImport.tsx` — treat every non-`"new"` status the same way
+      anything else consumes the old field. Nothing else did, so replaced
+      cleanly rather than carrying both fields.
+- [x] `PlaylistImport.tsx` — treat every non-`"new"` status the same way
       `inBacklog` is treated today (excluded from selection, dimmed row),
       but show the specific reason in the trailing label instead of always
-      "in backlog."
+      "in backlog." Verified live against a real playlist: "kept" and
+      "marked revisit" render correctly alongside "in backlog."
 
 ### 10.14 — Album image gallery: back cover, liner notes, insert scans
 
@@ -928,14 +937,16 @@ confirmed here, don't guess-and-ship a URL pattern that 404s.
 `Layout.tsx` has a header (logo, health dot, nav) and the fixed bottom
 player bar, but nothing at the bottom of normal page flow.
 
-- [ ] Add a `<footer>` in `Layout.tsx`, as a flex-column sibling after
+- [x] Add a `<footer>` in `Layout.tsx`, as a flex-column sibling after
       `<Outlet />` and before `<NowPlayingCard />` (so it's in normal
       document flow, not fixed — it can sit below the fold under the
       player bar, which is fine for a footer). Small, muted text
       (`text-xs text-neutral-600`), centered: current version (reuse the
       same `["version"]` query `AboutSettings`/`UpdateBanner` already fetch
       — no new request), `AGPL-3.0-only` linking to the `LICENSE` file, and
-      "Made with ♥ by S. Cortés."
+      "Made with ♥ by S. Cortés." Used `text-ink-muted` (the redesign's
+      token) rather than the literal `text-neutral-600` above, which
+      predates the theme system.
 
 ### 10.16 — Settings: thank the data providers
 
@@ -944,7 +955,7 @@ section — not just a nicety: MusicBrainz, Discogs, and LRCLIB's own API
 terms all ask for attribution, and this is the one screen a self-hoster
 will actually read once.
 
-- [ ] New `AttributionSettings.tsx`, rendered right after `AboutSettings`
+- [x] New `AttributionSettings.tsx`, rendered right after `AboutSettings`
       in `SettingsPage.tsx`. One line per source actually integrated today
       (plus Cover Art Archive once 10.14 lands), each linking out:
       **Spotify** (catalog + playback), **MusicBrainz** (release facts),
@@ -953,6 +964,8 @@ will actually read once.
       Art Archive** (cover scans — 10.14). Framed as a thank-you, not a
       bare link list — matches the warmer tone this ask is going for,
       distinct from the purely functional links elsewhere in Settings.
+      10.14 had already landed by the time this was built, so Cover Art
+      Archive's line ships from the start rather than needing a follow-up.
 
 **AC for 10.3–10.16 collectively:** every list of albums anywhere in the app
 (Backlog, Recent, Revisit, Reviews, playlist import) gets you to

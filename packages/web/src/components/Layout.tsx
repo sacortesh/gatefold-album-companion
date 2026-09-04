@@ -32,6 +32,31 @@ function UpdateBanner() {
   );
 }
 
+function Footer() {
+  const { data } = useQuery({
+    queryKey: ["version"],
+    queryFn: api.version,
+    staleTime: 3600_000,
+  });
+
+  return (
+    <footer className="flex flex-col items-center gap-1 py-8 text-center text-xs text-ink-muted">
+      <p>
+        Gatefold{data?.current ? ` v${data.current}` : ""} ·{" "}
+        <a
+          href="https://github.com/sacortesh/gatefold-album-companion/blob/main/LICENSE"
+          target="_blank"
+          rel="noreferrer"
+          className="hover:text-ink hover:underline"
+        >
+          AGPL-3.0-only
+        </a>
+      </p>
+      <p>Made with ♥ by S. Cortés.</p>
+    </footer>
+  );
+}
+
 function HealthDot() {
   const { data, isError } = useQuery({
     queryKey: ["health"],
@@ -89,6 +114,8 @@ export function Layout() {
         <main className="flex-1 py-8 pb-28">
           <Outlet />
         </main>
+
+        <Footer />
 
         <NowPlayingCard />
       </div>

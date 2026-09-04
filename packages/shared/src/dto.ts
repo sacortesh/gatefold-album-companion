@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { reviewSchema } from "./review.js";
+import { reviewSchema, verdictSchema } from "./review.js";
 
 /** `GET /api/health` */
 export const healthResponseSchema = z.object({
@@ -299,12 +299,24 @@ export const searchResponseSchema = z.object({
 });
 export type SearchResponse = z.infer<typeof searchResponseSchema>;
 
+/** Why an album from a source playlist isn't offered as a fresh import —
+ *  the user already made a call on it, one way or another. */
+export const playlistAlbumStatusSchema = z.enum([
+  "new",
+  "in_backlog",
+  "in_revisit",
+  "reviewed",
+]);
+export type PlaylistAlbumStatus = z.infer<typeof playlistAlbumStatusSchema>;
+
 /** One album distilled out of a source playlist. */
 export const playlistAlbumSchema = z.object({
   album: albumSummarySchema,
   /** How many of the playlist's tracks come from this album. */
   trackCount: z.number(),
-  inBacklog: z.boolean(),
+  status: playlistAlbumStatusSchema,
+  /** Set only when `status` is `"reviewed"`. */
+  verdict: verdictSchema.nullable(),
 });
 export type PlaylistAlbum = z.infer<typeof playlistAlbumSchema>;
 

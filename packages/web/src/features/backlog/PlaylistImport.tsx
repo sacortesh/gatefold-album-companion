@@ -1,9 +1,17 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import type { Verdict } from "@gatefold/shared";
 import { api } from "../../api/client";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { useBacklog } from "./useBacklog";
+
+const VERDICT_LABEL: Record<Verdict, string> = {
+  keep: "kept",
+  revisit: "marked revisit",
+  pass: "passed",
+  delete: "deleted",
+};
 
 export function PlaylistImport() {
   const { importAlbums } = useBacklog();
@@ -24,7 +32,9 @@ export function PlaylistImport() {
     if (q.data) {
       setPicked(
         new Set(
-          q.data.albums.filter((a) => !a.inBacklog).map((a) => a.album.id),
+          q.data.albums
+            .filter((a) => a.status === "new")
+            .map((a) => a.album.id),
         ),
       );
     }
@@ -38,7 +48,9 @@ export function PlaylistImport() {
       return next;
     });
 
-  const selectable = albums.filter((a) => !a.inBacklog).map((a) => a.album.id);
+  const selectable = albums
+    .filter((a) => a.status === "new")
+    .map((a) => a.album.id);
   const allPicked =
     selectable.length > 0 && selectable.every((id) => picked.has(id));
 
@@ -108,44 +120,55 @@ export function PlaylistImport() {
             </div>
 
             <ul className="max-h-72 space-y-0.5 overflow-y-auto">
-              {albums.map(({ album, trackCount, inBacklog }) => (
-                <li key={album.id}>
-                  <label
-                    className={`flex items-center gap-3 rounded-md px-2 py-1.5 ${
-                      inBacklog ? "opacity-40" : "cursor-pointer hover:bg-surface"
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      disabled={inBacklog}
-                      checked={inBacklog || picked.has(album.id)}
-                      onChange={() => toggle(album.id)}
-                      className="h-4 w-4 rounded border-border bg-surface accent-primary"
-                    />
-                    <div className="h-9 w-9 shrink-0 overflow-hidden rounded bg-surface-2">
-                      {album.image && (
-                        <img
-                          src={album.image}
-                          alt=""
-                          className="h-full w-full object-cover"
-                        />
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm">{album.name}</p>
-                      <p className="truncate text-xs text-ink-muted">
-                        {album.artists.join(", ")}
-                        {album.year ? ` · ${album.year}` : ""}
-                      </p>
-                    </div>
-                    <span className="shrink-0 text-xs text-ink-muted">
-                      {inBacklog
-                        ? "in backlog"
-                        : `${trackCount} track${trackCount === 1 ? "" : "s"}`}
-                    </span>
-                  </label>
-                </li>
-              ))}
+              {albums.map(({ album, trackCount, status, verdict }) => {
+                const excluded = status !== "new";
+                const label =
+                  status === "new"
+                    ? `${trackCount} track${trackCount === 1 ? "" : "s"}`
+                    : status === "in_backlog"
+                      ? "in backlog"
+                      : status === "in_revisit"
+                        ? "in revisit"
+                        : verdict
+                        ? VERDICT_LABEL[verdict]
+                        : "reviewed";
+                return (
+                  <li key={album.id}>
+                    <label
+                      className={`flex items-center gap-3 rounded-md px-2 py-1.5 ${
+                        excluded ? "opacity-40" : "cursor-pointer hover:bg-surface"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        disabled={excluded}
+                        checked={excluded || picked.has(album.id)}
+                        onChange={() => toggle(album.id)}
+                        className="h-4 w-4 rounded border-border bg-surface accent-primary"
+                      />
+                      <div className="h-9 w-9 shrink-0 overflow-hidden rounded bg-surface-2">
+                        {album.image && (
+                          <img
+                            src={album.image}
+                            alt=""
+                            className="h-full w-full object-cover"
+                          />
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm">{album.name}</p>
+                        <p className="truncate text-xs text-ink-muted">
+                          {album.artists.join(", ")}
+                          {album.year ? ` · ${album.year}` : ""}
+                        </p>
+                      </div>
+                      <span className="shrink-0 text-xs text-ink-muted">
+                        {label}
+                      </span>
+                    </label>
+                  </li>
+                );
+              })}
             </ul>
 
             {importAlbums.isError && (

@@ -28,6 +28,7 @@ import {
   parsePlaylistId,
 } from "../spotify/playlists.js";
 import { readConfig, writeConfig } from "../store/config.js";
+import { readAllReviews } from "../store/reviews.js";
 
 const today = (): string => new Date().toISOString().slice(0, 10);
 
@@ -186,7 +187,7 @@ export async function backlogRoutes(app: FastifyInstance): Promise<void> {
         );
       }
 
-      const [{ name, albums }, backlog] = await Promise.all([
+      const [{ name, albums }, backlog, revisit, reviews] = await Promise.all([
         getPlaylistAlbums(id).catch((err: unknown) => {
           if (err instanceof AppError && err.statusCode === 404) {
             throw new AppError(
@@ -198,16 +199,32 @@ export async function backlogRoutes(app: FastifyInstance): Promise<void> {
           throw err;
         }),
         readConfig("backlog"),
+        readConfig("revisit"),
+        readAllReviews(),
       ]);
 
       const inBacklog = new Set(backlog.items.map((i) => i.albumId));
+      const inRevisit = new Set(revisit.items.map((i) => i.albumId));
+      const verdictByAlbum = new Map(reviews.map((r) => [r.albumId, r.verdict]));
+
       return {
         playlistName: name,
-        albums: albums.map((a) => ({
-          album: a.album,
-          trackCount: a.trackCount,
-          inBacklog: inBacklog.has(a.album.id),
-        })),
+        albums: albums.map((a) => {
+          const verdict = verdictByAlbum.get(a.album.id) ?? null;
+          const status = verdict
+            ? ("reviewed" as const)
+            : inRevisit.has(a.album.id)
+              ? ("in_revisit" as const)
+              : inBacklog.has(a.album.id)
+                ? ("in_backlog" as const)
+                : ("new" as const);
+          return {
+            album: a.album,
+            trackCount: a.trackCount,
+            status,
+            verdict: status === "reviewed" ? verdict : null,
+          };
+        }),
       };
     },
   );
