@@ -145,7 +145,9 @@ export function AlbumPage() {
     () =>
       hotkeyTargetId &&
       triage.toggleLike(hotkeyTargetId, triage.stateFor(hotkeyTargetId).liked),
-    () => hotkeyTargetId && triage.fireBanger(hotkeyTargetId),
+    () =>
+      hotkeyTargetId &&
+      triage.fireBanger(hotkeyTargetId, triage.stateFor(hotkeyTargetId).inBanger),
   );
 
   const playAlbum = useMutation({
@@ -330,7 +332,7 @@ export function AlbumPage() {
                   onSelect={() => setPicked(t.id)}
                   onPlay={() => playFrom.mutate(t.uri)}
                   onLike={() => triage.toggleLike(t.id, st.liked)}
-                  onBanger={() => triage.fireBanger(t.id)}
+                  onBanger={() => triage.fireBanger(t.id, st.inBanger)}
                 />
               );
             })}

@@ -210,3 +210,21 @@ export async function addTrackToPlaylist(
     cached.fetchedAt = Date.now();
   }
 }
+
+export async function removeTrackFromPlaylist(
+  playlistId: string,
+  trackId: string,
+): Promise<void> {
+  const res = await spotifyRequest<{ snapshot_id: string }>({
+    method: "DELETE",
+    path: `/playlists/${playlistId}/tracks`,
+    body: { tracks: [{ uri: `spotify:track:${trackId}` }] },
+  });
+
+  const cached = membershipCache.get(playlistId);
+  if (cached) {
+    cached.trackIds.delete(trackId);
+    cached.snapshotId = res.snapshot_id;
+    cached.fetchedAt = Date.now();
+  }
+}

@@ -49,7 +49,7 @@ export function NowPlayingPage() {
   useTriageHotkeys(
     Boolean(trackId),
     () => trackId && recent.toggleLike(trackId, liked),
-    () => trackId && recent.fireBanger(trackId),
+    () => trackId && recent.fireBanger(trackId, inBanger),
   );
 
   if (notConnected) return <ConnectPrompt />;
@@ -183,7 +183,7 @@ export function NowPlayingPage() {
             active={inBanger}
             label={recent.bangerLabel}
             pending={triagePending}
-            onToggle={() => recent.fireBanger(track.id)}
+            onToggle={() => recent.fireBanger(track.id, inBanger)}
           />
         </div>
 

@@ -33,9 +33,9 @@ export function TriageButton({
         ? "Remove from Liked Songs"
         : "Add to Liked Songs (L)"
       : active
-        ? `Already in ${text}`
+        ? `Remove from ${text} (B)`
         : `Add to ${text} + Like (B)`;
-  const disabled = kind === "like" ? pending : pending || active;
+  const disabled = pending;
 
   return (
     <button

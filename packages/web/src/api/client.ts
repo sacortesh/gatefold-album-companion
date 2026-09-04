@@ -180,6 +180,11 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ trackId }),
     }),
+  unbanger: (trackId: string) =>
+    request<{ ok: true }>("/banger", {
+      method: "DELETE",
+      body: JSON.stringify({ trackId }),
+    }),
   playlists: () => request<PlaylistsResponse>("/playlists"),
 
   backlog: () => request<BacklogResponse>("/backlog"),

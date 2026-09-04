@@ -82,11 +82,11 @@ export function NowPlayingCard() {
           active={inBanger}
           label={recent.bangerLabel}
           pending={pending}
-          onToggle={() => recent.fireBanger(track.id)}
+          onToggle={() => recent.fireBanger(track.id, inBanger)}
         />
         <Button
           variant="primary"
-          size="sm"
+          size="icon"
           onClick={controls.toggle}
           aria-label={state?.isPlaying ? "Pause" : "Play"}
         >
@@ -96,7 +96,7 @@ export function NowPlayingCard() {
             <Play className="size-4" />
           )}
         </Button>
-        <Button variant="secondary" size="sm" onClick={controls.next} aria-label="Next track">
+        <Button variant="secondary" size="icon" onClick={controls.next} aria-label="Next track">
           <SkipForward className="size-4" />
         </Button>
       </div>

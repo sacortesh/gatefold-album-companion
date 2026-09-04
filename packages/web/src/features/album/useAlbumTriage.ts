@@ -40,10 +40,10 @@ export function useAlbumTriage(albumId: string, trackIds: string[]) {
   const triage = useTriage<TrackStatesResponse>({
     queryKey: key,
     applyLike: (d, id, liked) => patchState(d, id, { liked }),
-    applyBanger: (d, id) =>
+    applyBanger: (d, id, inBanger) =>
       patchState(d, id, {
-        inBanger: true,
-        ...(autoLike ? { liked: true } : {}),
+        inBanger,
+        ...(inBanger && autoLike ? { liked: true } : {}),
       }),
   });
 

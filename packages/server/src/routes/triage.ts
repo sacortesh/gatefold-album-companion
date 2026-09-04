@@ -26,6 +26,7 @@ import {
   addTrackToPlaylist,
   getEditablePlaylists,
   getPlaylistTrackIds,
+  removeTrackFromPlaylist,
 } from "../spotify/playlists.js";
 import { getRecentlyPlayed } from "../spotify/recent.js";
 import { readConfig } from "../store/config.js";
@@ -170,6 +171,41 @@ export async function triageRoutes(app: FastifyInstance): Promise<void> {
       }
 
       return { ok: true, addedToPlaylist, liked };
+    },
+  );
+
+  typed.delete(
+    "/banger",
+    { schema: { body: trackIdRequestSchema, response: { 200: okSchema } } },
+    async (req) => {
+      const { trackId } = req.body;
+      const buttons = await readConfig("buttons");
+      const playlistId = buttons.banger.playlistId;
+      if (!playlistId) {
+        throw new AppError(
+          "no_banger_playlist",
+          "No Banger playlist set — choose one in Settings.",
+          409,
+        );
+      }
+
+      await removeTrackFromPlaylist(playlistId, trackId).catch(
+        (err: unknown) => {
+          if (err instanceof AppError && err.statusCode === 404) {
+            throw new AppError(
+              "banger_playlist_error",
+              "The Banger playlist no longer exists — pick another in Settings.",
+              409,
+            );
+          }
+          throw err;
+        },
+      );
+
+      // Deliberately doesn't touch the Like — un-bangering a track is about
+      // the playlist membership, not about undoing a Like the user may
+      // still want, even if autoLike added it as a side effect originally.
+      return { ok: true as const };
     },
   );
 

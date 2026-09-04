@@ -32,8 +32,11 @@ export function useRecent() {
   const triage = useTriage<RecentResponse>({
     queryKey: RECENT_KEY,
     applyLike: (d, id, liked) => patchRow(d, id, { liked }),
-    applyBanger: (d, id) =>
-      patchRow(d, id, { inBanger: true, ...(autoLike ? { liked: true } : {}) }),
+    applyBanger: (d, id, inBanger) =>
+      patchRow(d, id, {
+        inBanger,
+        ...(inBanger && autoLike ? { liked: true } : {}),
+      }),
   });
 
   return {

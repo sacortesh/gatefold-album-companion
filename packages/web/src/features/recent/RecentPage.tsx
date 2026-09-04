@@ -130,7 +130,7 @@ export function RecentPage() {
             bangerLabel={bangerLabel}
             pending={pendingTrackId === row.track.id}
             onLike={() => toggleLike(row.track.id, row.liked)}
-            onBanger={() => fireBanger(row.track.id)}
+            onBanger={() => fireBanger(row.track.id, row.inBanger)}
           />
         ))}
       </ul>
