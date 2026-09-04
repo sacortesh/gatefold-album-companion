@@ -48,19 +48,25 @@ export function TriageButton({
       className={cn(
         "inline-flex items-center rounded-md font-medium transition-colors disabled:cursor-default disabled:opacity-60",
         big ? "gap-2 px-5 py-2 text-sm" : "gap-1 px-2 py-1 text-xs",
-        kind === "like"
-          ? active
+        // Same visual weight for both kinds — quiet until active/hovered,
+        // color-coded rather than solid-filled by default. A track list
+        // with N rows each carrying a filled Banger button reads as N
+        // competing CTAs (Von Restorff: an isolated highlight only works
+        // if it stays isolated); quiet-by-default fixes that while still
+        // surfacing the accent color on hover as a discoverability hint.
+        active
+          ? kind === "like"
             ? big
               ? "bg-primary text-primary-ink hover:bg-primary/90"
               : "text-primary"
-              : big
-                ? "border border-border text-ink hover:bg-surface-2"
-                : "text-ink-muted hover:text-ink"
-          : active
-            ? big
+            : big
               ? "border border-banger/40 bg-banger/10 text-banger"
-              : "border border-banger/40 text-banger"
-            : "bg-banger text-primary-ink hover:bg-banger/90",
+              : "text-banger"
+          : big
+            ? "border border-border text-ink hover:bg-surface-2"
+            : kind === "like"
+              ? "text-ink-muted hover:text-ink"
+              : "text-ink-muted hover:text-banger",
       )}
     >
       <Icon className="size-4" fill={kind === "like" && active ? "currentColor" : "none"} />
