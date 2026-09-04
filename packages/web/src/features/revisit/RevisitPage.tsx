@@ -10,12 +10,12 @@ import { useDevicePickerPrompt } from "../playback/DevicePickerPrompt";
 
 function Row({ entry }: { entry: RevisitEntry }) {
   const { requestDevice } = useDevicePickerPrompt();
+  const contextUri = entry.album?.uri ?? `spotify:album:${entry.albumId}`;
   const play = useMutation({
-    mutationFn: () =>
-      api.play({ contextUri: entry.album?.uri ?? `spotify:album:${entry.albumId}` }),
+    mutationFn: () => api.play({ contextUri }),
     onError: (err) => {
       if (err instanceof ApiRequestError && err.code === "no_device") {
-        requestDevice(() => play.mutate());
+        requestDevice(() => play.mutate(), contextUri);
       }
     },
   });

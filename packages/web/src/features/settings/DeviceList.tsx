@@ -11,6 +11,7 @@ export function DeviceList({
   onSetPreferred,
   onPlayHere,
   playPending,
+  deepLinkUri,
 }: {
   devices: Device[];
   loading: boolean;
@@ -19,16 +20,41 @@ export function DeviceList({
   onSetPreferred?: (deviceId: string) => void;
   onPlayHere: (deviceId: string) => void;
   playPending: boolean;
+  /** The `spotify:...` URI of whatever the caller was trying to play, if
+   *  known (only the no-device-found modal has this). A `spotify:` link
+   *  hands off to the OS's registered protocol handler — the same trick
+   *  Spotify's own embed widgets use — which launches the native app on
+   *  this device (phone or desktop) instead of just telling the user to
+   *  go find it themselves. Once that app is running it should register
+   *  as a Connect device on its own; the 10s device-list poll picks it up
+   *  without a manual refresh. */
+  deepLinkUri?: string | null;
 }) {
   if (loading) {
     return <p className="text-sm text-ink-muted">Looking for devices…</p>;
   }
   if (devices.length === 0) {
     return (
-      <p className="text-sm text-ink-muted">
-        No Spotify devices found. Open Spotify on a phone, desktop, or
-        speaker.
-      </p>
+      <div className="space-y-2">
+        <p className="text-sm text-ink-muted">
+          No Spotify devices found. Open Spotify on a phone, desktop, or
+          speaker.
+        </p>
+        {deepLinkUri && (
+          <div>
+            <a
+              href={deepLinkUri}
+              className="inline-block text-sm text-primary hover:underline"
+            >
+              Play on this device →
+            </a>
+            <p className="mt-1 text-xs text-ink-muted">
+              Opens the Spotify app installed here, if any — it should
+              appear above within a few seconds.
+            </p>
+          </div>
+        )}
+      </div>
     );
   }
 

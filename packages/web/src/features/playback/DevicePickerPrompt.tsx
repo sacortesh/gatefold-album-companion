@@ -5,8 +5,10 @@ import { useDevices } from "../settings/useDevices";
 
 interface DevicePickerPromptContextValue {
   /** Open the "choose a device" modal; `retry` re-runs the play call that
-   *  hit `no_device` once a device is picked and playback is transferred. */
-  requestDevice: (retry: () => void) => void;
+   *  hit `no_device` once a device is picked and playback is transferred.
+   *  `contextUri` is the `spotify:...` URI of whatever was being played,
+   *  if known — passed through to `DeviceList`'s deep-link button. */
+  requestDevice: (retry: () => void, contextUri?: string) => void;
 }
 
 const DevicePickerPromptContext =
@@ -32,14 +34,19 @@ export function DevicePickerPromptProvider({
   children: ReactNode;
 }) {
   const [retry, setRetry] = useState<(() => void) | null>(null);
+  const [contextUri, setContextUri] = useState<string | null>(null);
   const { devices, list, transfer } = useDevices();
 
-  const requestDevice = (retryFn: () => void) => setRetry(() => retryFn);
+  const requestDevice = (retryFn: () => void, uri?: string) => {
+    setRetry(() => retryFn);
+    setContextUri(uri ?? null);
+  };
 
   const handlePick = async (deviceId: string) => {
     await transfer.mutateAsync(deviceId);
     const fn = retry;
     setRetry(null);
+    setContextUri(null);
     // Mirrors the Settings page's own transfer → playback-state settle delay
     // (`useDevices`'s `onSettled`) — give Spotify a beat to register the
     // transfer before retrying the play call on it.
@@ -51,7 +58,12 @@ export function DevicePickerPromptProvider({
       {children}
       <Dialog
         open={retry !== null}
-        onOpenChange={(open) => !open && setRetry(null)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setRetry(null);
+            setContextUri(null);
+          }
+        }}
       >
         <DialogContent>
           <DialogTitle>Choose a device to play on</DialogTitle>
@@ -65,6 +77,7 @@ export function DevicePickerPromptProvider({
               loading={devices.isLoading}
               onPlayHere={(id) => void handlePick(id)}
               playPending={transfer.isPending}
+              deepLinkUri={contextUri}
             />
           </div>
         </DialogContent>

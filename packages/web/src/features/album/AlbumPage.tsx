@@ -164,7 +164,7 @@ export function AlbumPage() {
       api.play({ contextUri: album.data!.uri, shuffle: false, repeat: "off" }),
     onError: (err) => {
       if (err instanceof ApiRequestError && err.code === "no_device") {
-        requestDevice(() => playAlbum.mutate());
+        requestDevice(() => playAlbum.mutate(), album.data!.uri);
       }
     },
   });
@@ -178,7 +178,7 @@ export function AlbumPage() {
       }),
     onError: (err, trackUri) => {
       if (err instanceof ApiRequestError && err.code === "no_device") {
-        requestDevice(() => playFrom.mutate(trackUri));
+        requestDevice(() => playFrom.mutate(trackUri), trackUri);
       }
     },
   });

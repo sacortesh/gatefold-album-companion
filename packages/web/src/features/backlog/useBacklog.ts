@@ -82,7 +82,7 @@ export function useBacklog() {
       api.play({ contextUri, shuffle: false, repeat: "off" }),
     onError: (err, contextUri) => {
       if (err instanceof ApiRequestError && err.code === "no_device") {
-        requestDevice(() => playAlbum.mutate(contextUri));
+        requestDevice(() => playAlbum.mutate(contextUri), contextUri);
       }
     },
   });

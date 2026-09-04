@@ -25,11 +25,12 @@ const FILTERS: Array<{ value: Verdict | "all"; label: string }> = [
 
 function Row({ review }: { review: ReviewListItem }) {
   const { requestDevice } = useDevicePickerPrompt();
+  const contextUri = `spotify:album:${review.albumId}`;
   const play = useMutation({
-    mutationFn: () => api.play({ contextUri: `spotify:album:${review.albumId}` }),
+    mutationFn: () => api.play({ contextUri }),
     onError: (err) => {
       if (err instanceof ApiRequestError && err.code === "no_device") {
-        requestDevice(() => play.mutate());
+        requestDevice(() => play.mutate(), contextUri);
       }
     },
   });

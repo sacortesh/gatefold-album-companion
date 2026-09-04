@@ -777,6 +777,20 @@ themselves.
 - [x] Apply at all three call sites (Backlog, Album page, Revisit/Reviews)
       plus the ambient bottom bar's toggle/skip controls, which hit the
       same 409 path.
+- [x] Added (2026-09-04): a "Play on this device →" deep link in the
+      modal's empty-device state, using the `spotify:...` URI already
+      computed for the failed play call (`spotify:album:...`/
+      `spotify:track:...`) as an `<a href>` — the same protocol-handler
+      trick Spotify's own embed widgets use to hand off to the native app
+      (phone or desktop) instead of just telling the user to go find it.
+      `requestDevice(retry, contextUri?)` threads that URI from each of
+      the 5 call sites through `DevicePickerPromptProvider` into
+      `DeviceList`'s new `deepLinkUri` prop; only rendered when known
+      (only the modal has it — the Settings page's static `DevicePicker`
+      section doesn't call `requestDevice`, so it's unaffected). Once the
+      app launches and registers as a Connect device, the existing 10s
+      device-list poll (`useDevices`) picks it up without a manual
+      refresh — no new polling logic needed.
 
 ### 10.9 — Settings: link out to `/docs`
 
