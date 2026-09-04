@@ -581,12 +581,349 @@ release produces a multi-arch image and the running app shows an
 
 ---
 
+## Phase 10 — Field-trial hardening + Revision 2 (from the first real self-host)
+
+Source: 2026-09-04, after the first real Docker install (not dev) and the
+audit issues it produced on the repo (#1–#9). Spec only — not implemented
+yet. Runs as its own track, same as Phase 8; nothing here blocks Phase 7.
+
+### 10.1 — Triage of field-trial issues #1–#9 before the next tag
+
+The self-host install ("this is the image, install it") struggled mainly
+because of **#8**, not because a compose file was missing (`docker-compose.yml`
+already ships as of this same day). #8 is the one that actively lies to the
+user: it makes a *successful* Connect Spotify look like a failure.
+
+| # | Title | Recommendation |
+|---|---|---|
+| 8 | Post-OAuth redirect goes to `127.0.0.1:5173` when `PUBLIC_URL` unset | **Fix before next tag.** Single most common first-run failure — every default (`docker-compose.yml` as shipped) hits it on first connect. Fix is small (relative redirect in `auth.ts`'s `settingsUrl`, per the issue's own patch). |
+| 6 | Prod web bundle ships a `.js.map` publicly | **Fix before next tag.** One-line Vite config change (`build.sourcemap: false`), zero behavior risk. |
+| 5 | No `SIGTERM` handler, exits 143 | **Fix before next tag.** Small, safe, and `docker compose down` / any orchestrator restart currently drops in-flight requests. |
+| 4 | Container fails under `--user` / `runAsUser` | **Fix before next tag.** One `id -u` branch in `docker-entrypoint.sh`. Anyone hardening their compose/k8s setup — a reasonable thing to do right after reading #6 — hits this immediately. |
+| 2 | Base image OpenSSL 2 HIGH CVEs | **Fix before next tag** — `RUN apk upgrade --no-cache` in the final stage. Trivial, and "0 critical/high" is the kind of thing that gets screenshotted into a GitHub issue by the next person who scans the image. |
+| 1 | Bundled npm/yarn → 1 CRITICAL + 10 HIGH CVEs | **Fix before next tag** if convenient, else first patch after. Not reachable at runtime, but it's the finding most likely to make someone bounce off the project before reading far enough to learn that. `npm prune --omit=dev` already runs (Dockerfile line 38) — this needs an explicit `rm -rf` of the global npm/yarn install, not the workspace's own deps. |
+| 3 | No OCI labels / SBOM on the image | Nice-to-have, not blocking. Do it in the release workflow (`docker/metadata-action`) since that's already the multi-arch build step. |
+| 7 | Grab-bag: unconditional `chown -R`, dupe entrypoint script, `package.json main` pointing at unshipped `src/`, `@types/node` in runtime `node_modules`, `VOLUME /config` | Batch into the same pass as #4 (same file). None individually urgent; the unconditional `chown -R` is the one with a real user-facing cost (startup latency on a large bind-mounted `/config`). |
+| 9 | Document the LAN / no-public-domain path | **Do this one — it's the other half of "make it accessible from external sources."** The key fact (Spotify token is server-side and single-user; only the *one-time* Connect needs loopback/HTTPS, everyone else just hits `http://<host>:8888` forever) isn't stated anywhere today. Add as a third tier in `docs/self-hosting.md` alongside Local-only / Remote, per the issue's own writeup. This is docs-only, no code risk — do it any time, doesn't need to wait for a tag. |
+
+**Why this framing:** issues #1–#8 all came out of *auditing* the exact
+image the user just fought with, and #8 in particular explains the "quite a
+trial" first-hand — Spotify login silently "worked" while the browser sat on
+a connection-refused error. Fixing #8 + writing #9 addresses the actual
+reported pain; the rest is opportunistic hardening while the image is
+already being touched for #8.
+
+**AC:** `docker run --user 1000:1000 ...` starts; `docker kill --signal=TERM`
+exits 0; a fresh `docker compose up -d` → Connect Spotify → browser lands
+back on `/settings?auth=connected` on the *same* host:port, not `:5173`;
+`docs/self-hosting.md` has a LAN-only tier; a Trivy scan shows 0
+CRITICAL/HIGH.
+
+### 10.2 — Instructions for agents
+
+- [x] `INSTRUCTIONS_FOR_AGENTS.md` — task-oriented quickstart for a script
+      or AI agent calling the API directly (auth header, error shape, a
+      task→endpoint table, the `no_device` precondition on playback, config
+      write shapes, rate-limit etiquette). Points at `/docs` (the real
+      OpenAPI contract, already shipped per 2026-09-04's notes) rather than
+      duplicating every field; linked from `README.md`.
+
+### 10.3 — Navigation: album access shouldn't depend on noticing a link
+
+Current state (audited against `web/src/{components,features}`): the
+*only* way to reach `/album/:id` from most list views is clicking the cover
+thumbnail or the title text — which reads as "here's the album name," not
+as a navigation affordance, on rows that otherwise have real `<button>`
+CTAs (Play, Remove) sitting right next to it. `RevisitPage` and
+`ReviewsPage` already do this right (explicit "Open" button next to "Play")
+— that's the pattern to copy everywhere else, not a new pattern to invent.
+
+- [ ] `BacklogPage.tsx` `Card` — add an explicit "View" button/link next to
+      Play/Remove, same visual weight as those two.
+- [ ] `RecentPage.tsx` `Row` — **currently has no album link at all**, not
+      even an implicit one (confirmed: no `<Link>` in the row). Add one —
+      thumbnail and/or an explicit affordance to `/album/:id`. This is the
+      "no CTA to go to the album that record belongs to" gap.
+- [ ] `NowPlayingCard.tsx` (the sticky bottom bar) — already links the art
+      and the album-name text to `/album/:id`; make it an explicit,
+      obviously-clickable affordance (not just underline-on-hover text)
+      since this bar is visible on every page while something plays and is
+      the highest-frequency place someone would want to jump to the album.
+
+Same underlying fix in three places — worth doing as one pass since it's
+the same affordance pattern each time.
+
+### 10.4 — Merge "Now Playing" and "Recent"
+
+`NowPlayingPage.tsx` already renders `<RecentPage />` inline below its hero
+(added in Phase 8 Rev-2) — the two nav items are already ~90% the same
+screen today, just reachable from two different tabs, which is exactly the
+"makes no sense" complaint.
+
+- [ ] Collapse `navItems` in `Layout.tsx` to one entry (keep the `/recent`
+      path since that's the more durable name for "what am I listening to
+      / what did I just play"; redirect `/now-playing` → `/recent` rather
+      than 404ing old links/bookmarks).
+- [ ] `NowPlayingPage.tsx` becomes the sole component behind that route (it
+      already is the superset — hero transport when something's active,
+      `RecentPage`'s list below); delete `RecentPage`'s standalone route,
+      keep the component for embedding.
+
+### 10.5 — Add-to-backlog from the album page: verify, don't rebuild
+
+`AlbumPage.tsx` already has this (`a.inBacklog ? "Remove from backlog" :
+"Add to backlog"`, wired to `useBacklog().add`/`.remove` — landed in Phase 8
+Rev-2). **No new work** — just confirm it still works in a real browser
+pass, since Phase 7's browser-verification pass never happened. Listed here
+only so it isn't re-speced as new work by a future pass over this list.
+
+### 10.6 — Surface genre in list views (Backlog / Revisit / Reviews)
+
+The album page already shows genre (`AlbumDetail.genres`, Spotify's own
+tags) but list rows use the lighter `AlbumSummary` DTO, which has none.
+
+- Caveat worth designing around: Spotify's own per-album `genres` array is
+  frequently empty in practice (Spotify mostly tags *artists*, not albums).
+  The richer source is the context pipeline (`server/src/context/` —
+  MusicBrainz + Discogs, already merged into `AlbumContext.facts.genres`
+  and cached 30 days per album).
+- [ ] Add `genres: string[]` to `albumSummarySchema` (`shared/src/dto.ts`),
+      populated **only from what's already cached** in the context store —
+      don't trigger a fresh MusicBrainz/Discogs lookup just to render a
+      list row (that's N network calls for one page load). If nothing's
+      cached yet for an album, show no genre chip rather than blocking or
+      fetching.
+- [ ] `BacklogPage.tsx` `Card`, `RevisitPage.tsx` `Row`, `ReviewsPage.tsx`
+      `Row` — render the genre chip(s) when present, same treatment as the
+      existing meta line (year · tracks · duration).
+
+### 10.7 — Album page background art
+
+- [ ] `AlbumPage.tsx` header — use the same `a.image` already fetched and
+      rendered as the small cover (no new API dependency) as a blurred/
+      dimmed full-bleed background behind the header block, à la Spotify's
+      own web player. Note for the record: this does **not** need Discogs —
+      the earlier assumption that it did was wrong; the cover art is
+      already coming from Spotify's own album response.
+
+### 10.8 — Device picker when playback has nowhere to go
+
+The server already has the right shape for this: `playback.ts`'s
+`playWithFallback` returns `409 { code: "no_device", message }` when
+nothing is active and no `preferredDeviceId` is set. `ApiRequestError`
+already carries `.code` (`web/src/api/client.ts`). Today every call site
+that can trigger this (`AlbumPage`'s `playAlbum`/`playFrom`,
+`useBacklog().playAlbum`, `RevisitPage`/`ReviewsPage`'s inline `play`
+mutation) just renders `.message` as a line of red text — a dead end for
+the user, who then has to know to go find Settings → Playback device
+themselves.
+
+- [ ] Extract `DevicePicker`'s list (`features/settings/DevicePicker.tsx`)
+      into something embeddable in a modal, not just the Settings page
+      section.
+- [ ] On any play mutation's `onError`, check
+      `err instanceof ApiRequestError && err.code === "no_device"` and open
+      that modal instead of (or in addition to) the text error. Picking a
+      device there should transfer playback to it (existing
+      `POST /api/playback/transfer`) and immediately retry the original
+      play call.
+- [ ] Apply at all three call sites (Backlog, Album page, Revisit/Reviews)
+      plus the ambient bottom bar's toggle/skip controls, which hit the
+      same 409 path.
+
+### 10.9 — Settings: link out to `/docs`
+
+- [ ] `AboutSettings.tsx` (or a new line in the Spotify section) — a link to
+      `/docs` on the running instance (relative link, no config needed —
+      it's the same origin). Small, but it's the discoverability half of
+      `INSTRUCTIONS_FOR_AGENTS.md` / the OpenAPI work already shipped.
+
+### 10.10 — Hide the API key without a `type="password"` input
+
+`SecuritySettings.tsx`'s `CopyField` renders the live API key in a plain
+`readOnly` text input, always fully visible. The Discogs consumer key/secret
+fields (`DiscogsSetup.tsx`) already show the *right* pattern for secrets in
+this app — but that one works by never echoing the value back at all
+(write-only fields). The API key is different: the UI legitimately needs to
+*display* it (for copy/paste into a script), just not by default.
+
+- [ ] Add a show/hide toggle to the API-key `CopyField` that swaps the
+      *displayed* string for a fixed-width mask (e.g. `••••••••`) client-side
+      — the real value stays in the input's `value` for copy, it's just not
+      rendered. Keep `type="text"` throughout; **do not** switch to
+      `type="password"`, which is exactly what triggers the browser
+      credential-manager prompts this request is trying to avoid.
+
+### 10.11 — Encyclopaedia Metallum + Rate Your Music links
+
+Neither site exposes a usable public lookup API with stable ids we already
+have (unlike MusicBrainz/Discogs). Realistic scope: a **search link**, not a
+deep link — `https://www.metal-archives.com/search?searchString=<artist>` /
+RYM's search URL, URL-encoded from the album's artist + name. Good enough to
+land a human one click from the right release page; anything deeper would
+need scraping either site, which is out of scope. Feeds into 10.12 below as
+one of the default link templates rather than a special case.
+
+### 10.12 — Settings: customize "About this album" links + a lyrics-search fallback
+
+Today `AlbumContext.links` is entirely server-computed (whatever
+MusicBrainz/Wikipedia/Discogs handed back) — nothing user-configurable, and
+no way to add fixed external links like 10.11's or a "search for lyrics
+elsewhere" fallback when `AlbumLyricsResponse` comes back empty for a track.
+
+- [ ] New config: `data/config/links.json` (extend `configSchemas` in
+      `shared/src/config.ts` with a `links` entry). Shape: an ordered list
+      of `{ id, label, enabled, urlTemplate }`, where `urlTemplate` supports
+      `{artist}` / `{album}` placeholders (URL-encoded on substitution) —
+      e.g. `https://rateyourmusic.com/search?searchterm={artist}+{album}`.
+      Ship sensible defaults (RYM, Metal Archives, a Genius lyrics search)
+      pre-populated but toggleable off, rather than starting empty.
+  - `GET /api/album/:id/context` merges enabled templated links (rendered
+    with the album's real artist/name) alongside the existing
+    provider-derived ones in the response — client stays a dumb renderer of
+    `AlbumContext.links`, no new client-side templating logic needed.
+- [ ] A second template class for **track-level** lyrics fallback (needs
+      `{artist}`/`{track}`, e.g. a Genius search) — surfaced in
+      `LyricsPanel.tsx` only when the current track's `TrackLyrics` has both
+      `synced: null` and `plain: null`.
+- [ ] Settings UI: a new section (e.g. under `AboutSettings.tsx` or its own
+      `LinksSettings.tsx`) listing the configured templates with
+      enable/disable toggles and editable label/URL-template fields, same
+      form patterns as the rest of Settings.
+
+### 10.13 — Playlist import: dedupe against Revisit and past Reviews, not just the backlog
+
+`GET /api/playlist/:id/albums` (`backlog.ts`) only checks the album against
+`readConfig("backlog")` today — an album already **reviewed** (any verdict)
+or currently sitting in the **Revisit** queue gets offered again as if
+brand new, defeating the point: the user already made a call on it.
+
+- [ ] In that route, also load `readConfig("revisit")` and
+      `readAllReviews()` (`store/reviews.ts` — already backs `GET
+      /api/reviews`) alongside the existing backlog read, and compute a
+      richer per-album status instead of a bare `inBacklog` boolean —
+      e.g. `status: "new" | "in_backlog" | "in_revisit" | "reviewed"` plus
+      (when `reviewed`) the verdict, so the UI can show *why* it's excluded
+      ("passed" reads very differently from "kept" or "in backlog already").
+- [ ] `playlistAlbumSchema` (`shared/src/dto.ts`) — replace/extend
+      `inBacklog: boolean` with the richer status; keep it additive if
+      anything else consumes the old field.
+- [ ] `PlaylistImport.tsx` — treat every non-`"new"` status the same way
+      `inBacklog` is treated today (excluded from selection, dimmed row),
+      but show the specific reason in the trailing label instead of always
+      "in backlog."
+
+### 10.14 — Album image gallery: back cover, liner notes, insert scans
+
+Right now the app only ever shows one image per album (Spotify's front
+cover, `AlbumDetail.image`). Discogs and the Cover Art Archive (see below)
+both carry more — back cover, liner/booklet scans, disc art, sometimes a
+full insert — which is exactly the "unfold the gatefold" material the app's
+own name gestures at, and neither is wired in today.
+
+Two complementary sources, both already reachable from existing code:
+
+- **Discogs** — the release object `context/discogs.ts` already fetches
+  (for credits/notes) carries an `images[]` array in the same response —
+  no extra HTTP call, just an unused field. Caveat: Discogs only reliably
+  distinguishes `primary` (front) vs `secondary` (everything else); it does
+  **not** reliably label back-cover vs. insert vs. promo photo within
+  `secondary` — same ambiguity Discogs' own web UI has (the screenshot's
+  "More images" link is an undifferentiated grid, not individually
+  captioned either). Don't invent categories the source data doesn't
+  support — surface `secondary` images as an unlabeled "more images" set,
+  matching Discogs' own presentation, rather than guessing at back/insert.
+- **Cover Art Archive** (`coverartarchive.org` — from the question above) —
+  *does* type its images reliably (`Front`/`Back`/`Booklet`/`Tray`/`Medium`/
+  `Liner`/`Spine`/`Other`). `context/musicbrainz.ts` already resolves a
+  release-group MBID for the facts panel; reuse it against
+  `GET https://coverartarchive.org/release-group/<mbid>` (no auth, courtesy
+  User-Agent only — same `context/http.ts` wrapper already used for MB
+  calls). 404 (no art submitted) is a normal, common outcome, not an error.
+
+Design:
+
+- [ ] New `context/coverartarchive.ts` module, same shape as `wikipedia.ts`/
+      `discogs.ts` (independent, degrades to empty, doesn't fail the whole
+      context lookup).
+- [ ] Extend `AlbumContext` (`shared/src/dto.ts`) with
+      `images: { url, thumbnailUrl, type: "front"|"back"|"secondary", source: "discogs"|"coverartarchive" }[]`
+      — merged in `context/index.ts` alongside summary/credits/facts/links,
+      cached in the same 30-day per-album cache entry (no new cache).
+- [ ] Client: a thumbnail strip (not buried inside the collapsed "About
+      this album" `<details>` — this is visual content, worth its own
+      always-visible row near the header) that opens a simple lightbox
+      (prev/next, no new dependency needed for something this small) on
+      click. Render nothing at all when the only image found is the same
+      front cover already shown as the header art — the point is the
+      *extra* material, not a redundant second copy of the cover.
+- [ ] Attribution links ("View on Discogs" / "View on Cover Art Archive"),
+      same pattern as the existing `summarySource` link.
+
+Explicitly not attempting: categorizing Discogs' `secondary` bucket by
+content (see caveat above) — ship what the sources actually tell you.
+
+### 10.12 addendum — Song Meanings as a default track-level link template
+
+Same mechanism as 10.12's Genius lyrics-search fallback (track-level
+template, `{artist}`/`{track}` placeholders) — add
+[songmeanings.com](https://songmeanings.com) as a second default, since it's
+a different thing than a lyrics search: song-meaning/interpretation
+discussion, not the lyrics text itself. **Verify the exact search
+query-string format against the live site when implementing** — not
+confirmed here, don't guess-and-ship a URL pattern that 404s.
+
+### 10.15 — Footer: license + credit line
+
+`Layout.tsx` has a header (logo, health dot, nav) and the fixed bottom
+player bar, but nothing at the bottom of normal page flow.
+
+- [ ] Add a `<footer>` in `Layout.tsx`, as a flex-column sibling after
+      `<Outlet />` and before `<NowPlayingCard />` (so it's in normal
+      document flow, not fixed — it can sit below the fold under the
+      player bar, which is fine for a footer). Small, muted text
+      (`text-xs text-neutral-600`), centered: current version (reuse the
+      same `["version"]` query `AboutSettings`/`UpdateBanner` already fetch
+      — no new request), `AGPL-3.0-only` linking to the `LICENSE` file, and
+      "Made with ♥ by S. Cortés."
+
+### 10.16 — Settings: thank the data providers
+
+Beneath `AboutSettings.tsx` in `SettingsPage.tsx`, a short attribution
+section — not just a nicety: MusicBrainz, Discogs, and LRCLIB's own API
+terms all ask for attribution, and this is the one screen a self-hoster
+will actually read once.
+
+- [ ] New `AttributionSettings.tsx`, rendered right after `AboutSettings`
+      in `SettingsPage.tsx`. One line per source actually integrated today
+      (plus Cover Art Archive once 10.14 lands), each linking out:
+      **Spotify** (catalog + playback), **MusicBrainz** (release facts),
+      **Wikipedia** (album summaries), **Discogs** (credits, notes, and
+      once 10.14 lands, extra cover images), **LRCLIB** (lyrics), **Cover
+      Art Archive** (cover scans — 10.14). Framed as a thank-you, not a
+      bare link list — matches the warmer tone this ask is going for,
+      distinct from the purely functional links elsewhere in Settings.
+
+**AC for 10.3–10.16 collectively:** every list of albums anywhere in the app
+(Backlog, Recent, Revisit, Reviews, playlist import) gets you to
+`/album/:id` in one obvious click; hitting Play with nothing active always
+resolves to either playing audio or a device-picker, never a dead-end error
+string; genre and background art appear on every album a provider has data
+for; a back-cover/insert gallery appears whenever Discogs or the Cover Art
+Archive actually has extra images for that release; every page shows the
+license and a credit line; Settings fully explains and controls what's
+visible in "About this album" and thanks every data provider it actually
+uses; a playlist import never re-offers an album already reviewed or
+queued for revisit.
+
+---
+
 ## Dependency graph
 
 ```
 0 ─▶ 1 ─▶ 2 ─▶ 3 ─▶ 7
           └──▶ 4 ─▶ 5 ─▶ 6 ─▶ 7 ─▶ 8
-                                   └──▶ 9
+                                   └──▶ 9 ─▶ 10
 ```
 
 Phases 3 and 4 both only need Phase 2; everything funnels into 7. Phase 8

@@ -24,12 +24,17 @@ self-hosted tool for people who still listen to records front to back.
 - **Ambient player** — a slim now-playing bar on every page.
 - **API** — the same API the UI runs on is usable directly (e.g. from a
   script or another agent) with the API key from Settings → Security.
-  Interactive docs at `/docs` on a running instance.
+  Interactive docs at `/docs` on a running instance; a task-oriented
+  quickstart for AI agents is in
+  [`INSTRUCTIONS_FOR_AGENTS.md`](INSTRUCTIONS_FOR_AGENTS.md).
 
 Docs: [`docs/functional-spec.md`](docs/functional-spec.md) ·
 [`docs/architecture.md`](docs/architecture.md) ·
 [`docs/implementation-plan.md`](docs/implementation-plan.md) ·
-[`docs/self-hosting.md`](docs/self-hosting.md)
+[`docs/self-hosting.md`](docs/self-hosting.md) ·
+[`docs/pitch-video-script.md`](docs/pitch-video-script.md) ·
+[`INSTRUCTIONS_FOR_AGENTS.md`](INSTRUCTIONS_FOR_AGENTS.md) ·
+[`CONTRIBUTING.md`](CONTRIBUTING.md)
 
 ## Stack
 
