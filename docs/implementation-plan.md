@@ -642,17 +642,23 @@ CTAs (Play, Remove) sitting right next to it. `RevisitPage` and
 `ReviewsPage` already do this right (explicit "Open" button next to "Play")
 — that's the pattern to copy everywhere else, not a new pattern to invent.
 
-- [ ] `BacklogPage.tsx` `Card` — add an explicit "View" button/link next to
+- [x] `BacklogPage.tsx` `Card` — add an explicit "View" button/link next to
       Play/Remove, same visual weight as those two.
-- [ ] `RecentPage.tsx` `Row` — **currently has no album link at all**, not
+- [x] `RecentPage.tsx` `Row` — **currently has no album link at all**, not
       even an implicit one (confirmed: no `<Link>` in the row). Add one —
       thumbnail and/or an explicit affordance to `/album/:id`. This is the
-      "no CTA to go to the album that record belongs to" gap.
-- [ ] `NowPlayingCard.tsx` (the sticky bottom bar) — already links the art
+      "no CTA to go to the album that record belongs to" gap. Required adding
+      `albumId` to the shared `TrackRef`/`recentRowSchema` DTO (previously
+      only `albumName`, a string with no id to link to) and populating it
+      server-side (`spotify/recent.ts`, `routes/triage.ts`).
+- [x] `NowPlayingCard.tsx` (the sticky bottom bar) — already links the art
       and the album-name text to `/album/:id`; make it an explicit,
       obviously-clickable affordance (not just underline-on-hover text)
       since this bar is visible on every page while something plays and is
       the highest-frequency place someone would want to jump to the album.
+      Landed as a hover overlay (dim + an open-external icon) on the art
+      thumbnail rather than restyling the text link — keeps the meta line's
+      density low per the theme's density-6 dial.
 
 Same underlying fix in three places — worth doing as one pass since it's
 the same affordance pattern each time.
@@ -664,11 +670,11 @@ the same affordance pattern each time.
 screen today, just reachable from two different tabs, which is exactly the
 "makes no sense" complaint.
 
-- [ ] Collapse `navItems` in `Layout.tsx` to one entry (keep the `/recent`
+- [x] Collapse `navItems` in `Layout.tsx` to one entry (keep the `/recent`
       path since that's the more durable name for "what am I listening to
       / what did I just play"; redirect `/now-playing` → `/recent` rather
       than 404ing old links/bookmarks).
-- [ ] `NowPlayingPage.tsx` becomes the sole component behind that route (it
+- [x] `NowPlayingPage.tsx` becomes the sole component behind that route (it
       already is the superset — hero transport when something's active,
       `RecentPage`'s list below); delete `RecentPage`'s standalone route,
       keep the component for embedding.
@@ -722,16 +728,22 @@ mutation) just renders `.message` as a line of red text — a dead end for
 the user, who then has to know to go find Settings → Playback device
 themselves.
 
-- [ ] Extract `DevicePicker`'s list (`features/settings/DevicePicker.tsx`)
+- [x] Extract `DevicePicker`'s list (`features/settings/DevicePicker.tsx`)
       into something embeddable in a modal, not just the Settings page
-      section.
-- [ ] On any play mutation's `onError`, check
+      section. Landed as a shared `useDevices` hook + `DeviceList`
+      presentational component (`features/settings/`), used by both the
+      Settings page section and the new modal.
+- [x] On any play mutation's `onError`, check
       `err instanceof ApiRequestError && err.code === "no_device"` and open
       that modal instead of (or in addition to) the text error. Picking a
       device there should transfer playback to it (existing
       `POST /api/playback/transfer`) and immediately retry the original
-      play call.
-- [ ] Apply at all three call sites (Backlog, Album page, Revisit/Reviews)
+      play call. Landed as a `DevicePickerPromptProvider` context
+      (`features/playback/DevicePickerPrompt.tsx`) mounted once in
+      `Layout.tsx`; each call site's `onError` reads `variables` off the
+      mutation to retry with the exact original args. Verified live against
+      real Spotify devices (a 409 → transfer → retry → correct album playing).
+- [x] Apply at all three call sites (Backlog, Album page, Revisit/Reviews)
       plus the ambient bottom bar's toggle/skip controls, which hit the
       same 409 path.
 

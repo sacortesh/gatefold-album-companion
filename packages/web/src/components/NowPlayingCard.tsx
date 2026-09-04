@@ -1,4 +1,4 @@
-import { Pause, Play, SkipForward } from "lucide-react";
+import { ExternalLink, Pause, Play, SkipForward } from "lucide-react";
 import { Link } from "react-router-dom";
 import { formatDuration } from "../lib/format";
 import { useRecent } from "../features/recent/useRecent";
@@ -40,7 +40,8 @@ export function NowPlayingCard() {
       <div className="mx-auto flex max-w-5xl items-center gap-3 px-6 py-2.5">
         <Link
           to={`/album/${track.album.id}`}
-          className="h-11 w-11 shrink-0 overflow-hidden rounded bg-surface-2"
+          aria-label={`Open ${track.album.name}`}
+          className="group relative h-11 w-11 shrink-0 overflow-hidden rounded bg-surface-2"
         >
           {track.album.image && (
             <img
@@ -49,11 +50,14 @@ export function NowPlayingCard() {
               className="h-full w-full object-cover"
             />
           )}
+          <span className="absolute inset-0 flex items-center justify-center bg-bg/0 opacity-0 transition-opacity group-hover:bg-bg/60 group-hover:opacity-100">
+            <ExternalLink className="size-3.5 text-ink" />
+          </span>
         </Link>
 
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm">
-            <Link to="/now-playing" className="hover:underline">
+            <Link to="/recent" className="hover:underline">
               {track.name}
             </Link>
           </p>

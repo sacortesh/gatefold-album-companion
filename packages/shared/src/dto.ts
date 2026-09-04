@@ -195,6 +195,7 @@ export const trackRefSchema = z.object({
   name: z.string(),
   uri: z.string(),
   artists: z.array(z.string()),
+  albumId: z.string(),
   albumName: z.string(),
   image: z.string().nullable(),
   durationMs: z.number(),

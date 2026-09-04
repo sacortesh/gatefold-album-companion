@@ -8,6 +8,7 @@ interface RawTrack {
   duration_ms: number;
   artists?: Array<{ name: string }>;
   album?: {
+    id: string;
     name: string;
     images?: Array<{ url: string; width: number | null }>;
   };
@@ -20,6 +21,7 @@ export const toTrackRef = (t: RawTrack): TrackRef | null => {
     name: t.name,
     uri: t.uri,
     artists: (t.artists ?? []).map((a) => a.name),
+    albumId: t.album?.id ?? "",
     albumName: t.album?.name ?? "",
     image: t.album?.images?.[0]?.url ?? null,
     durationMs: t.duration_ms,

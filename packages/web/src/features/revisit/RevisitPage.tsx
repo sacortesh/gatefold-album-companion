@@ -5,11 +5,18 @@ import type { RevisitEntry } from "@gatefold/shared";
 import { api, ApiRequestError } from "../../api/client";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
+import { useDevicePickerPrompt } from "../playback/DevicePickerPrompt";
 
 function Row({ entry }: { entry: RevisitEntry }) {
+  const { requestDevice } = useDevicePickerPrompt();
   const play = useMutation({
     mutationFn: () =>
       api.play({ contextUri: entry.album?.uri ?? `spotify:album:${entry.albumId}` }),
+    onError: (err) => {
+      if (err instanceof ApiRequestError && err.code === "no_device") {
+        requestDevice(() => play.mutate());
+      }
+    },
   });
   const a = entry.album;
   const r = entry.review;

@@ -26,7 +26,10 @@ function Row({
         row.isCurrent ? "bg-surface" : "hover:bg-surface/60"
       }`}
     >
-      <div className="h-11 w-11 shrink-0 overflow-hidden rounded bg-surface-2">
+      <Link
+        to={`/album/${row.track.albumId}`}
+        className="h-11 w-11 shrink-0 overflow-hidden rounded bg-surface-2"
+      >
         {row.track.image && (
           <img
             src={row.track.image}
@@ -34,7 +37,7 @@ function Row({
             className="h-full w-full object-cover"
           />
         )}
-      </div>
+      </Link>
 
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm">
@@ -46,7 +49,11 @@ function Row({
           )}
         </p>
         <p className="truncate text-xs text-ink-muted">
-          {row.track.artists.join(", ")} · {formatRelative(row.playedAt)}
+          {row.track.artists.join(", ")} ·{" "}
+          <Link to={`/album/${row.track.albumId}`} className="hover:text-ink">
+            {row.track.albumName}
+          </Link>{" "}
+          · {formatRelative(row.playedAt)}
         </p>
       </div>
 

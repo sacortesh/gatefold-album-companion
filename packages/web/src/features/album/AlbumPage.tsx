@@ -10,6 +10,7 @@ import { Button } from "../../components/ui/button";
 import { TriageButton } from "../../components/TriageButton";
 import { useBacklog } from "../backlog/useBacklog";
 import { usePlayback } from "../now-playing/usePlayback";
+import { useDevicePickerPrompt } from "../playback/DevicePickerPrompt";
 import { VerdictDialog } from "../review/VerdictDialog";
 import { useAlbumReview } from "../review/useVerdict";
 import { useTriageHotkeys } from "../triage/useTriageHotkeys";
@@ -123,6 +124,7 @@ export function AlbumPage() {
   const { state, displayMs, controls } = usePlayback();
   const backlog = useBacklog();
   const review = useAlbumReview(id);
+  const { requestDevice } = useDevicePickerPrompt();
 
   const tracks = album.data?.tracks ?? [];
   const triage = useAlbumTriage(
@@ -153,6 +155,11 @@ export function AlbumPage() {
   const playAlbum = useMutation({
     mutationFn: () =>
       api.play({ contextUri: album.data!.uri, shuffle: false, repeat: "off" }),
+    onError: (err) => {
+      if (err instanceof ApiRequestError && err.code === "no_device") {
+        requestDevice(() => playAlbum.mutate());
+      }
+    },
   });
   const playFrom = useMutation({
     mutationFn: (trackUri: string) =>
@@ -162,6 +169,11 @@ export function AlbumPage() {
         shuffle: false,
         repeat: "off",
       }),
+    onError: (err, trackUri) => {
+      if (err instanceof ApiRequestError && err.code === "no_device") {
+        requestDevice(() => playFrom.mutate(trackUri));
+      }
+    },
   });
 
   if (album.error?.status === 401) {
@@ -188,9 +200,11 @@ export function AlbumPage() {
   const selectedTrack = tracks.find((t) => t.id === selectedId) ?? null;
   const albumArtistKey = a.artists.join("|");
 
-  const playMutationError = (playAlbum.error ?? playFrom.error) as
-    | Error
-    | undefined;
+  const rawPlayError = playAlbum.error ?? playFrom.error;
+  const playMutationError =
+    rawPlayError instanceof ApiRequestError && rawPlayError.code === "no_device"
+      ? undefined
+      : rawPlayError;
   const backlogMutationError = (backlog.add.error ?? backlog.remove.error) as
     | Error
     | undefined;

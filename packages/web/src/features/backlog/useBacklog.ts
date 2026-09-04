@@ -1,11 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { BacklogResponse } from "@gatefold/shared";
 import { api, ApiRequestError } from "../../api/client";
+import { useDevicePickerPrompt } from "../playback/DevicePickerPrompt";
 
 export const BACKLOG_KEY = ["backlog"] as const;
 
 export function useBacklog() {
   const qc = useQueryClient();
+  const { requestDevice } = useDevicePickerPrompt();
 
   const query = useQuery<BacklogResponse, ApiRequestError>({
     queryKey: BACKLOG_KEY,
@@ -78,6 +80,11 @@ export function useBacklog() {
   const playAlbum = useMutation({
     mutationFn: (contextUri: string) =>
       api.play({ contextUri, shuffle: false, repeat: "off" }),
+    onError: (err, contextUri) => {
+      if (err instanceof ApiRequestError && err.code === "no_device") {
+        requestDevice(() => playAlbum.mutate(contextUri));
+      }
+    },
   });
 
   const move = (albumId: string, dir: -1 | 1) => {

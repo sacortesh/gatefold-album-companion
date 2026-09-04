@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import type { BacklogEntry } from "@gatefold/shared";
+import { ApiRequestError } from "../../api/client";
 import { formatDuration } from "../../lib/format";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
@@ -87,6 +88,9 @@ function Card({
       <Button variant="primary" onClick={onPlay} className="shrink-0">
         Play album
       </Button>
+      <Button variant="secondary" asChild className="shrink-0">
+        <Link to={`/album/${entry.albumId}`}>View</Link>
+      </Button>
       <Button variant="secondary" onClick={onRemove} className="shrink-0">
         Remove
       </Button>
@@ -145,11 +149,12 @@ export function BacklogPage() {
 
       <PlaylistImport />
 
-      {playAlbum.isError && (
-        <p className="text-sm text-danger">
-          Couldn&apos;t start playback: {(playAlbum.error as Error).message}
-        </p>
-      )}
+      {playAlbum.isError &&
+        !(playAlbum.error instanceof ApiRequestError && playAlbum.error.code === "no_device") && (
+          <p className="text-sm text-danger">
+            Couldn&apos;t start playback: {(playAlbum.error as Error).message}
+          </p>
+        )}
 
       {query.isLoading && <p className="text-sm text-ink-muted">Loading…</p>}
       {query.isError && (

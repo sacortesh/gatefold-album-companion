@@ -5,6 +5,7 @@ import type { Review, Verdict } from "@gatefold/shared";
 import { api, ApiRequestError } from "../../api/client";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
+import { useDevicePickerPrompt } from "../playback/DevicePickerPrompt";
 
 const VERDICT_STYLE: Record<Verdict, string> = {
   keep: "border-primary/40 bg-primary/10 text-primary",
@@ -22,8 +23,14 @@ const FILTERS: Array<{ value: Verdict | "all"; label: string }> = [
 ];
 
 function Row({ review }: { review: Review }) {
+  const { requestDevice } = useDevicePickerPrompt();
   const play = useMutation({
     mutationFn: () => api.play({ contextUri: `spotify:album:${review.albumId}` }),
+    onError: (err) => {
+      if (err instanceof ApiRequestError && err.code === "no_device") {
+        requestDevice(() => play.mutate());
+      }
+    },
   });
 
   return (

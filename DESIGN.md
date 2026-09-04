@@ -213,6 +213,7 @@ tell.
 - CopyField — the field already duplicated verbatim between `SecuritySettings` and `SpotifySetup` (audit finding), now a single shared molecule (label + monospace value + copy button + optional show/hide).
 - MetaLine — the `·`-joined metadata line (year · tracks · duration · label), one component instead of ad hoc string-joining per screen; capped at one `·`-joined line per Vercel/taste-checklist copy discipline.
 - SearchField — existing `AlbumSearch` input, unchanged in behavior, restyled onto the Input atom.
+- DeviceList — added Phase 10.8: the device rows (radio + "Play here"), extracted out of `DevicePicker` so the Settings-page section and the new `DevicePickerPrompt` modal render the identical list off one `useDevices` hook instead of two hand-rolled copies.
 
 ### Organisms
 - AppHeader — logo, health indicator, primary nav (6 → 5 after Phase 10.4) — appears on: all pages. Taste-checklist flags navs over 80px tall / not on one line at desktop: the current two-row layout (logo row, then a separate nav-pill row) likely exceeds that — collapse to one row at desktop width as part of the restyle, wrap to a second row only below the existing documented ~360px overflow breakpoint.
@@ -222,7 +223,8 @@ tell.
 - LyricsPanel — unchanged structurally (already well-scoped: 4 props, 2 boolean, under the proliferation threshold), restyled onto the new type scale.
 - BacklogList / RecentList / RevisitList / ReviewsList — the four list-page organisms, unified onto one internal `ListRow` molecule (currently four separately hand-rolled `Row`/`Card` locals per the audit) so the four pages stop drifting from each other visually.
 - SettingsPanel — the settings-card shape (`AboutSettings`, `DiscogsSetup`, `SecuritySettings`, `SpotifySetup`, `BangerPlaylistPicker`) — this is where a real card border *is* justified (Card discipline above), since each is a genuinely separate configuration unit.
-- VerdictDialog — the one true modal organism; migrated onto shadcn/ui's `Dialog` primitive (see `ARCHITECTURE.md`) for built-in focus-trap, `Escape`-to-close, and `aria-*` wiring instead of hand-built overlay/backdrop-click logic. DevicePicker and PlaylistImport are inline panels (a settings-page list and a `<details>` disclosure respectively), not modals — corrected from an earlier pass of this doc that miscategorized them.
+- VerdictDialog — the one true modal organism; migrated onto shadcn/ui's `Dialog` primitive (see `ARCHITECTURE.md`) for built-in focus-trap, `Escape`-to-close, and `aria-*` wiring instead of hand-built overlay/backdrop-click logic. PlaylistImport is an inline `<details>` disclosure, not a modal.
+- DevicePickerPrompt — **second true modal organism**, added in Phase 10.8 (implementation-plan.md): same `Dialog` primitive as VerdictDialog, opened by a `DevicePickerPromptProvider` context mounted once in `Layout` so any play mutation across the app can trigger it on a `no_device` 409. Corrects this doc's earlier note that DevicePicker was inline-only — the Settings-page section still is (unchanged, still not a modal), but its underlying device list is now also reachable through this second, modal call site via a shared `useDevices` hook + `DeviceList` molecule.
 
 ### Compound families
 - none identified — the app has no tabs/accordion-with-multiple-panels/menu structure that needs a shared-context compound component; `AlbumContextPanel`'s single `<details>` doesn't need one.

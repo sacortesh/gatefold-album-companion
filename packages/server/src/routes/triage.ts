@@ -42,6 +42,7 @@ function nowPlayingToRef(t: NonNullable<
     name: t.name,
     uri: t.uri,
     artists: t.artists,
+    albumId: t.album.id,
     albumName: t.album.name,
     image: t.album.image,
     durationMs: t.durationMs,
