@@ -368,6 +368,8 @@ export function AlbumPage() {
                 selectedId && selectedId === nowId && state?.isPlaying,
               )}
               positionMs={displayMs}
+              artist={selectedTrack?.artists[0] ?? a.artists[0] ?? ""}
+              track={selectedTrack?.name ?? ""}
             />
           </div>
           {a.copyrights.length > 0 && (

@@ -14,6 +14,7 @@ import type {
   ConfigName,
   DevicesResponse,
   HealthResponse,
+  LinksConfig,
   PlaybackState,
   PlaylistAlbumsResponse,
   PlaylistsResponse,
@@ -113,6 +114,7 @@ interface ConfigMap {
   buttons: Buttons;
   backlog: Backlog;
   revisit: Revisit;
+  links: LinksConfig;
 }
 
 export const api = {

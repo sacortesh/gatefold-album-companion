@@ -11,6 +11,7 @@ import {
 } from "@gatefold/shared";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { getAlbumContext } from "../context/index.js";
+import { renderLinkTemplates } from "../links.js";
 import { getLyrics } from "../lyrics/lrclib.js";
 import {
   getAlbum,
@@ -95,11 +96,29 @@ export async function albumRoutes(app: FastifyInstance): Promise<void> {
     async (req): Promise<AlbumContext> => {
       const { id } = req.params;
       const raw = await getAlbum(id);
-      return getAlbumContext({
-        artist: raw.artists?.[0]?.name ?? "",
-        album: raw.name,
-        year: raw.release_date?.slice(0, 4) ?? null,
-      });
+      const artist = raw.artists?.[0]?.name ?? "";
+      const album = raw.name;
+
+      // Templated links are user config, not provider data — rendered
+      // fresh on every request rather than folded into the 30-day context
+      // cache, so an edit in Settings shows up immediately instead of
+      // waiting out a stale cache entry.
+      const [context, links] = await Promise.all([
+        getAlbumContext({
+          artist,
+          album,
+          year: raw.release_date?.slice(0, 4) ?? null,
+        }),
+        readConfig("links"),
+      ]);
+
+      const templatedLinks = renderLinkTemplates(links.album, { artist, album });
+      return {
+        ...context,
+        links: [...context.links, ...templatedLinks].filter(
+          (l, i, all) => all.findIndex((x) => x.label === l.label) === i,
+        ),
+      };
     },
   );
 

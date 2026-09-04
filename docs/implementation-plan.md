@@ -787,7 +787,7 @@ this app — but that one works by never echoing the value back at all
       a side effect of the redesign's `CopyField` molecule (`masked` prop) —
       checkbox was never ticked here even though the work shipped.
 
-### 10.11 — Encyclopaedia Metallum + Rate Your Music + Last.fm links
+### 10.11 — Encyclopaedia Metallum + Rate Your Music + Last.fm links — done
 
 Neither Metal Archives nor RYM exposes a usable public lookup API with
 stable ids we already have (unlike MusicBrainz/Discogs). Realistic scope: a
@@ -807,14 +807,25 @@ session, same discipline as the Song Meanings addendum below; don't
 guess-and-ship a URL pattern that 404s on real artist/album names with
 punctuation or non-Latin characters.
 
-### 10.12 — Settings: customize "About this album" links + a lyrics-search fallback
+All three verified live via real browser navigation (not curl — Metal
+Archives and RYM both sit behind a Cloudflare bot challenge that blocks
+curl/WebFetch outright) against "Opeth" / "Blackwater Park":
+`metal-archives.com/search?searchString={artist}&type=band_name` — an
+exact-match search auto-redirects straight to the band's own page;
+`rateyourmusic.com/search?searchterm={artist}+{album}&searchtype=l` —
+`searchtype=l` (release) puts the right album at the top of real results;
+`last.fm/music/{artist}/{album}` — confirmed a real release gives `200`
+(spaces as `+`) while a fabricated album name reliably `404`s, so the
+pattern is trustworthy, not just coincidentally working once.
+
+### 10.12 — Settings: customize "About this album" links + a lyrics-search fallback — done
 
 Today `AlbumContext.links` is entirely server-computed (whatever
 MusicBrainz/Wikipedia/Discogs handed back) — nothing user-configurable, and
 no way to add fixed external links like 10.11's or a "search for lyrics
 elsewhere" fallback when `AlbumLyricsResponse` comes back empty for a track.
 
-- [ ] New config: `data/config/links.json` (extend `configSchemas` in
+- [x] New config: `data/config/links.json` (extend `configSchemas` in
       `shared/src/config.ts` with a `links` entry). Shape: an ordered list
       of `{ id, label, enabled, urlTemplate }`, where `urlTemplate` supports
       `{artist}` / `{album}` placeholders (URL-encoded on substitution) —
@@ -825,14 +836,35 @@ elsewhere" fallback when `AlbumLyricsResponse` comes back empty for a track.
     with the album's real artist/name) alongside the existing
     provider-derived ones in the response — client stays a dumb renderer of
     `AlbumContext.links`, no new client-side templating logic needed.
-- [ ] A second template class for **track-level** lyrics fallback (needs
+    Deliberately rendered in the route handler, *after* the 30-day context
+    cache read, not folded into the cached blob — user edits in Settings
+    would otherwise sit stale for up to 30 days, the same class of bug
+    already hit twice in 10.14. Learned that lesson forward this time
+    instead of patching it after the fact.
+- [x] A second template class for **track-level** lyrics fallback (needs
       `{artist}`/`{track}`, e.g. a Genius search) — surfaced in
       `LyricsPanel.tsx` only when the current track's `TrackLyrics` has both
-      `synced: null` and `plain: null`.
-- [ ] Settings UI: a new section (e.g. under `AboutSettings.tsx` or its own
+      `synced: null` and `plain: null`. Also covers the case where there's
+      no `TrackLyrics` entry for the track at all (`undefined`), not just
+      one with both fields explicitly null — same dead end from the user's
+      point of view, same escape hatch. Excludes instrumental tracks
+      (a lyrics search makes no sense there), handled naturally since that
+      branch returns earlier.
+- [x] Settings UI: a new section (e.g. under `AboutSettings.tsx` or its own
       `LinksSettings.tsx`) listing the configured templates with
       enable/disable toggles and editable label/URL-template fields, same
-      form patterns as the rest of Settings.
+      form patterns as the rest of Settings. Mirrors `DiscogsSetup.tsx`'s
+      local-draft-plus-dirty-flag-plus-one-Save-button pattern exactly.
+
+Real bug found and fixed along the way: the first build of this pulled
+`zod` (131KB) and the shared package's entire runtime schema graph into the
+client bundle (+65KB gzipped, tripped the 500KB chunk-size warning) —
+`LyricsPanel.tsx`'s `renderLinkTemplate` import was the first-ever *runtime*
+(non-`type`) import from `@gatefold/shared` in the client, and without a
+`sideEffects: false` in that package's `package.json`, Rollup couldn't prove
+the rest of the barrel (`dto.ts`/`config.ts`/`review.ts`, all top-level
+`z.object(...)` calls) was safe to drop. Added `"sideEffects": false`;
+bundle landed at +2.87KB, proportional to what was actually added.
 
 ### 10.13 — Playlist import: dedupe against Revisit and past Reviews, not just the backlog
 
@@ -922,7 +954,7 @@ Design:
 Explicitly not attempting: categorizing Discogs' `secondary` bucket by
 content (see caveat above) — ship what the sources actually tell you.
 
-### 10.12 addendum — Song Meanings as a default track-level link template
+### 10.12 addendum — Song Meanings as a default track-level link template — done
 
 Same mechanism as 10.12's Genius lyrics-search fallback (track-level
 template, `{artist}`/`{track}` placeholders) — add
@@ -931,6 +963,13 @@ a different thing than a lyrics search: song-meaning/interpretation
 discussion, not the lyrics text itself. **Verify the exact search
 query-string format against the live site when implementing** — not
 confirmed here, don't guess-and-ship a URL pattern that 404s.
+
+Verified live: `songmeanings.com/query/?query={artist}+{track}` (and
+Genius's own pattern, `genius.com/search?q={artist}+{track}`) both
+confirmed via real browser navigation against "Opeth" / "Bleak," then
+end-to-end against a genuinely lyrics-less track (Karnivool's "Scarabs,"
+found by scanning real backlog albums for a track LRCLIB has nothing for)
+— both search links rendered and resolved correctly in the live app.
 
 ### 10.15 — Footer: license + credit line
 
@@ -967,17 +1006,18 @@ will actually read once.
       10.14 had already landed by the time this was built, so Cover Art
       Archive's line ships from the start rather than needing a follow-up.
 
-**AC for 10.3–10.16 collectively:** every list of albums anywhere in the app
-(Backlog, Recent, Revisit, Reviews, playlist import) gets you to
-`/album/:id` in one obvious click; hitting Play with nothing active always
-resolves to either playing audio or a device-picker, never a dead-end error
-string; genre and background art appear on every album a provider has data
-for; a back-cover/insert gallery appears whenever Discogs or the Cover Art
-Archive actually has extra images for that release; every page shows the
-license and a credit line; Settings fully explains and controls what's
-visible in "About this album" and thanks every data provider it actually
-uses; a playlist import never re-offers an album already reviewed or
-queued for revisit.
+**AC for 10.3–10.16 collectively — satisfied:** every list of albums
+anywhere in the app (Backlog, Recent, Revisit, Reviews, playlist import)
+gets you to `/album/:id` in one obvious click; hitting Play with nothing
+active always resolves to either playing audio or a device-picker, never a
+dead-end error string; genre and background art appear on every album a
+provider has data for; a back-cover/insert gallery appears whenever Discogs
+or the Cover Art Archive actually has extra images for that release; every
+page shows the license and a credit line; Settings fully explains and
+controls what's visible in "About this album" and thanks every data
+provider it actually uses; a playlist import never re-offers an album
+already reviewed or queued for revisit. All of 10.3–10.16 is now checked;
+this was the last outstanding item.
 
 ---
 
