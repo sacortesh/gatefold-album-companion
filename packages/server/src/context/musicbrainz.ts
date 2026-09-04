@@ -18,6 +18,7 @@ interface RawRelation {
 }
 
 export interface MusicBrainzContext {
+  releaseGroupId: string;
   firstReleased: string | null;
   formats: string[];
   wikipediaTitle: string | null;
@@ -85,6 +86,7 @@ export async function getMusicBrainz(input: {
   });
 
   return {
+    releaseGroupId: match.id,
     firstReleased: match["first-release-date"] || null,
     formats,
     wikipediaTitle,

@@ -15,6 +15,7 @@ import { VerdictDialog } from "../review/VerdictDialog";
 import { useAlbumReview } from "../review/useVerdict";
 import { useTriageHotkeys } from "../triage/useTriageHotkeys";
 import { AlbumContextPanel } from "./AlbumContextPanel";
+import { AlbumGallery } from "./AlbumGallery";
 import { AlbumHero } from "./AlbumHero";
 import { LyricsPanel } from "./LyricsPanel";
 import { useAlbumTriage } from "./useAlbumTriage";
@@ -300,6 +301,8 @@ export function AlbumPage() {
           </div>
         )}
       </AlbumHero>
+
+      <AlbumGallery albumId={a.id} />
 
       <AlbumContextPanel albumId={a.id} />
 

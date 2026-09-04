@@ -97,12 +97,26 @@ export function AlbumContextPanel({ albumId }: { albumId: string }) {
               Personnel
             </p>
             <ul className="space-y-0.5 text-ink">
-              {d.credits.map((c) => (
-                <li key={c.name}>
-                  <span className="text-ink">{c.name}</span>
-                  <span className="text-ink-muted"> — {c.roles.join(", ")}</span>
-                </li>
-              ))}
+              {d.credits.map((c) =>
+                c.discogsUrl ? (
+                  <li key={c.name}>
+                    <a
+                      href={c.discogsUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-ink hover:text-primary hover:underline"
+                    >
+                      {c.name}
+                    </a>
+                    <span className="text-ink-muted"> · {c.roles.join(", ")}</span>
+                  </li>
+                ) : (
+                  <li key={c.name}>
+                    <span className="text-ink">{c.name}</span>
+                    <span className="text-ink-muted"> · {c.roles.join(", ")}</span>
+                  </li>
+                ),
+              )}
             </ul>
           </div>
         )}

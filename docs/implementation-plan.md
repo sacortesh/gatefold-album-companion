@@ -869,21 +869,32 @@ Two complementary sources, both already reachable from existing code:
 
 Design:
 
-- [ ] New `context/coverartarchive.ts` module, same shape as `wikipedia.ts`/
+- [x] New `context/coverartarchive.ts` module, same shape as `wikipedia.ts`/
       `discogs.ts` (independent, degrades to empty, doesn't fail the whole
       context lookup).
-- [ ] Extend `AlbumContext` (`shared/src/dto.ts`) with
+- [x] Extend `AlbumContext` (`shared/src/dto.ts`) with
       `images: { url, thumbnailUrl, type: "front"|"back"|"secondary", source: "discogs"|"coverartarchive" }[]`
       — merged in `context/index.ts` alongside summary/credits/facts/links,
-      cached in the same 30-day per-album cache entry (no new cache).
-- [ ] Client: a thumbnail strip (not buried inside the collapsed "About
+      cached in the same 30-day per-album cache entry (no new cache). Real
+      bug found and fixed during this: pre-existing 30-day cache entries
+      written before `images` existed don't carry the field, and the
+      response schema now requires it — Fastify's serializer 500'd on any
+      cache hit until the read path was made to default `images` to `[]`
+      for legacy entries.
+- [x] Client: a thumbnail strip (not buried inside the collapsed "About
       this album" `<details>` — this is visual content, worth its own
       always-visible row near the header) that opens a simple lightbox
       (prev/next, no new dependency needed for something this small) on
       click. Render nothing at all when the only image found is the same
       front cover already shown as the header art — the point is the
       *extra* material, not a redundant second copy of the cover.
-- [ ] Attribution links ("View on Discogs" / "View on Cover Art Archive"),
+      Implemented as: hide the whole strip unless at least one non-front
+      image exists (URL-level dedup against the Spotify header art isn't
+      meaningful across three different image hosts). Verified live against
+      a real Discogs+Cover Art Archive pull (11 images: front/back/insert
+      scans/disc art), including click-to-open, prev/next click, arrow-key
+      nav, and Escape-to-close.
+- [x] Attribution links ("View on Discogs" / "View on Cover Art Archive"),
       same pattern as the existing `summarySource` link.
 
 Explicitly not attempting: categorizing Discogs' `secondary` bucket by

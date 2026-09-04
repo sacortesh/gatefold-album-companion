@@ -1,3 +1,4 @@
+import type { AlbumContextImage } from "@gatefold/shared";
 import { getJson } from "./http.js";
 
 const BASE = "https://api.discogs.com";
@@ -28,16 +29,22 @@ interface RawRelease {
   styles?: string[];
   labels?: Array<{ name: string }>;
   formats?: Array<{ name: string; descriptions?: string[] }>;
-  extraartists?: Array<{ name: string; role: string }>;
+  extraartists?: Array<{ id: number; name: string; role: string }>;
   artists?: Array<{ name: string }>;
+  images?: Array<{ type: string; uri: string; uri150?: string }>;
 }
 
 export interface DiscogsContext {
-  credits: Array<{ name: string; roles: string[] }>;
+  credits: Array<{ name: string; roles: string[]; discogsUrl: string | null }>;
   notes: string | null;
   labels: string[];
   genres: string[];
   formats: string[];
+  /** Discogs only reliably distinguishes primary (front) vs. secondary
+   *  (everything else, undifferentiated — back cover, insert, promo photo,
+   *  disc art, all mixed together). Don't invent sub-categories the source
+   *  data doesn't support. */
+  images: AlbumContextImage[];
   url: string;
 }
 
@@ -98,17 +105,22 @@ export async function getDiscogs(
     headers: authHeader(creds),
   });
 
-  const byPerson = new Map<string, Set<string>>();
+  const byPerson = new Map<string, { id: number; roles: Set<string> }>();
   for (const ea of release.extraartists ?? []) {
     const name = cleanName(ea.name);
     if (!name) continue;
-    const set = byPerson.get(name) ?? new Set<string>();
-    for (const role of splitRoles(ea.role)) set.add(role);
-    byPerson.set(name, set);
+    const entry = byPerson.get(name) ?? { id: ea.id, roles: new Set<string>() };
+    for (const role of splitRoles(ea.role)) entry.roles.add(role);
+    byPerson.set(name, entry);
   }
 
   const credits = [...byPerson.entries()]
-    .map(([name, roles]) => ({ name, roles: [...roles] }))
+    .map(([name, { id, roles }]) => ({
+      name,
+      roles: [...roles],
+      // Discogs uses id 0 (or omits it) for placeholder credits like "Various".
+      discogsUrl: id > 0 ? `https://www.discogs.com/artist/${id}` : null,
+    }))
     .slice(0, 40);
 
   const genres = [
@@ -123,12 +135,21 @@ export async function getDiscogs(
     ),
   ].filter(Boolean);
 
+  const images: AlbumContextImage[] = (release.images ?? []).map((img) => ({
+    url: img.uri,
+    thumbnailUrl: img.uri150 ?? img.uri,
+    type: img.type === "primary" ? "front" : "secondary",
+    source: "discogs",
+    label: null,
+  }));
+
   return {
     credits,
     notes: release.notes ? cleanNotes(release.notes) || null : null,
     labels: [...new Set((release.labels ?? []).map((l) => l.name))],
     genres,
     formats,
+    images,
     url: `https://www.discogs.com/release/${best.r.id}`,
   };
 }

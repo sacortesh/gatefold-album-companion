@@ -400,6 +400,10 @@ export type RevisitResponse = z.infer<typeof revisitResponseSchema>;
 export const albumContextCreditSchema = z.object({
   name: z.string(),
   roles: z.array(z.string()),
+  /** Links out to the person's own Discogs page — their full discography,
+   *  not just this one release. Null on the rare credit with no Discogs
+   *  artist id (e.g. a "Various" placeholder). */
+  discogsUrl: z.string().nullable(),
 });
 export type AlbumContextCredit = z.infer<typeof albumContextCreditSchema>;
 
@@ -407,6 +411,21 @@ export const albumContextLinkSchema = z.object({
   label: z.string(),
   url: z.string(),
 });
+
+/** Back cover / liner / insert scans — the "unfold the gatefold" material
+ *  neither Spotify's single front cover nor the facts panel carries. */
+export const albumContextImageSchema = z.object({
+  url: z.string(),
+  thumbnailUrl: z.string(),
+  type: z.enum(["front", "back", "secondary"]),
+  source: z.enum(["discogs", "coverartarchive"]),
+  /** A more specific caption when the source actually provides one (Cover
+   *  Art Archive types images as Booklet/Tray/Medium/etc.) — null when the
+   *  source can't say more than `type` already does (Discogs' `secondary`
+   *  bucket is genuinely undifferentiated; don't guess). */
+  label: z.string().nullable(),
+});
+export type AlbumContextImage = z.infer<typeof albumContextImageSchema>;
 
 export const albumContextSchema = z.object({
   /** Prose on why the album matters, from Wikipedia. */
@@ -422,9 +441,12 @@ export const albumContextSchema = z.object({
     genres: z.array(z.string()),
     formats: z.array(z.string()),
   }),
+  images: z.array(albumContextImageSchema),
   links: z.array(albumContextLinkSchema),
   /** Providers that actually contributed something. */
-  sources: z.array(z.enum(["musicbrainz", "wikipedia", "discogs"])),
+  sources: z.array(
+    z.enum(["musicbrainz", "wikipedia", "discogs", "coverartarchive"]),
+  ),
   /** True when Discogs creds aren't configured, so the UI can nudge. */
   discogsConfigured: z.boolean(),
 });
