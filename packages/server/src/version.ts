@@ -10,7 +10,12 @@ const USER_AGENT = `gatefold (+https://github.com/${REPO})`;
 
 const cache = makeCache("meta");
 const CACHE_KEY = "latest-release";
-const TTL_MS = 6 * 3600_000;
+// GitHub's unauthenticated rate limit is 60 req/hour/IP — this app is
+// single-user and self-hosted, so even zero caching would stay nowhere
+// near that. 30 minutes is just enough cushion to survive a burst of
+// page loads/devices without ever risking the limit, while keeping a
+// freshly-shipped release from reading as stale for hours.
+const TTL_MS = 30 * 60_000;
 
 interface GhRelease {
   tag_name: string;
