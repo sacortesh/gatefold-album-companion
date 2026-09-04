@@ -5,21 +5,25 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import type { AlbumTrack } from "@gatefold/shared";
 import { api, ApiRequestError } from "../../api/client";
 import { formatDuration } from "../../lib/format";
+import { Badge } from "../../components/ui/badge";
+import { Button } from "../../components/ui/button";
+import { TriageButton } from "../../components/TriageButton";
 import { useBacklog } from "../backlog/useBacklog";
 import { usePlayback } from "../now-playing/usePlayback";
-import { BangerButton, LikeButton } from "../recent/TriageControls";
 import { VerdictDialog } from "../review/VerdictDialog";
 import { useAlbumReview } from "../review/useVerdict";
 import { useTriageHotkeys } from "../triage/useTriageHotkeys";
 import { AlbumContextPanel } from "./AlbumContextPanel";
+import { AlbumHero } from "./AlbumHero";
 import { LyricsPanel } from "./LyricsPanel";
 import { useAlbumTriage } from "./useAlbumTriage";
+
+type RowVariant = "default" | "now-playing" | "selected";
 
 function TrackRow({
   track,
   index,
-  selected,
-  isNow,
+  variant,
   showArtist,
   liked,
   inBanger,
@@ -32,8 +36,7 @@ function TrackRow({
 }: {
   track: AlbumTrack;
   index: number;
-  selected: boolean;
-  isNow: boolean;
+  variant: RowVariant;
   showArtist: boolean;
   liked: boolean;
   inBanger: boolean;
@@ -48,7 +51,7 @@ function TrackRow({
     <li
       onClick={onSelect}
       className={`group flex cursor-pointer items-center gap-3 rounded-md px-2 py-1.5 ${
-        selected ? "bg-neutral-900" : "hover:bg-neutral-900/50"
+        variant === "selected" ? "bg-surface" : "hover:bg-surface/60"
       }`}
     >
       <button
@@ -57,7 +60,7 @@ function TrackRow({
           e.stopPropagation();
           onPlay();
         }}
-        className="w-6 shrink-0 text-center text-xs text-neutral-500 hover:text-emerald-400"
+        className="w-6 shrink-0 text-center text-xs text-ink-muted hover:text-primary"
         title="Play from here"
       >
         <span className="group-hover:hidden">{track.trackNumber ?? index + 1}</span>
@@ -68,31 +71,32 @@ function TrackRow({
         <p className="truncate text-sm">
           {track.name}
           {track.explicit && (
-            <span className="ml-1.5 rounded bg-neutral-800 px-1 text-[9px] text-neutral-400">
+            <Badge variant="neutral" className="ml-1.5 px-1 py-0 text-[9px]">
               E
-            </span>
+            </Badge>
           )}
-          {isNow && (
-            <span className="ml-2 rounded bg-emerald-950 px-1.5 py-0.5 text-[10px] font-medium text-emerald-300">
+          {variant === "now-playing" && (
+            <Badge variant="now-playing" className="ml-2">
               now
-            </span>
+            </Badge>
           )}
         </p>
         {showArtist && (
-          <p className="truncate text-xs text-neutral-500">
+          <p className="truncate text-xs text-ink-muted">
             {track.artists.join(", ")}
           </p>
         )}
       </div>
 
-      <span className="shrink-0 text-xs tabular-nums text-neutral-600">
+      <span className="shrink-0 text-xs tabular-nums text-ink-muted">
         {formatDuration(track.durationMs)}
       </span>
-      <LikeButton liked={liked} onToggle={onLike} pending={pending} />
-      <BangerButton
-        inBanger={inBanger}
+      <TriageButton kind="like" active={liked} onToggle={onLike} pending={pending} />
+      <TriageButton
+        kind="banger"
+        active={inBanger}
         label={bangerLabel}
-        onFire={onBanger}
+        onToggle={onBanger}
         pending={pending}
       />
     </li>
@@ -160,9 +164,9 @@ export function AlbumPage() {
 
   if (album.error?.status === 401) {
     return (
-      <p className="text-sm text-neutral-400">
+      <p className="text-sm text-ink-muted">
         Spotify isn&apos;t connected.{" "}
-        <Link to="/settings" className="text-emerald-400 hover:underline">
+        <Link to="/settings" className="text-primary hover:underline">
           Connect in Settings
         </Link>
         .
@@ -170,10 +174,10 @@ export function AlbumPage() {
     );
   }
   if (album.isLoading)
-    return <p className="text-sm text-neutral-500">Loading album…</p>;
+    return <p className="text-sm text-ink-muted">Loading album…</p>;
   if (album.isError || !album.data)
     return (
-      <p className="text-sm text-red-400">
+      <p className="text-sm text-danger">
         {album.error?.message ?? "Couldn't load that album."}
       </p>
     );
@@ -191,129 +195,102 @@ export function AlbumPage() {
 
   return (
     <section className="space-y-8">
-      <div className="flex flex-col gap-6 sm:flex-row">
-        <div className="h-44 w-44 shrink-0 overflow-hidden rounded-lg bg-neutral-900">
-          {a.image && (
-            <img src={a.image} alt="" className="h-full w-full object-cover" />
-          )}
-        </div>
-        <div className="min-w-0 space-y-1.5">
-          <h1 className="text-2xl font-semibold">{a.name}</h1>
-          <p className="text-neutral-300">{a.artists.join(", ")}</p>
-          <p className="text-sm text-neutral-500">
-            {[
-              a.year,
-              `${a.totalTracks} track${a.totalTracks === 1 ? "" : "s"}`,
-              formatDuration(a.durationMs),
-              a.label,
-            ]
-              .filter(Boolean)
-              .join(" · ")}
-          </p>
-          {a.genres.length > 0 && (
-            <p className="text-xs text-neutral-600">{a.genres.join(", ")}</p>
-          )}
-
-          <div className="flex flex-wrap items-center gap-2 pt-2">
+      <AlbumHero
+        image={a.image}
+        name={a.name}
+        artists={a.artists.join(", ")}
+        meta={[
+          a.year,
+          `${a.totalTracks} track${a.totalTracks === 1 ? "" : "s"}`,
+          formatDuration(a.durationMs),
+          a.label,
+        ]}
+        genres={a.genres}
+        actions={
+          <>
             {thisAlbumIsPlaying ? (
               <>
-                <button
-                  type="button"
+                <Button
+                  variant="secondary"
+                  size="icon"
                   onClick={controls.previous}
-                  className="rounded-md border border-neutral-700 px-3 py-2 text-sm hover:bg-neutral-800"
                   aria-label="Previous track"
                 >
                   <SkipBack className="size-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={controls.toggle}
-                  className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500"
-                >
+                </Button>
+                <Button variant="primary" onClick={controls.toggle}>
                   {state?.isPlaying ? "Pause" : "Resume"}
-                </button>
-                <button
-                  type="button"
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="icon"
                   onClick={controls.next}
-                  className="rounded-md border border-neutral-700 px-3 py-2 text-sm hover:bg-neutral-800"
                   aria-label="Next track"
                 >
                   <SkipForward className="size-4" />
-                </button>
+                </Button>
               </>
             ) : (
-              <button
-                type="button"
-                onClick={() => playAlbum.mutate()}
-                className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500"
-              >
+              <Button variant="primary" onClick={() => playAlbum.mutate()}>
                 Play album
-              </button>
+              </Button>
             )}
-            <button
-              type="button"
-              onClick={() => setReviewOpen(true)}
-              className="rounded-md border border-neutral-700 px-3 py-2 text-sm hover:bg-neutral-800"
-            >
+            <Button variant="secondary" onClick={() => setReviewOpen(true)}>
               {review.data ? "Update review" : "Finish album"}
-            </button>
+            </Button>
             {a.inBacklog ? (
-              <button
-                type="button"
+              <Button
+                variant="ghost"
                 onClick={() => backlog.remove.mutate(a.id)}
                 disabled={backlog.remove.isPending}
-                className="rounded-md border border-neutral-800 px-3 py-2 text-sm text-neutral-400 hover:bg-neutral-800 disabled:opacity-50"
               >
                 {backlog.remove.isPending ? "Removing…" : "Remove from backlog"}
-              </button>
+              </Button>
             ) : (
-              <button
-                type="button"
+              <Button
+                variant="secondary"
                 onClick={() => backlog.add.mutate(a.id)}
                 disabled={backlog.add.isPending}
-                className="rounded-md border border-neutral-700 px-3 py-2 text-sm hover:bg-neutral-800 disabled:opacity-50"
               >
                 {backlog.add.isPending ? "Adding…" : "Add to backlog"}
-              </button>
+              </Button>
+            )}
+          </>
+        }
+      >
+        {playMutationError && (
+          <p className="text-sm text-danger">{playMutationError.message}</p>
+        )}
+        {backlogMutationError && (
+          <p className="text-sm text-danger">
+            Couldn&apos;t update the backlog: {backlogMutationError.message}
+          </p>
+        )}
+
+        {review.data && (
+          <div className="mt-2 rounded-md border border-border bg-surface/50 p-3 text-sm">
+            <p className="text-ink">
+              <span className="font-medium capitalize">
+                {review.data.verdict}
+              </span>
+              {review.data.rating != null && ` · ${review.data.rating}/10`}
+              <span className="text-ink-muted"> · reviewed {review.data.listenedOn}</span>
+            </p>
+            {review.data.notes && (
+              <p className="mt-1 whitespace-pre-wrap text-ink-muted">
+                {review.data.notes}
+              </p>
             )}
           </div>
-          {playMutationError && (
-            <p className="text-sm text-red-400">{playMutationError.message}</p>
-          )}
-          {backlogMutationError && (
-            <p className="text-sm text-red-400">
-              Couldn&apos;t update the backlog: {backlogMutationError.message}
-            </p>
-          )}
-
-          {review.data && (
-            <div className="mt-2 rounded-md border border-neutral-800 bg-neutral-900/50 p-3 text-sm">
-              <p className="text-neutral-300">
-                <span className="font-medium capitalize">
-                  {review.data.verdict}
-                </span>
-                {review.data.rating != null && ` · ${review.data.rating}/10`}
-                <span className="text-neutral-500">
-                  {" "}
-                  · reviewed {review.data.listenedOn}
-                </span>
-              </p>
-              {review.data.notes && (
-                <p className="mt-1 whitespace-pre-wrap text-neutral-400">
-                  {review.data.notes}
-                </p>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
+        )}
+      </AlbumHero>
 
       <AlbumContextPanel albumId={a.id} />
 
       <div className="grid gap-8 lg:grid-cols-2">
         <div>
           <div className="mb-2 flex items-center justify-between gap-2">
-            <p className="text-xs text-neutral-600">
+            <p className="text-xs text-ink-muted">
               <kbd>P</kbd> play/pause · <kbd>L</kbd> like · <kbd>B</kbd> banger —{" "}
               {nowInAlbum
                 ? "on the playing track"
@@ -326,7 +303,8 @@ export function AlbumPage() {
               onClick={() => void triage.query.refetch()}
               disabled={triage.query.isFetching}
               title="Refresh like/banger state"
-              className="shrink-0 rounded-md p-1 text-neutral-500 hover:bg-neutral-800 hover:text-neutral-200 disabled:opacity-50"
+              aria-label="Refresh like/banger state"
+              className="shrink-0 rounded-md p-1 text-ink-muted hover:bg-surface-2 hover:text-ink disabled:opacity-50"
             >
               <RefreshCw
                 className={`size-3.5 ${triage.query.isFetching ? "animate-spin" : ""}`}
@@ -336,13 +314,14 @@ export function AlbumPage() {
           <ol className="space-y-0.5">
             {tracks.map((t, i) => {
               const st = triage.stateFor(t.id);
+              const variant: RowVariant =
+                t.id === nowId ? "now-playing" : t.id === selectedId ? "selected" : "default";
               return (
                 <TrackRow
                   key={t.id}
                   track={t}
                   index={i}
-                  selected={t.id === selectedId}
-                  isNow={t.id === nowId}
+                  variant={variant}
                   showArtist={t.artists.join("|") !== albumArtistKey}
                   liked={st.liked}
                   inBanger={st.inBanger}
@@ -359,7 +338,7 @@ export function AlbumPage() {
         </div>
 
         <div className="lg:sticky lg:top-6 lg:self-start">
-          <h2 className="mb-3 text-sm font-medium text-neutral-400">
+          <h2 className="mb-3 text-sm font-medium text-ink-muted">
             {selectedTrack ? `Lyrics: ${selectedTrack.name}` : "Lyrics"}
           </h2>
           <div className="max-h-[70vh] overflow-y-auto pr-2">
@@ -373,7 +352,7 @@ export function AlbumPage() {
             />
           </div>
           {a.copyrights.length > 0 && (
-            <p className="mt-6 text-[11px] leading-relaxed text-neutral-600">
+            <p className="mt-6 text-[11px] leading-relaxed text-ink-muted">
               {a.copyrights.join(" · ")}
             </p>
           )}

@@ -1,11 +1,42 @@
+@import "@fontsource/spectral/500.css";
+@import "@fontsource/spectral/500-italic.css";
+@import "@fontsource/spectral/600.css";
+@import "@fontsource/public-sans/400.css";
+@import "@fontsource/public-sans/500.css";
+@import "@fontsource/public-sans/600.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* DESIGN.md `## Theme` — single source of truth for these hex values. */
 :root {
   color-scheme: dark;
+
+  --color-bg: #070b13;
+  --color-surface: #131922;
+  --color-surface-2: #202731;
+  --color-border: #313844;
+  --color-ink: #e5e8ed;
+  --color-ink-muted: #9299a2;
+  --color-primary: #00dde9;
+  --color-primary-ink: #1c0d06;
+  --color-banger: #eda922;
+  --color-danger: #e24947;
 }
 
 body {
-  @apply bg-neutral-950 text-neutral-100 font-sans antialiased;
+  @apply bg-bg text-ink font-sans antialiased;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

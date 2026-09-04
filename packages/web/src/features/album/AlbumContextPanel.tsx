@@ -5,8 +5,8 @@ import { api } from "../../api/client";
 
 const Fact = ({ label, value }: { label: string; value: string }) => (
   <>
-    <dt className="text-neutral-500">{label}</dt>
-    <dd className="text-neutral-300">{value}</dd>
+    <dt className="text-ink-muted">{label}</dt>
+    <dd className="text-ink">{value}</dd>
   </>
 );
 
@@ -39,34 +39,34 @@ export function AlbumContextPanel({ albumId }: { albumId: string }) {
       d!.links.length > 0);
 
   return (
-    <details className="group rounded-lg border border-neutral-800 bg-neutral-900/40">
-      <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 text-sm font-medium text-neutral-300">
+    <details className="group rounded-lg border border-border bg-surface/40">
+      <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 text-sm font-medium text-ink">
         <ChevronRight className="size-4 transition group-open:rotate-90" />
         About this album
         {ctx.isLoading && (
-          <span className="text-xs font-normal text-neutral-500">loading…</span>
+          <span className="text-xs font-normal text-ink-muted">loading…</span>
         )}
       </summary>
 
-      <div className="space-y-4 border-t border-neutral-800 px-4 py-4 text-sm">
+      <div className="space-y-4 border-t border-border px-4 py-4 text-sm">
         {ctx.isError && (
-          <p className="text-red-400">Couldn&apos;t load background info.</p>
+          <p className="text-danger">Couldn&apos;t load background info.</p>
         )}
         {ctx.isSuccess && !hasAnything && (
-          <p className="text-neutral-500">
+          <p className="text-ink-muted">
             No background info found for this album.
           </p>
         )}
 
         {d?.summary && (
           <div>
-            <p className="whitespace-pre-line text-neutral-300">{d.summary}</p>
+            <p className="whitespace-pre-line text-ink">{d.summary}</p>
             {d.summarySource && (
               <a
                 href={d.summarySource.url}
                 target="_blank"
                 rel="noreferrer"
-                className="mt-1 inline-block text-xs text-emerald-400 hover:underline"
+                className="mt-1 inline-block text-xs text-primary hover:underline"
               >
                 Read on {d.summarySource.label} →
               </a>
@@ -93,17 +93,14 @@ export function AlbumContextPanel({ albumId }: { albumId: string }) {
 
         {d && d.credits.length > 0 && (
           <div>
-            <p className="mb-1 text-xs font-medium uppercase tracking-wide text-neutral-500">
+            <p className="mb-1 text-xs font-medium uppercase tracking-wide text-ink-muted">
               Personnel
             </p>
-            <ul className="space-y-0.5 text-neutral-300">
+            <ul className="space-y-0.5 text-ink">
               {d.credits.map((c) => (
                 <li key={c.name}>
-                  <span className="text-neutral-200">{c.name}</span>
-                  <span className="text-neutral-500">
-                    {" "}
-                    — {c.roles.join(", ")}
-                  </span>
+                  <span className="text-ink">{c.name}</span>
+                  <span className="text-ink-muted"> — {c.roles.join(", ")}</span>
                 </li>
               ))}
             </ul>
@@ -112,17 +109,17 @@ export function AlbumContextPanel({ albumId }: { albumId: string }) {
 
         {d?.notes && (
           <div>
-            <p className="mb-1 text-xs font-medium uppercase tracking-wide text-neutral-500">
+            <p className="mb-1 text-xs font-medium uppercase tracking-wide text-ink-muted">
               Notes
             </p>
-            <p className="whitespace-pre-line text-neutral-400">{d.notes}</p>
+            <p className="whitespace-pre-line text-ink-muted">{d.notes}</p>
           </div>
         )}
 
         {d && !d.discogsConfigured && (
-          <p className="text-xs text-neutral-600">
+          <p className="text-xs text-ink-muted">
             Add a Discogs key in{" "}
-            <Link to="/settings" className="text-emerald-500 hover:underline">
+            <Link to="/settings" className="text-primary hover:underline">
               Settings
             </Link>{" "}
             for personnel &amp; credits.
@@ -137,7 +134,7 @@ export function AlbumContextPanel({ albumId }: { albumId: string }) {
                 href={l.url}
                 target="_blank"
                 rel="noreferrer"
-                className="text-emerald-400 hover:underline"
+                className="text-primary hover:underline"
               >
                 {l.label} →
               </a>

@@ -1,10 +1,12 @@
 import { Pause, Play, SkipForward } from "lucide-react";
 import { Link } from "react-router-dom";
 import { formatDuration } from "../lib/format";
-import { BangerButton, LikeButton } from "../features/recent/TriageControls";
 import { useRecent } from "../features/recent/useRecent";
 import { useHotkeys } from "../features/triage/useTriageHotkeys";
 import { usePlayback } from "../features/now-playing/usePlayback";
+import { Button } from "./ui/button";
+import { ProgressBar } from "./ui/progress-bar";
+import { TriageButton } from "./TriageButton";
 
 /**
  * Ambient player that rides along the bottom of every page — small art, track
@@ -34,11 +36,11 @@ export function NowPlayingCard() {
     : 0;
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-neutral-800 bg-neutral-950/95 backdrop-blur">
+    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-bg/95 backdrop-blur">
       <div className="mx-auto flex max-w-5xl items-center gap-3 px-6 py-2.5">
         <Link
           to={`/album/${track.album.id}`}
-          className="h-11 w-11 shrink-0 overflow-hidden rounded bg-neutral-800"
+          className="h-11 w-11 shrink-0 overflow-hidden rounded bg-surface-2"
         >
           {track.album.image && (
             <img
@@ -55,43 +57,37 @@ export function NowPlayingCard() {
               {track.name}
             </Link>
           </p>
-          <p className="truncate text-xs text-neutral-500">
+          <p className="truncate text-xs text-ink-muted">
             {track.artists.join(", ")} ·{" "}
-            <Link
-              to={`/album/${track.album.id}`}
-              className="hover:text-neutral-300"
-            >
+            <Link to={`/album/${track.album.id}`} className="hover:text-ink">
               {track.album.name}
             </Link>
           </p>
           <div className="mt-1 flex items-center gap-2">
-            <div className="h-0.5 flex-1 rounded-full bg-neutral-800">
-              <div
-                className="h-full rounded-full bg-emerald-500"
-                style={{ width: `${pct}%` }}
-              />
-            </div>
-            <span className="shrink-0 text-[10px] tabular-nums text-neutral-600">
+            <ProgressBar pct={pct} className="h-0.5" />
+            <span className="shrink-0 text-[10px] tabular-nums text-ink-muted">
               {formatDuration(displayMs)} / {formatDuration(track.durationMs)}
             </span>
           </div>
         </div>
 
-        <LikeButton
-          liked={liked}
+        <TriageButton
+          kind="like"
+          active={liked}
           pending={pending}
           onToggle={() => recent.toggleLike(track.id, liked)}
         />
-        <BangerButton
-          inBanger={inBanger}
+        <TriageButton
+          kind="banger"
+          active={inBanger}
           label={recent.bangerLabel}
           pending={pending}
-          onFire={() => recent.fireBanger(track.id)}
+          onToggle={() => recent.fireBanger(track.id)}
         />
-        <button
-          type="button"
+        <Button
+          variant="primary"
+          size="sm"
           onClick={controls.toggle}
-          className="rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-500"
           aria-label={state?.isPlaying ? "Pause" : "Play"}
         >
           {state?.isPlaying ? (
@@ -99,15 +95,10 @@ export function NowPlayingCard() {
           ) : (
             <Play className="size-4" />
           )}
-        </button>
-        <button
-          type="button"
-          onClick={controls.next}
-          className="rounded-md border border-neutral-700 px-3 py-1.5 text-sm hover:bg-neutral-800"
-          aria-label="Next track"
-        >
+        </Button>
+        <Button variant="secondary" size="sm" onClick={controls.next} aria-label="Next track">
           <SkipForward className="size-4" />
-        </button>
+        </Button>
       </div>
     </div>
   );

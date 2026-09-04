@@ -27,15 +27,15 @@ function SyncedView({
           key={`${line.timeMs}-${i}`}
           className={
             !live
-              ? "text-neutral-400"
+              ? "text-ink-muted"
               : i === activeIdx
-                ? "font-medium text-neutral-50"
+                ? "font-medium text-primary"
                 : i < activeIdx
-                  ? "text-neutral-600"
-                  : "text-neutral-400"
+                  ? "text-ink-muted/50"
+                  : "text-ink-muted"
           }
         >
-          {line.text || " "}
+          {line.text || " "}
         </p>
       ))}
     </div>
@@ -49,12 +49,12 @@ export function LyricsPanel({
   positionMs,
 }: Props) {
   if (loading) {
-    return <p className="text-sm text-neutral-500">Loading lyrics…</p>;
+    return <p className="text-sm text-ink-muted">Loading lyrics…</p>;
   }
 
   if (!lyrics || lyrics.instrumental) {
     return (
-      <p className="text-sm text-neutral-500">
+      <p className="text-sm text-ink-muted">
         {lyrics?.instrumental ? "Instrumental." : "No lyrics found."}
       </p>
     );
@@ -72,11 +72,11 @@ export function LyricsPanel({
 
   if (lyrics.plain) {
     return (
-      <p className="whitespace-pre-wrap leading-relaxed text-neutral-300">
+      <p className="whitespace-pre-wrap leading-relaxed text-ink">
         {lyrics.plain}
       </p>
     );
   }
 
-  return <p className="text-sm text-neutral-500">No lyrics found.</p>;
+  return <p className="text-sm text-ink-muted">No lyrics found.</p>;
 }

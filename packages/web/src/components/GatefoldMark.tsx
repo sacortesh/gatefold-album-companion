@@ -4,7 +4,7 @@ export function GatefoldMark({ className = "size-4" }: { className?: string }) {
   return (
     <span
       aria-hidden
-      className={`inline-block bg-emerald-500 align-[-0.2em] ${className}`}
+      className={`inline-block bg-primary align-[-0.2em] ${className}`}
       style={{
         WebkitMaskImage: "url(/gatefold-mark.svg)",
         maskImage: "url(/gatefold-mark.svg)",
