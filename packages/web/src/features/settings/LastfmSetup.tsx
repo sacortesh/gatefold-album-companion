@@ -89,6 +89,15 @@ export function LastfmSetup() {
       >
         {save.isPending ? "Saving…" : "Save"}
       </Button>
+
+      <a
+        href="https://github.com/sacortesh/gatefold-album-companion/blob/main/docs/self-hosting.md#lastfm-optional"
+        target="_blank"
+        rel="noreferrer"
+        className="inline-block text-xs text-primary hover:underline"
+      >
+        Full setup guide →
+      </a>
     </div>
   );
 }

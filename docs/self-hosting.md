@@ -9,6 +9,7 @@ Discogs key); there's no shared backend and no multi-tenancy.
 - [Local vs. remote access](#local-vs-remote-access)
 - [Reverse proxy examples](#reverse-proxy-examples)
 - [Discogs (optional)](#discogs-optional)
+- [Last.fm (optional)](#lastfm-optional)
 - [Security](#security)
 - [Backup](#backup)
 - [Updating](#updating)
@@ -165,6 +166,24 @@ Enables the personnel/credits half of the "About this album" panel
 1. Create a key pair at
    [discogs.com/settings/developers](https://www.discogs.com/settings/developers).
 2. Paste the consumer key + secret into **Settings → Discogs**.
+
+Can also be set via `DISCOGS_CONSUMER_KEY` / `DISCOGS_CONSUMER_SECRET` env
+vars instead — the Settings field shows "set by environment" and locks
+when it is, so the two never fight over which value wins.
+
+## Last.fm (optional)
+
+Enables "Similar albums" on the album page (suggestions resolved to real
+Spotify albums, filtered against what's already in your Backlog/Revisit/
+Reviews). Free:
+
+1. Create a key at
+   [last.fm/api/account/create](https://www.last.fm/api/account/create) —
+   no callback URL needed, any app name works.
+2. Paste the API key into **Settings → Last.fm**.
+
+Can also be set via the `LASTFM_API_KEY` env var, same environment-lock
+behavior as Discogs above.
 
 ## Security
 

@@ -14,7 +14,8 @@ self-hosted tool for people who still listen to records front to back.
   a playlist a friend sent you) and start them with shuffle forced off.
 - **Album view** — full tracklist, synced lyrics (LRCLIB), and an *About this
   album* panel with a blurb, personnel/credits and label info pulled from
-  Wikipedia, MusicBrainz and Discogs.
+  Wikipedia, MusicBrainz and Discogs. Optionally, Last.fm-powered *Similar
+  albums* suggestions, resolved to real Spotify albums.
 - **Triage while listening** — one **Like** button (save to Liked Songs) and one
   **Banger** button (add to a chosen playlist + auto-Like), on the current track
   or any recent track. `P` play/pause, `L` like, `B` banger from the keyboard.
@@ -60,8 +61,10 @@ Requires Node ≥ 20 and a **Spotify account** (Premium only for playback
    Authorization Code + PKCE, so there's no client secret.
 2. `cp .env.example .env` and fill in `SPOTIFY_CLIENT_ID`.
    Optionally add `DISCOGS_CONSUMER_KEY` / `DISCOGS_CONSUMER_SECRET`
-   (<https://www.discogs.com/settings/developers>) to enable the credits panel.
-   (Both can also be set later from the Settings page instead.)
+   (<https://www.discogs.com/settings/developers>) to enable the credits panel,
+   and/or `LASTFM_API_KEY` (<https://www.last.fm/api/account/create>) to enable
+   *Similar albums*. (All three can also be set later from the Settings page
+   instead.)
 3. Install and start:
 
    ```bash
@@ -98,9 +101,9 @@ One constraint worth knowing early: Spotify only allows a plain-`http`
 redirect URI for `127.0.0.1`. Reaching the app from another device needs a
 real domain with HTTPS in front (a reverse proxy or a tunnel).
 
-Full walkthrough — the Spotify app, Discogs, remote access, reverse-proxy
-configs (Caddy/Traefik/nginx/Cloudflare Tunnel), backup, updating — in
-[`docs/self-hosting.md`](docs/self-hosting.md).
+Full walkthrough — the Spotify app, Discogs, Last.fm, remote access,
+reverse-proxy configs (Caddy/Traefik/nginx/Cloudflare Tunnel), backup,
+updating — in [`docs/self-hosting.md`](docs/self-hosting.md).
 
 ## Status
 
