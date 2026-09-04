@@ -1099,6 +1099,85 @@ session did manually, more than once, while testing 10.6/10.14/10.17.
       Settings page's own version query refetched right after — expected,
       not a bug).
 
+### 10.19 — Lyrics romanization (Japanese/Korean/Russian) — scoped, not built
+
+Requested conversationally (2026-09-04): the user is learning Japanese and
+wants romaji shown alongside lyrics that aren't in a Latin-adjacent script —
+same want covers Korean (Hangul) and Russian (Cyrillic). Prior art checked
+and ruled out as reusable: `lyricstify` (github.com/lyricstify/lyricstify)
+is a full standalone terminal Spotify client (NestJS/RxJS), not a library —
+that's almost certainly why it was never "set up properly," it wants to
+replace the Spotify client, not slot into one.
+
+**This is transliteration (how it sounds), not translation (what it
+means).** Real translation needs a paid MT API and is a much bigger,
+separate feature — explicitly out of scope here, possible future MVP.
+
+Architecture decision: **server-side, cached inside the existing lyrics
+cache entry**, not client-side. Reasoning: it's the same shape as the
+existing `lyrics/lrclib.ts` pattern (fetch once, cache 30 days), and it
+keeps a real dependency-weight concern (below) off the browser entirely.
+
+- [ ] New `packages/server/src/lyrics/romanize.ts`:
+      `detectScript(text: string): "cyrillic" | "hangul" | "japanese" | null`
+      using Unicode property-escape regexes on the *whole* lyrics text once
+      (not per line — real songs don't mix scripts mid-track, and per-line
+      detection isn't worth the complexity): `/\p{Script=Cyrillic}/u`,
+      `/\p{Script=Hangul}/u`, and for Japanese specifically require
+      hiragana/katakana presence (`/\p{Script=Hiragana}|\p{Script=Katakana}/u`),
+      not bare `\p{Script=Han}` — kanji-only text is ambiguous with Chinese,
+      and this app has no reason to guess at Chinese. Returns `null`
+      (skip entirely) for Latin-script lyrics, which is most tracks.
+- [ ] `romanize(text, script): Promise<string>` dispatches to one of three
+      libraries, decided this session:
+      - **Japanese** — `kuroshiro` + `kuroshiro-analyzer-kuromoji`, romaji
+        (Hepburn) mode. This is the one hard case: kanji readings are
+        context-dependent, so it needs a real morphological analyzer +
+        dictionary, not a lookup table. Caveat to verify at implementation
+        time: upstream `kuroshiro` is unmaintained (~5 years); if it fails
+        to install/run cleanly on the current Node version, fall back to
+        the `miseya/kuroshiro` typed fork before writing custom glue.
+        The `kuromoji` IPADIC dictionary is a real ~15MB asset — **import
+        it lazily** (`await import(...)` inside the Japanese branch only)
+        so server boot time/memory and the Docker image aren't affected for
+        the large fraction of users who'll never hit a Japanese track.
+      - **Korean** — `@romanize/korean`, Revised Romanization (the modern
+        default standard, matches what most libraries default to). Purely
+        algorithmic (Hangul syllables decompose deterministically per
+        Unicode block math) — no dictionary, negligible weight.
+      - **Russian/Cyrillic** — the general `transliteration` npm package
+        (actively maintained, broad Unicode table coverage) rather than a
+        Russian-only package — the dedicated ones found this session were
+        ~11 years stale.
+      No new Settings/API-key UI needed for any of the three — all three
+      run fully local, no network call, unlike Last.fm/Discogs.
+- [ ] Extend `TrackLyrics` (`shared/src/dto.ts`) with `script` (the
+      detected value above, `null` for Latin) and either
+      `romanizedSynced: string[] | null` (index-aligned 1:1 with `synced`
+      lines — timing is identical, so only the text needs duplicating) or
+      `romanizedPlain: string | null`, whichever of `synced`/`plain` the
+      track actually has. Computed once in `getLyrics()` right after the
+      LRCLIB fetch and stored in the *same* 30-day cache entry — it's fully
+      derived from lyrics text already being cached, not independent data
+      that needs its own cache namespace.
+- [ ] `LyricsPanel.tsx`: a small toggle ("Show romanization"), rendered
+      only when `lyrics.script` is non-null — the large majority of tracks
+      show no new UI at all. When on, each `SyncedView` line gets a second,
+      smaller `text-ink-muted text-xs` line underneath with the romanized
+      text (original stays primary, romanized is the gloss — not a
+      replace-in-place toggle). `plain` mode renders the romanized blob as
+      a second block below the original. Per the same "confidently wrong"
+      precedent as the LRCLIB-mismatch fallback (Phase 10.12): label it
+      something like "romanized automatically" rather than presenting it as
+      authoritative, since kanji-reading disambiguation can still be wrong
+      even with a real analyzer.
+
+Open decisions to make at implementation time, not guessed here:
+`kuroshiro` vs the `miseya` fork (try upstream first, fall back if it
+doesn't install/run cleanly); whether the ~15MB kuromoji dictionary ships
+in the Docker image or gets fetched on first use (affects image size,
+documented as a real tradeoff above, not silently picked).
+
 **AC for 10.3–10.16 collectively — satisfied:** every list of albums
 anywhere in the app (Backlog, Recent, Revisit, Reviews, playlist import)
 gets you to `/album/:id` in one obvious click; hitting Play with nothing
