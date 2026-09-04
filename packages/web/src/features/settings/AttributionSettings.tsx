@@ -5,6 +5,7 @@ const SOURCES = [
   { name: "Discogs", url: "https://www.discogs.com", note: "credits, notes, and cover images" },
   { name: "LRCLIB", url: "https://lrclib.net", note: "lyrics" },
   { name: "Cover Art Archive", url: "https://coverartarchive.org", note: "cover scans" },
+  { name: "Last.fm", url: "https://www.last.fm", note: "similar albums" },
 ];
 
 /** A thank-you, not a bare link list — MusicBrainz, Discogs, and LRCLIB's

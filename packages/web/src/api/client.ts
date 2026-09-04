@@ -27,6 +27,7 @@ import type {
   SearchResponse,
   SessionStatus,
   Settings,
+  SimilarAlbumsResponse,
   TrackStatesResponse,
   UiAuthUpdate,
   VerdictRequest,
@@ -218,6 +219,8 @@ export const api = {
   albumContext: (id: string) => request<AlbumContext>(`/album/${id}/context`),
   albumLyrics: (id: string) =>
     request<AlbumLyricsResponse>(`/album/${id}/lyrics`),
+  similarAlbums: (id: string) =>
+    request<SimilarAlbumsResponse>(`/album/${id}/similar`),
   trackStates: (ids: string[]) =>
     request<TrackStatesResponse>(
       `/track-states?ids=${encodeURIComponent(ids.join(","))}`,

@@ -1005,6 +1005,52 @@ will actually read once.
       distinct from the purely functional links elsewhere in Settings.
       10.14 had already landed by the time this was built, so Cover Art
       Archive's line ships from the start rather than needing a follow-up.
+      Amended when 10.17 landed to add a 7th line (Last.fm).
+
+### 10.17 — Similar albums (Last.fm) — done
+
+Not originally spec'd here — added conversationally mid-session after the
+user asked whether Last.fm has an API (it does, free, self-service) and
+pointed at a sibling project (`project-sensmoi`) that already held a
+`LASTFM_API_KEY` and an unbuilt design doc reaching the same conclusion:
+Last.fm's similarity data is artist-level only (`artist.getSimilar`), no
+album-level equivalent exists.
+
+- [x] Settings: `LastfmSetup.tsx`, a single-field mirror of
+      `DiscogsSetup.tsx` — presence of the key is the on/off switch (no
+      separate enabled flag), explicitly requested ("make it disable via
+      settings") — clear the field and Save to turn the feature off.
+- [x] `server/src/similar-albums.ts` — for the album's artist:
+      `artist.getSimilar` (top 8, Miller's Law) → each similar artist's
+      `artist.gettopalbums` (limit 1) → resolved to a real Spotify album id
+      via `/v1/search` (Last.fm's own artist/album images are near-
+      universally a generic placeholder, confirmed live — not worth using).
+      Cached 30 days per artist; deliberately knows nothing about Backlog/
+      Revisit/Reviews so that fast-changing local state never bakes into
+      the cache, same lesson as 10.12's link-template rendering. `GET
+      /album/:id/similar` filters fresh against current Backlog/Revisit/
+      Reviews at request time — verified live (adding a suggested album to
+      the backlog made it disappear from the strip on next load).
+      All response shapes (`artist.getsimilar`, `artist.gettopalbums`)
+      verified against the live API with a real key before writing any
+      parsing code, not guessed from memory.
+- [x] Client: new `SimilarAlbums.tsx` organism — a horizontal strip of
+      cards (cover + name + artist, `rounded-lg` per the shape lock),
+      placed after the tracklist/lyrics grid, not competing with it for
+      attention (DESIGN.md's own Pareto note: tracklist+lyrics+triage is
+      the 20% that matters, discovery content is secondary). Renders
+      nothing when Last.fm isn't configured or nothing survives the
+      known-albums filter. Verified live against a real album (Karnivool's
+      *Themata* → Dead Letter Circus, Cog, Rishloo, The Butterfly Effect,
+      Leprous — genuinely similar bands, real Spotify cover art, real
+      working links).
+
+Real bug found and fixed along the way, unrelated to this feature but
+surfaced while testing it: the Phase 10.12 lyrics-search fallback only
+rendered on the empty-lyrics path, so a wrong-but-non-empty LRCLIB match
+(a 20-second Karnivool interlude matched to an unrelated Don Henley song,
+found live) had no escape hatch and no visible explanation. Fallback links
+now render under any lyrics state except instrumental.
 
 **AC for 10.3–10.16 collectively — satisfied:** every list of albums
 anywhere in the app (Backlog, Recent, Revisit, Reviews, playlist import)

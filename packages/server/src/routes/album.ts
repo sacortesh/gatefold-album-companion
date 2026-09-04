@@ -4,22 +4,28 @@ import {
   albumDetailSchema,
   albumLyricsResponseSchema,
   idParamSchema,
+  similarAlbumsResponseSchema,
   type AlbumContext,
   type AlbumDetail,
   type AlbumLyricsResponse,
   type AlbumTrack,
+  type SimilarAlbumsResponse,
 } from "@gatefold/shared";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { getAlbumContext } from "../context/index.js";
 import { renderLinkTemplates } from "../links.js";
 import { getLyrics } from "../lyrics/lrclib.js";
+import { getSimilarAlbumIds } from "../similar-albums.js";
 import {
   getAlbum,
+  getAlbums,
   getAlbumTracks,
+  toAlbumSummary,
   type RawAlbum,
   type RawAlbumTrack,
 } from "../spotify/albums.js";
 import { readConfig } from "../store/config.js";
+import { readAllReviews } from "../store/reviews.js";
 
 async function mapLimit<T, R>(
   items: T[],
@@ -119,6 +125,45 @@ export async function albumRoutes(app: FastifyInstance): Promise<void> {
           (l, i, all) => all.findIndex((x) => x.label === l.label) === i,
         ),
       };
+    },
+  );
+
+  typed.get(
+    "/album/:id/similar",
+    {
+      schema: {
+        params: idParamSchema,
+        response: { 200: similarAlbumsResponseSchema },
+      },
+    },
+    async (req): Promise<SimilarAlbumsResponse> => {
+      const { id } = req.params;
+      const raw = await getAlbum(id);
+      const artist = raw.artists?.[0]?.name ?? "";
+
+      const ids = (await getSimilarAlbumIds(artist)).filter((i) => i !== id);
+      if (ids.length === 0) return { albums: [] };
+
+      // Backlog/Revisit/Reviews change constantly — filtered fresh here,
+      // never baked into getSimilarAlbumIds's 30-day cache.
+      const [rawAlbums, backlog, revisit, reviews] = await Promise.all([
+        getAlbums(ids),
+        readConfig("backlog"),
+        readConfig("revisit"),
+        readAllReviews(),
+      ]);
+      const known = new Set([
+        ...backlog.items.map((i) => i.albumId),
+        ...revisit.items.map((i) => i.albumId),
+        ...reviews.map((r) => r.albumId),
+      ]);
+
+      const albums = ids
+        .map((i) => rawAlbums.get(i))
+        .filter((a): a is RawAlbum => a !== undefined && !known.has(a.id))
+        .map(toAlbumSummary);
+
+      return { albums };
     },
   );
 

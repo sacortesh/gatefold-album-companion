@@ -18,6 +18,7 @@ import { AlbumContextPanel } from "./AlbumContextPanel";
 import { AlbumGallery } from "./AlbumGallery";
 import { AlbumHero } from "./AlbumHero";
 import { LyricsPanel } from "./LyricsPanel";
+import { SimilarAlbums } from "./SimilarAlbums";
 import { useAlbumTriage } from "./useAlbumTriage";
 
 type RowVariant = "default" | "now-playing" | "selected";
@@ -379,6 +380,8 @@ export function AlbumPage() {
           )}
         </div>
       </div>
+
+      <SimilarAlbums albumId={a.id} />
 
       {reviewOpen && (
         <VerdictDialog

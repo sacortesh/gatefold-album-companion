@@ -8,6 +8,7 @@ import { AttributionSettings } from "./AttributionSettings";
 import { BangerPlaylistPicker } from "./BangerPlaylistPicker";
 import { DevicePicker } from "./DevicePicker";
 import { DiscogsSetup } from "./DiscogsSetup";
+import { LastfmSetup } from "./LastfmSetup";
 import { LinksSettings } from "./LinksSettings";
 import { SecuritySettings } from "./SecuritySettings";
 import { SpotifySetup } from "./SpotifySetup";
@@ -136,6 +137,8 @@ export function SettingsPage() {
       <SpotifySetup />
 
       <DiscogsSetup />
+
+      <LastfmSetup />
 
       <LinksSettings />
 

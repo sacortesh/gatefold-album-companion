@@ -22,6 +22,7 @@ const fileSchema = z.object({
   spotifyClientId: z.string().default(""),
   discogsConsumerKey: z.string().default(""),
   discogsConsumerSecret: z.string().default(""),
+  lastfmApiKey: z.string().default(""),
   /** Public base URL the app is reached at, e.g. https://album.example.com. */
   publicUrl: z.string().default(""),
   /** Required on every `/api/*` call except `/api/health`. Generated on first run. */
@@ -44,6 +45,7 @@ export interface AppConfig extends AppConfigFile {
     publicUrl: boolean;
     discogsConsumerKey: boolean;
     discogsConsumerSecret: boolean;
+    lastfmApiKey: boolean;
   };
 }
 
@@ -125,6 +127,7 @@ export async function getAppConfig(): Promise<AppConfig> {
     env.DISCOGS_CONSUMER_SECRET,
     file.discogsConsumerSecret,
   );
+  const lastfmApiKey = prefer(env.LASTFM_API_KEY, file.lastfmApiKey);
   const publicUrl = prefer(env.PUBLIC_URL, file.publicUrl).replace(/\/+$/, "");
 
   const redirectUri =
@@ -136,6 +139,7 @@ export async function getAppConfig(): Promise<AppConfig> {
     spotifyClientId,
     discogsConsumerKey,
     discogsConsumerSecret,
+    lastfmApiKey,
     publicUrl,
     redirectUri,
     envLocked: {
@@ -143,6 +147,7 @@ export async function getAppConfig(): Promise<AppConfig> {
       publicUrl: Boolean(env.PUBLIC_URL),
       discogsConsumerKey: Boolean(env.DISCOGS_CONSUMER_KEY),
       discogsConsumerSecret: Boolean(env.DISCOGS_CONSUMER_SECRET),
+      lastfmApiKey: Boolean(env.LASTFM_API_KEY),
     },
   };
 }
@@ -163,6 +168,8 @@ export async function updateAppConfig(
     merged.discogsConsumerKey = patch.discogsConsumerKey;
   if (patch.discogsConsumerSecret !== undefined && !locked.discogsConsumerSecret)
     merged.discogsConsumerSecret = patch.discogsConsumerSecret;
+  if (patch.lastfmApiKey !== undefined && !locked.lastfmApiKey)
+    merged.lastfmApiKey = patch.lastfmApiKey;
 
   await persist(fileSchema.parse(merged));
   return getAppConfig();
@@ -175,6 +182,10 @@ export async function spotifyConfigured(): Promise<boolean> {
 export async function discogsConfigured(): Promise<boolean> {
   const c = await getAppConfig();
   return Boolean(c.discogsConsumerKey && c.discogsConsumerSecret);
+}
+
+export async function lastfmConfigured(): Promise<boolean> {
+  return Boolean((await getAppConfig()).lastfmApiKey);
 }
 
 // --- Phase 9.2: API key + UI auth ------------------------------------

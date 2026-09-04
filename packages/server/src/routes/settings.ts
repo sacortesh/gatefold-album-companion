@@ -21,6 +21,7 @@ function toDto(c: AppConfig): AppSettings {
     publicUrl: c.publicUrl,
     redirectUri: c.redirectUri,
     discogsConfigured: Boolean(c.discogsConsumerKey && c.discogsConsumerSecret),
+    lastfmConfigured: Boolean(c.lastfmApiKey),
     apiKey: c.apiKey,
     uiAuth: {
       enabled: c.uiAuth.enabled,
@@ -32,6 +33,7 @@ function toDto(c: AppConfig): AppSettings {
       publicUrl: c.envLocked.publicUrl,
       discogs:
         c.envLocked.discogsConsumerKey || c.envLocked.discogsConsumerSecret,
+      lastfm: c.envLocked.lastfmApiKey,
     },
   };
 }
@@ -64,6 +66,8 @@ export async function settingsRoutes(app: FastifyInstance): Promise<void> {
         clean.discogsConsumerKey = patch.discogsConsumerKey.trim();
       if (patch.discogsConsumerSecret !== undefined)
         clean.discogsConsumerSecret = patch.discogsConsumerSecret.trim();
+      if (patch.lastfmApiKey !== undefined)
+        clean.lastfmApiKey = patch.lastfmApiKey.trim();
       return toDto(await updateAppConfig(clean));
     },
   );

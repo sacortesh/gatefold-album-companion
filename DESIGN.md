@@ -229,12 +229,13 @@ tell.
 - SettingsPanel — the settings-card shape (`AboutSettings`, `DiscogsSetup`, `SecuritySettings`, `SpotifySetup`, `BangerPlaylistPicker`) — this is where a real card border *is* justified (Card discipline above), since each is a genuinely separate configuration unit.
 - VerdictDialog — the one true modal organism; migrated onto shadcn/ui's `Dialog` primitive (see `ARCHITECTURE.md`) for built-in focus-trap, `Escape`-to-close, and `aria-*` wiring instead of hand-built overlay/backdrop-click logic. PlaylistImport is an inline `<details>` disclosure, not a modal.
 - DevicePickerPrompt — **second true modal organism**, added in Phase 10.8 (implementation-plan.md): same `Dialog` primitive as VerdictDialog, opened by a `DevicePickerPromptProvider` context mounted once in `Layout` so any play mutation across the app can trigger it on a `no_device` 409. Corrects this doc's earlier note that DevicePicker was inline-only — the Settings-page section still is (unchanged, still not a modal), but its underlying device list is now also reachable through this second, modal call site via a shared `useDevices` hook + `DeviceList` molecule.
+- SimilarAlbums — added Phase 10.17: a horizontal strip of album-recommendation cards (cover + name + artist, `rounded-lg` per the shape lock), sourced from Last.fm and resolved to real Spotify albums server-side. Placed after the tracklist/lyrics grid on `AlbumPage` — deliberately last, not competing with the tracklist/lyrics/triage loop for attention (the Pareto note under Requirements). Renders nothing when the integration isn't configured or there's nothing left after filtering against Backlog/Revisit/Reviews — same silent-when-empty discipline as AlbumGallery.
 
 ### Compound families
 - none identified — the app has no tabs/accordion-with-multiple-panels/menu structure that needs a shared-context compound component.
 
 ### Templates → Pages
 - ListTemplate (AppHeader + PlaybackDock + list organism) → BacklogPage, RecentPage, RevisitPage, ReviewsPage.
-- AlbumTemplate (AppHeader + PlaybackDock + AlbumHero + TrackList/LyricsPanel two-column body) → AlbumPage.
+- AlbumTemplate (AppHeader + PlaybackDock + AlbumHero + AlbumGallery + TrackList/LyricsPanel two-column body + SimilarAlbums) → AlbumPage.
 - SettingsTemplate (AppHeader + PlaybackDock + stacked SettingsPanels) → SettingsPage.
 - NowPlayingTemplate (AppHeader + PlaybackDock + large transport + embedded RecentList) → NowPlayingPage (pending its Phase 10.4 merge into Recent — a content change tracked separately, not blocked by this).

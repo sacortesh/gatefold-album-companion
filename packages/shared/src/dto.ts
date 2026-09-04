@@ -57,6 +57,9 @@ export const appSettingsSchema = z.object({
   publicUrl: z.string(),
   redirectUri: z.string(),
   discogsConfigured: z.boolean(),
+  /** Presence of the key is the on/off switch — same pattern as Discogs;
+   *  no separate enabled flag to keep in sync with it. */
+  lastfmConfigured: z.boolean(),
   /** Required on every other `/api/*` call — shown for copy/paste into scripts. */
   apiKey: z.string(),
   uiAuth: z.object({
@@ -69,6 +72,7 @@ export const appSettingsSchema = z.object({
     spotifyClientId: z.boolean(),
     publicUrl: z.boolean(),
     discogs: z.boolean(),
+    lastfm: z.boolean(),
   }),
 });
 export type AppSettings = z.infer<typeof appSettingsSchema>;
@@ -79,6 +83,7 @@ export const appSettingsUpdateSchema = z.object({
   publicUrl: z.string().optional(),
   discogsConsumerKey: z.string().optional(),
   discogsConsumerSecret: z.string().optional(),
+  lastfmApiKey: z.string().optional(),
 });
 export type AppSettingsUpdate = z.infer<typeof appSettingsUpdateSchema>;
 
@@ -327,6 +332,14 @@ export const playlistAlbumsResponseSchema = z.object({
 export type PlaylistAlbumsResponse = z.infer<
   typeof playlistAlbumsResponseSchema
 >;
+
+/** `GET /api/album/:id/similar` — Last.fm similar-artist → top-album,
+ *  resolved to real Spotify albums, filtered against Backlog/Revisit/
+ *  Reviews. Empty when Last.fm isn't configured, not an error. */
+export const similarAlbumsResponseSchema = z.object({
+  albums: z.array(albumSummarySchema),
+});
+export type SimilarAlbumsResponse = z.infer<typeof similarAlbumsResponseSchema>;
 
 // --- Phase 5: album view + lyrics ---------------------------------
 

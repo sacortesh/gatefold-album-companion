@@ -20,6 +20,7 @@ const envSchema = z.object({
   PUBLIC_URL: z.string().optional(),
   DISCOGS_CONSUMER_KEY: z.string().optional(),
   DISCOGS_CONSUMER_SECRET: z.string().optional(),
+  LASTFM_API_KEY: z.string().optional(),
 });
 
 export const env = envSchema.parse(process.env);
