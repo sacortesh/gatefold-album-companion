@@ -39,63 +39,71 @@ function Card({
     : "album unavailable";
 
   return (
-    <li className="flex items-center gap-4 rounded-lg border border-border p-3">
-      <Link
-        to={`/album/${entry.albumId}`}
-        className="h-16 w-16 shrink-0 overflow-hidden rounded bg-surface-2"
-      >
-        {a?.image && (
-          <img src={a.image} alt="" className="h-full w-full object-cover" />
-        )}
-      </Link>
-
-      <div className="min-w-0 flex-1">
+    <li className="flex flex-col gap-3 rounded-lg border border-border p-3 sm:flex-row sm:items-center sm:gap-4">
+      <div className="flex items-center gap-4">
         <Link
           to={`/album/${entry.albumId}`}
-          className="block truncate font-medium hover:underline"
+          className="h-16 w-16 shrink-0 overflow-hidden rounded bg-surface-2"
         >
-          {a?.name ?? entry.albumId}
+          {a?.image && (
+            <img src={a.image} alt="" className="h-full w-full object-cover" />
+          )}
         </Link>
-        <p className="truncate text-sm text-ink-muted">
-          {a?.artists.join(", ")}
-        </p>
-        <p className="truncate text-xs text-ink-muted">{meta}</p>
-        {a && <GenreChips genres={a.genres} />}
+
+        <div className="min-w-0 flex-1">
+          <Link
+            to={`/album/${entry.albumId}`}
+            className="block truncate font-medium hover:underline"
+          >
+            {a?.name ?? entry.albumId}
+          </Link>
+          <p className="truncate text-sm text-ink-muted">
+            {a?.artists.join(", ")}
+          </p>
+          <p className="truncate text-xs text-ink-muted">{meta}</p>
+          {a && <GenreChips genres={a.genres} />}
+        </div>
       </div>
 
-      <div
-        className="flex shrink-0 flex-col text-ink-muted"
-        title={reorderable ? undefined : "Clear the filter to reorder"}
-      >
-        <button
-          type="button"
-          onClick={() => onMove(-1)}
-          disabled={!reorderable || first}
-          className="flex h-8 w-8 items-center justify-center rounded hover:bg-surface-2 hover:text-ink disabled:opacity-20 disabled:hover:bg-transparent"
-          aria-label="Move up"
+      {/* Below sm: this drops to its own row instead of squeezing the
+          title/artist text above to nothing — the thumbnail+text block
+          and the reorder arrows + 3 buttons together never fit one row
+          under ~450px, and flex won't shrink text past its content. */}
+      <div className="flex flex-wrap items-center gap-2 sm:ml-auto sm:shrink-0">
+        <div
+          className="flex shrink-0 flex-col text-ink-muted"
+          title={reorderable ? undefined : "Clear the filter to reorder"}
         >
-          ▲
-        </button>
-        <button
-          type="button"
-          onClick={() => onMove(1)}
-          disabled={!reorderable || last}
-          className="flex h-8 w-8 items-center justify-center rounded hover:bg-surface-2 hover:text-ink disabled:opacity-20 disabled:hover:bg-transparent"
-          aria-label="Move down"
-        >
-          ▼
-        </button>
-      </div>
+          <button
+            type="button"
+            onClick={() => onMove(-1)}
+            disabled={!reorderable || first}
+            className="flex h-8 w-8 items-center justify-center rounded hover:bg-surface-2 hover:text-ink disabled:opacity-20 disabled:hover:bg-transparent"
+            aria-label="Move up"
+          >
+            ▲
+          </button>
+          <button
+            type="button"
+            onClick={() => onMove(1)}
+            disabled={!reorderable || last}
+            className="flex h-8 w-8 items-center justify-center rounded hover:bg-surface-2 hover:text-ink disabled:opacity-20 disabled:hover:bg-transparent"
+            aria-label="Move down"
+          >
+            ▼
+          </button>
+        </div>
 
-      <Button variant="primary" onClick={onPlay} className="shrink-0">
-        Play album
-      </Button>
-      <Button variant="secondary" asChild className="shrink-0">
-        <Link to={`/album/${entry.albumId}`}>View</Link>
-      </Button>
-      <Button variant="secondary" onClick={onRemove} className="shrink-0">
-        Remove
-      </Button>
+        <Button variant="primary" onClick={onPlay} className="shrink-0">
+          Play album
+        </Button>
+        <Button variant="secondary" asChild className="shrink-0">
+          <Link to={`/album/${entry.albumId}`}>View</Link>
+        </Button>
+        <Button variant="secondary" onClick={onRemove} className="shrink-0">
+          Remove
+        </Button>
+      </div>
     </li>
   );
 }

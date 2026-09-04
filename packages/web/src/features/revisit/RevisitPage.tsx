@@ -23,41 +23,43 @@ function Row({ entry }: { entry: RevisitEntry }) {
   const r = entry.review;
 
   return (
-    <li className="flex items-start gap-4 rounded-lg border border-border p-3">
-      <Link
-        to={`/album/${entry.albumId}`}
-        className="h-16 w-16 shrink-0 overflow-hidden rounded bg-surface-2"
-      >
-        {a?.image && (
-          <img src={a.image} alt="" className="h-full w-full object-cover" />
-        )}
-      </Link>
-
-      <div className="min-w-0 flex-1">
+    <li className="flex flex-col gap-3 rounded-lg border border-border p-3 sm:flex-row sm:items-start sm:gap-4">
+      <div className="flex items-start gap-4">
         <Link
           to={`/album/${entry.albumId}`}
-          className="block truncate font-medium hover:underline"
+          className="h-16 w-16 shrink-0 overflow-hidden rounded bg-surface-2"
         >
-          {a?.name ?? entry.albumId}
+          {a?.image && (
+            <img src={a.image} alt="" className="h-full w-full object-cover" />
+          )}
         </Link>
-        <p className="truncate text-sm text-ink-muted">{a?.artists.join(", ")}</p>
-        {a && <GenreChips genres={a.genres} />}
-        {r && (
-          <p className="mt-1 text-xs text-ink-muted">
-            reviewed {r.listenedOn}
-            {r.rating != null && ` · ${r.rating}/10`}
-            {r.revisitedOn.length > 0 &&
-              ` · revisited ${r.revisitedOn.length}×`}
-          </p>
-        )}
-        {r?.notes && (
-          <p className="mt-1 line-clamp-3 whitespace-pre-wrap text-sm text-ink-muted">
-            {r.notes}
-          </p>
-        )}
+
+        <div className="min-w-0 flex-1">
+          <Link
+            to={`/album/${entry.albumId}`}
+            className="block truncate font-medium hover:underline"
+          >
+            {a?.name ?? entry.albumId}
+          </Link>
+          <p className="truncate text-sm text-ink-muted">{a?.artists.join(", ")}</p>
+          {a && <GenreChips genres={a.genres} />}
+          {r && (
+            <p className="mt-1 text-xs text-ink-muted">
+              reviewed {r.listenedOn}
+              {r.rating != null && ` · ${r.rating}/10`}
+              {r.revisitedOn.length > 0 &&
+                ` · revisited ${r.revisitedOn.length}×`}
+            </p>
+          )}
+          {r?.notes && (
+            <p className="mt-1 line-clamp-3 whitespace-pre-wrap text-sm text-ink-muted">
+              {r.notes}
+            </p>
+          )}
+        </div>
       </div>
 
-      <div className="flex shrink-0 flex-col gap-2">
+      <div className="flex shrink-0 gap-2 sm:ml-auto sm:flex-col">
         <Button variant="primary" size="sm" onClick={() => play.mutate()}>
           Play
         </Button>

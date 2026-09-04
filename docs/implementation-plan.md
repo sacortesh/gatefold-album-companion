@@ -245,16 +245,36 @@ Goal: it survives real use and a fresh clone.
       connected
 - [ ] keyboard-shortcut help overlay (`?`)
 
-### Responsive layout (assessed 2026-08-28)
-- [ ] nav bar: 4 items + status dot overflow the header below ~360 px —
-      let it wrap, or collapse to a compact/menu form on narrow screens
-- [ ] backlog cards: cover + ▲▼ + "Play album" + "Remove" are all
+### Responsive layout (assessed 2026-08-28, fixed 2026-09-04)
+- [x] nav bar: 4 items + status dot overflow the header below ~360 px —
+      let it wrap, or collapse to a compact/menu form on narrow screens.
+      Fixed: `<nav>` in `Layout.tsx` claims a full row below `sm:`
+      (`basis-full sm:basis-auto sm:flex-1`) instead of competing with the
+      wordmark for whatever space is left, so it wraps 2 items/line instead
+      of collapsing to 1.
+- [x] backlog cards: cover + ▲▼ + "Play album" + "Remove" are all
       fixed-width `shrink-0` (~260 px) → the row breaks on a phone;
-      restack the controls / move secondary actions into a menu
-- [ ] album tracklist: "play from here" ▶ is `group-hover` only →
-      invisible on touch; give every row a real tap target
-- [ ] audit remaining rows (recent, revisit, device picker) at 360 px for
-      horizontal overflow — the page body must never scroll sideways
+      restack the controls / move secondary actions into a menu.
+      Fixed: `Card` in `BacklogPage.tsx` restructured to
+      `flex-col ... sm:flex-row` — info block (cover+text) always stays
+      horizontal; the reorder-arrows + action buttons wrap to their own row
+      below on narrow screens instead of squeezing the title/artist text to
+      zero width. Same pattern applied to `Row` in `RevisitPage.tsx`, which
+      had the same bug (Open button overlapping a genre chip).
+- [x] album tracklist: "play from here" ▶ is `group-hover` only →
+      invisible on touch; give every row a real tap target.
+      Fixed: `TrackRow` in `AlbumPage.tsx` now also shows the Play icon
+      under `[@media(pointer:coarse)]:block` (Tailwind arbitrary variant —
+      `pointer-coarse:`/`pointer-fine:` aren't core Tailwind 3.4 variants,
+      confirmed by testing the JIT output), so touch devices get the icon
+      by default instead of relying on a hover state they don't have.
+- [x] audit remaining rows (recent, revisit, device picker) at 360 px for
+      horizontal overflow — the page body must never scroll sideways.
+      Verified live at ~450 px effective width (the narrowest this
+      environment's `resize_window` reliably produced): Backlog, Recent,
+      Revisit, Reviews, Settings, and an Album page (hero + tracklist +
+      lyrics) all confirmed `scrollWidth === clientWidth`, no overlap.
+      RecentPage's row was already fine as built — no fix needed there.
 
 ### Performance on low-end / mobile
 - [ ] images: server returns Spotify's 640 px image (`images[0]`) for

@@ -81,8 +81,10 @@ export function Layout() {
       <div className="mx-auto flex min-h-screen max-w-5xl flex-col px-6">
         <UpdateBanner />
         {/* Single row at desktop (taste-checklist: nav ≤80px, one line) —
-            wraps below the app's documented ~360px overflow breakpoint
-            instead of a hard two-row split. */}
+            below that, the nav claims its own full-width row (`basis-full`)
+            instead of competing with the logo for whatever's left, so it
+            can wrap 2+ items per line instead of collapsing to one per
+            row on a real phone width. */}
         <header className="flex flex-wrap items-center gap-x-6 gap-y-2 border-b border-border py-3">
           <Link
             to="/"
@@ -90,7 +92,7 @@ export function Layout() {
           >
             <GatefoldMark /> Gatefold
           </Link>
-          <nav className="flex flex-1 flex-wrap gap-1">
+          <nav className="flex basis-full flex-wrap gap-1 sm:basis-auto sm:flex-1">
             {navItems.map((item) => (
               <NavLink
                 key={item.to}

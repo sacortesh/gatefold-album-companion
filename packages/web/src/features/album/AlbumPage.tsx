@@ -66,8 +66,13 @@ function TrackRow({
         className="w-6 shrink-0 text-center text-xs text-ink-muted hover:text-primary"
         title="Play from here"
       >
-        <span className="group-hover:hidden">{track.trackNumber ?? index + 1}</span>
-        <Play className="mx-auto hidden size-3.5 group-hover:block" />
+        {/* Touch has no hover state to reveal the Play icon, so coarse
+            pointers get it shown by default instead of the track number —
+            otherwise "play from here" has zero visual affordance on phones. */}
+        <span className="group-hover:hidden [@media(pointer:coarse)]:hidden">
+          {track.trackNumber ?? index + 1}
+        </span>
+        <Play className="mx-auto hidden size-3.5 group-hover:block [@media(pointer:coarse)]:block" />
       </button>
 
       <div className="min-w-0 flex-1">
