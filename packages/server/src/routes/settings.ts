@@ -2,10 +2,12 @@ import type { FastifyInstance } from "fastify";
 import {
   appSettingsSchema,
   appSettingsUpdateSchema,
+  okSchema,
   uiAuthUpdateSchema,
   type AppSettings,
 } from "@gatefold/shared";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
+import { clearAllCaches } from "../cache.js";
 import {
   getAppConfig,
   regenerateApiKey,
@@ -76,6 +78,15 @@ export async function settingsRoutes(app: FastifyInstance): Promise<void> {
     "/settings/api-key/regenerate",
     { schema: { response: { 200: appSettingsSchema } } },
     async (): Promise<AppSettings> => toDto(await regenerateApiKey()),
+  );
+
+  typed.post(
+    "/settings/cache/clear",
+    { schema: { response: { 200: okSchema } } },
+    async () => {
+      await clearAllCaches();
+      return { ok: true as const };
+    },
   );
 
   typed.put(

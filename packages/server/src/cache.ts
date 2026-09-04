@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { CACHE_DIR } from "./paths.js";
 
@@ -31,4 +31,14 @@ export function makeCache(namespace: string) {
       await writeFile(fileFor(key), JSON.stringify(entry), "utf8");
     },
   };
+}
+
+/** Wipes every namespace under `data/cache/` — Spotify album lookups,
+ *  MusicBrainz/Wikipedia/Discogs/Cover-Art-Archive context, LRCLIB lyrics
+ *  (including cached misses, e.g. a wrong match that's since been fixed
+ *  upstream), Last.fm similar-artist resolutions, and the update-check.
+ *  Nothing here is user data (reviews/backlog/revisit are separate config
+ *  files) — everything just gets refetched lazily on next access. */
+export async function clearAllCaches(): Promise<void> {
+  await rm(CACHE_DIR, { recursive: true, force: true });
 }

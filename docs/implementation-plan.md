@@ -1052,6 +1052,33 @@ rendered on the empty-lyrics path, so a wrong-but-non-empty LRCLIB match
 found live) had no escape hatch and no visible explanation. Fallback links
 now render under any lyrics state except instrumental.
 
+### 10.18 — Settings: clear cache — done
+
+Also conversational, requested right after 10.17 landed: a self-hoster
+hitting a stale/wrong cached lookup (the exact LRCLIB mismatch above is the
+motivating case) had no way to force a refetch short of SSHing in and
+deleting files under `data/cache/` by hand — which is exactly what this
+session did manually, more than once, while testing 10.6/10.14/10.17.
+
+- [x] `cache.ts` — `clearAllCaches()`, a single `rm -rf` of the whole
+      `data/cache/` tree (Spotify albums, MusicBrainz/Wikipedia/Discogs/
+      Cover-Art-Archive context, LRCLIB lyrics, Last.fm similar-artist
+      resolution, the update-check). Doesn't touch `data/config/` or
+      `data/reviews/` — those are saved user data, not a cache.
+- [x] `POST /settings/cache/clear` — same operational-action shape as
+      `/settings/api-key/regenerate`, no confirmation dialog for the same
+      reason that one doesn't have one: fully reversible, nothing lost,
+      worst case is a few slower page loads while things refetch.
+- [x] Settings → About: a "Clear cache" button, with a plain-language
+      explanation of what it does and doesn't touch. On success, also
+      invalidates every client-side React Query cache (`queryClient.
+      invalidateQueries()` with no filter) so whatever's currently on
+      screen refetches immediately instead of waiting for a stale query to
+      naturally re-trigger. Verified live: 352 cached files on disk before,
+      1 after (the update-check cache, immediately regenerated because the
+      Settings page's own version query refetched right after — expected,
+      not a bug).
+
 **AC for 10.3–10.16 collectively — satisfied:** every list of albums
 anywhere in the app (Backlog, Recent, Revisit, Reviews, playlist import)
 gets you to `/album/:id` in one obvious click; hitting Play with nothing

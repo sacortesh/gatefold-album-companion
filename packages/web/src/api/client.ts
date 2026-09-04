@@ -138,6 +138,7 @@ export const api = {
     }),
   regenerateApiKey: () =>
     request<AppSettings>("/settings/api-key/regenerate", { method: "POST" }),
+  clearCache: () => post("/settings/cache/clear"),
   updateUiAuth: (body: UiAuthUpdate) =>
     request<AppSettings>("/settings/ui-auth", {
       method: "PUT",

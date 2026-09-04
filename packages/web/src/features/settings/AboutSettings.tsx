@@ -1,12 +1,29 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../api/client";
+import { Button } from "../../components/ui/button";
 
 /** Version + update check against the project's GitHub releases (server-side, 30min cache). */
 export function AboutSettings() {
+  const qc = useQueryClient();
   const version = useQuery({
     queryKey: ["version"],
     queryFn: api.version,
     staleTime: 3600_000,
+  });
+
+  const [cleared, setCleared] = useState(false);
+  const clearCache = useMutation({
+    mutationFn: api.clearCache,
+    onSuccess: () => {
+      // Server-side caches (Spotify albums, context, lyrics, similar-albums)
+      // are gone — refetch whatever's currently on screen so the page
+      // reflects it immediately instead of waiting for a stale query to
+      // naturally re-trigger.
+      void qc.invalidateQueries();
+      setCleared(true);
+      setTimeout(() => setCleared(false), 1500);
+    },
   });
 
   const v = version.data;
@@ -50,6 +67,28 @@ export function AboutSettings() {
       >
         API documentation →
       </a>
+
+      <div className="space-y-1 border-t border-border pt-3">
+        <p className="text-xs text-ink-muted">
+          Clears cached Spotify/MusicBrainz/Discogs/LRCLIB/Last.fm lookups —
+          use this if something's showing stale or wrong (a bad lyrics
+          match, for example). Nothing you've saved (reviews, backlog,
+          settings) is touched; everything just refetches on next view.
+        </p>
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => clearCache.mutate()}
+          disabled={clearCache.isPending}
+        >
+          {clearCache.isPending ? "Clearing…" : cleared ? "Cleared" : "Clear cache"}
+        </Button>
+        {clearCache.isError && (
+          <p className="text-sm text-danger">
+            {(clearCache.error as Error).message}
+          </p>
+        )}
+      </div>
     </div>
   );
 }
