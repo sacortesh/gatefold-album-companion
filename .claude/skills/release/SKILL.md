@@ -143,7 +143,12 @@ permissions** if `docker/login-action` or the push step itself 403s.
 
 ```bash
 gh release view "v<newversion>"
-docker pull ghcr.io/sacortesh/gatefold-album-companion:v<newversion>
+# The workflow strips the leading "v" before tagging the image
+# (GITHUB_REF_NAME#v in release.yml's merge job) — the git tag is
+# "v<newversion>" but the image tag is the bare "<newversion>". Pulling
+# with the "v" prefix 404s even on a totally healthy release; don't
+# mistake that for a GHCR-visibility problem (see below).
+docker pull ghcr.io/sacortesh/gatefold-album-companion:<newversion>
 ```
 
 **GHCR packages are private by default**, even on a public repo — that's
