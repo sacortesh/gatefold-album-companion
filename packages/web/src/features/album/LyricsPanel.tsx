@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { renderLinkTemplate, type TrackLyrics } from "@gatefold/shared";
 import { api } from "../../api/client";
@@ -90,27 +91,30 @@ export function LyricsPanel({
     return <p className="text-sm text-ink-muted">Instrumental.</p>;
   }
 
+  // Always paired with the search-elsewhere links below, not just on the
+  // empty-lyrics path — LRCLIB occasionally returns a confident-looking but
+  // wrong match (a short interlude matched to an unrelated song's lyrics,
+  // for one real example), and a plain-text match with no timing data has
+  // no other signal the user could use to tell it's wrong. The links are
+  // the escape hatch either way.
+  let body: ReactNode;
   if (lyrics?.synced?.length) {
-    return (
-      <SyncedView
-        lines={lyrics.synced}
-        positionMs={positionMs}
-        live={isNowPlaying}
-      />
+    body = (
+      <SyncedView lines={lyrics.synced} positionMs={positionMs} live={isNowPlaying} />
     );
-  }
-
-  if (lyrics?.plain) {
-    return (
+  } else if (lyrics?.plain) {
+    body = (
       <p className="whitespace-pre-wrap leading-relaxed text-ink">
         {lyrics.plain}
       </p>
     );
+  } else {
+    body = <p className="text-sm text-ink-muted">No lyrics found.</p>;
   }
 
   return (
     <div>
-      <p className="text-sm text-ink-muted">No lyrics found.</p>
+      {body}
       <LyricsFallback artist={artist} track={track} />
     </div>
   );
