@@ -1,11 +1,16 @@
 import type { FastifyInstance } from "fastify";
 import {
+  deviceIdRequestSchema,
+  devicesResponseSchema,
+  okSchema,
   playRequestSchema,
+  playbackStateSchema,
   seekRequestSchema,
   transferRequestSchema,
   type DevicesResponse,
   type PlaybackState,
 } from "@gatefold/shared";
+import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { AppError } from "../errors.js";
 import {
   getDevices,
@@ -45,47 +50,71 @@ async function playWithFallback(opts: PlayOptions): Promise<void> {
 }
 
 export async function playbackRoutes(app: FastifyInstance): Promise<void> {
-  app.get("/playback", async (): Promise<PlaybackState> => getPlayback());
+  const typed = app.withTypeProvider<ZodTypeProvider>();
 
-  app.get("/devices", async (): Promise<DevicesResponse> => ({
-    devices: await getDevices(),
-  }));
+  typed.get(
+    "/playback",
+    { schema: { response: { 200: playbackStateSchema } } },
+    async (): Promise<PlaybackState> => getPlayback(),
+  );
 
-  app.post("/playback/play", async (req) => {
-    const opts = playRequestSchema.parse(req.body ?? {});
-    await playWithFallback(opts);
-    return { ok: true as const };
-  });
+  typed.get(
+    "/devices",
+    { schema: { response: { 200: devicesResponseSchema } } },
+    async (): Promise<DevicesResponse> => ({ devices: await getDevices() }),
+  );
 
-  app.post("/playback/pause", async (req) => {
-    const { deviceId } = playRequestSchema.parse(req.body ?? {});
-    await pause(deviceId);
-    return { ok: true as const };
-  });
+  typed.post(
+    "/playback/play",
+    { schema: { body: playRequestSchema, response: { 200: okSchema } } },
+    async (req) => {
+      await playWithFallback(req.body);
+      return { ok: true as const };
+    },
+  );
 
-  app.post("/playback/next", async (req) => {
-    const { deviceId } = playRequestSchema.parse(req.body ?? {});
-    await next(deviceId);
-    return { ok: true as const };
-  });
+  typed.post(
+    "/playback/pause",
+    { schema: { body: deviceIdRequestSchema, response: { 200: okSchema } } },
+    async (req) => {
+      await pause(req.body.deviceId);
+      return { ok: true as const };
+    },
+  );
 
-  app.post("/playback/previous", async (req) => {
-    const { deviceId } = playRequestSchema.parse(req.body ?? {});
-    await previous(deviceId);
-    return { ok: true as const };
-  });
+  typed.post(
+    "/playback/next",
+    { schema: { body: deviceIdRequestSchema, response: { 200: okSchema } } },
+    async (req) => {
+      await next(req.body.deviceId);
+      return { ok: true as const };
+    },
+  );
 
-  app.post("/playback/seek", async (req) => {
-    const { positionMs, deviceId } = seekRequestSchema.parse(req.body ?? {});
-    await seek(positionMs, deviceId);
-    return { ok: true as const };
-  });
+  typed.post(
+    "/playback/previous",
+    { schema: { body: deviceIdRequestSchema, response: { 200: okSchema } } },
+    async (req) => {
+      await previous(req.body.deviceId);
+      return { ok: true as const };
+    },
+  );
 
-  app.post("/playback/transfer", async (req) => {
-    const { deviceId, play: startPlaying } = transferRequestSchema.parse(
-      req.body ?? {},
-    );
-    await transferPlayback(deviceId, startPlaying ?? false);
-    return { ok: true as const };
-  });
+  typed.post(
+    "/playback/seek",
+    { schema: { body: seekRequestSchema, response: { 200: okSchema } } },
+    async (req) => {
+      await seek(req.body.positionMs, req.body.deviceId);
+      return { ok: true as const };
+    },
+  );
+
+  typed.post(
+    "/playback/transfer",
+    { schema: { body: transferRequestSchema, response: { 200: okSchema } } },
+    async (req) => {
+      await transferPlayback(req.body.deviceId, req.body.play ?? false);
+      return { ok: true as const };
+    },
+  );
 }

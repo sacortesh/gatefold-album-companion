@@ -1,10 +1,17 @@
 import type { FastifyInstance } from "fastify";
 import {
+  albumIdParamSchema,
+  reviewSchema,
+  reviewTemplateResponseSchema,
+  reviewsResponseSchema,
+  revisitResponseSchema,
   verdictRequestSchema,
+  verdictResponseSchema,
   type Review,
   type RevisitResponse,
   type VerdictResponse,
 } from "@gatefold/shared";
+import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { AppError } from "../errors.js";
 import { getAlbum, getAlbums, toAlbumSummary } from "../spotify/albums.js";
 import {
@@ -34,99 +41,124 @@ async function removeFromBacklog(albumId: string): Promise<void> {
 }
 
 export async function verdictRoutes(app: FastifyInstance): Promise<void> {
-  app.post("/verdict", async (req): Promise<VerdictResponse> => {
-    const body = verdictRequestSchema.parse(req.body);
-    const raw = await getAlbum(body.albumId);
-    const artist = raw.artists?.[0]?.name ?? "Unknown Artist";
+  const typed = app.withTypeProvider<ZodTypeProvider>();
 
-    let savedAlbum = false;
-    let removedFromLibrary = false;
-
-    if (body.verdict === "keep") {
-      await saveAlbum(body.albumId);
-      savedAlbum = true;
-    } else if (body.verdict === "delete") {
-      if (await isAlbumSaved(body.albumId)) {
-        await removeSavedAlbum(body.albumId);
-        removedFromLibrary = true;
-      }
-    }
-
-    const revisit = await readConfig("revisit");
-    const wasInRevisit = revisit.items.some((i) => i.albumId === body.albumId);
-    const existing = await findReview(body.albumId);
-
-    const review = await writeReview(
-      {
-        album: raw.name,
-        artist,
-        albumId: body.albumId,
-        verdict: body.verdict,
-        rating: body.rating,
-        tags: body.tags,
-        listenedOn: existing?.listenedOn ?? today(),
-        revisitedOn:
-          existing && wasInRevisit
-            ? dedupe([...existing.revisitedOn, today()])
-            : (existing?.revisitedOn ?? []),
+  typed.post(
+    "/verdict",
+    {
+      schema: {
+        body: verdictRequestSchema,
+        response: { 200: verdictResponseSchema },
       },
-      body.notes,
-    );
+    },
+    async (req): Promise<VerdictResponse> => {
+      const body = req.body;
+      const raw = await getAlbum(body.albumId);
+      const artist = raw.artists?.[0]?.name ?? "Unknown Artist";
 
-    if (body.verdict === "revisit") {
-      if (!wasInRevisit) {
-        revisit.items.push({
-          albumId: body.albumId,
-          reviewPath: review.path,
-          addedAt: today(),
-        });
-        await writeConfig("revisit", revisit);
+      let savedAlbum = false;
+      let removedFromLibrary = false;
+
+      if (body.verdict === "keep") {
+        await saveAlbum(body.albumId);
+        savedAlbum = true;
+      } else if (body.verdict === "delete") {
+        if (await isAlbumSaved(body.albumId)) {
+          await removeSavedAlbum(body.albumId);
+          removedFromLibrary = true;
+        }
       }
-    } else if (wasInRevisit) {
-      await writeConfig("revisit", {
-        items: revisit.items.filter((i) => i.albumId !== body.albumId),
-      });
-    }
 
-    await removeFromBacklog(body.albumId);
+      const revisit = await readConfig("revisit");
+      const wasInRevisit = revisit.items.some((i) => i.albumId === body.albumId);
+      const existing = await findReview(body.albumId);
 
-    return { verdict: body.verdict, review, savedAlbum, removedFromLibrary };
-  });
+      const review = await writeReview(
+        {
+          album: raw.name,
+          artist,
+          albumId: body.albumId,
+          verdict: body.verdict,
+          rating: body.rating,
+          tags: body.tags,
+          listenedOn: existing?.listenedOn ?? today(),
+          revisitedOn:
+            existing && wasInRevisit
+              ? dedupe([...existing.revisitedOn, today()])
+              : (existing?.revisitedOn ?? []),
+        },
+        body.notes,
+      );
 
-  app.get("/reviews", async () => ({ reviews: await readAllReviews() }));
+      if (body.verdict === "revisit") {
+        if (!wasInRevisit) {
+          revisit.items.push({
+            albumId: body.albumId,
+            reviewPath: review.path,
+            addedAt: today(),
+          });
+          await writeConfig("revisit", revisit);
+        }
+      } else if (wasInRevisit) {
+        await writeConfig("revisit", {
+          items: revisit.items.filter((i) => i.albumId !== body.albumId),
+        });
+      }
 
-  app.get("/review-template", async () => ({
-    template: await readReviewTemplate(),
-  }));
+      await removeFromBacklog(body.albumId);
 
-  app.get("/review/:albumId", async (req): Promise<Review> => {
-    const { albumId } = req.params as { albumId: string };
-    const review = await findReview(albumId);
-    if (!review) {
-      throw new AppError("no_review", "No review for that album yet.", 404);
-    }
-    return review;
-  });
+      return { verdict: body.verdict, review, savedAlbum, removedFromLibrary };
+    },
+  );
 
-  app.get("/revisit", async (): Promise<RevisitResponse> => {
-    const { items } = await readConfig("revisit");
-    const [reviews, albums] = await Promise.all([
-      readAllReviews(),
-      items.length
-        ? getAlbums(items.map((i) => i.albumId))
-        : Promise.resolve(new Map()),
-    ]);
+  typed.get(
+    "/reviews",
+    { schema: { response: { 200: reviewsResponseSchema } } },
+    async () => ({ reviews: await readAllReviews() }),
+  );
 
-    return {
-      items: items.map((i) => {
-        const raw = albums.get(i.albumId);
-        return {
-          albumId: i.albumId,
-          addedAt: i.addedAt,
-          album: raw ? toAlbumSummary(raw) : null,
-          review: reviews.find((r) => r.albumId === i.albumId) ?? null,
-        };
-      }),
-    };
-  });
+  typed.get(
+    "/review-template",
+    { schema: { response: { 200: reviewTemplateResponseSchema } } },
+    async () => ({ template: await readReviewTemplate() }),
+  );
+
+  typed.get(
+    "/review/:albumId",
+    { schema: { params: albumIdParamSchema, response: { 200: reviewSchema } } },
+    async (req): Promise<Review> => {
+      const { albumId } = req.params;
+      const review = await findReview(albumId);
+      if (!review) {
+        throw new AppError("no_review", "No review for that album yet.", 404);
+      }
+      return review;
+    },
+  );
+
+  typed.get(
+    "/revisit",
+    { schema: { response: { 200: revisitResponseSchema } } },
+    async (): Promise<RevisitResponse> => {
+      const { items } = await readConfig("revisit");
+      const [reviews, albums] = await Promise.all([
+        readAllReviews(),
+        items.length
+          ? getAlbums(items.map((i) => i.albumId))
+          : Promise.resolve(new Map()),
+      ]);
+
+      return {
+        items: items.map((i) => {
+          const raw = albums.get(i.albumId);
+          return {
+            albumId: i.albumId,
+            addedAt: i.addedAt,
+            album: raw ? toAlbumSummary(raw) : null,
+            review: reviews.find((r) => r.albumId === i.albumId) ?? null,
+          };
+        }),
+      };
+    },
+  );
 }

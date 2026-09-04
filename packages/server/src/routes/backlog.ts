@@ -1,13 +1,20 @@
 import type { FastifyInstance } from "fastify";
-import type { BacklogItem } from "@gatefold/shared";
 import {
   addBacklogRequestSchema,
+  albumIdParamSchema,
+  backlogEntrySchema,
+  backlogResponseSchema,
   bulkAddBacklogRequestSchema,
+  idParamSchema,
+  okSchema,
+  playlistAlbumsResponseSchema,
   reorderBacklogRequestSchema,
   type BacklogEntry,
+  type BacklogItem,
   type BacklogResponse,
   type PlaylistAlbumsResponse,
 } from "@gatefold/shared";
+import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { AppError } from "../errors.js";
 import {
   getAlbum,
@@ -38,93 +45,129 @@ async function enrich(items: BacklogItem[]): Promise<BacklogEntry[]> {
 }
 
 export async function backlogRoutes(app: FastifyInstance): Promise<void> {
-  app.get("/backlog", async (): Promise<BacklogResponse> => {
-    const { items } = await readConfig("backlog");
-    return { items: await enrich(items) };
-  });
+  const typed = app.withTypeProvider<ZodTypeProvider>();
 
-  app.post("/backlog", async (req): Promise<BacklogEntry> => {
-    const { album } = addBacklogRequestSchema.parse(req.body);
-    const id = parseAlbumId(album);
-    if (!id) {
-      throw new AppError(
-        "bad_album",
-        "That doesn't look like a Spotify album id or link.",
-        400,
-      );
-    }
+  typed.get(
+    "/backlog",
+    { schema: { response: { 200: backlogResponseSchema } } },
+    async (): Promise<BacklogResponse> => {
+      const { items } = await readConfig("backlog");
+      return { items: await enrich(items) };
+    },
+  );
 
-    const backlog = await readConfig("backlog");
-    let entry = backlog.items.find((i) => i.albumId === id);
+  typed.post(
+    "/backlog",
+    {
+      schema: {
+        body: addBacklogRequestSchema,
+        response: { 200: backlogEntrySchema },
+      },
+    },
+    async (req): Promise<BacklogEntry> => {
+      const { album } = req.body;
+      const id = parseAlbumId(album);
+      if (!id) {
+        throw new AppError(
+          "bad_album",
+          "That doesn't look like a Spotify album id or link.",
+          400,
+        );
+      }
 
-    if (!entry) {
-      const raw = await getAlbum(id).catch((err: unknown) => {
-        if (err instanceof AppError && err.statusCode === 404) {
-          throw new AppError("album_not_found", "No album with that id.", 404);
-        }
-        throw err;
-      });
-      entry = {
-        albumId: id,
-        uri: raw.uri,
-        addedAt: today(),
-        priority: backlog.items.length,
-      };
-      backlog.items = renumber([...backlog.items, entry]);
-      await writeConfig("backlog", backlog);
-    }
+      const backlog = await readConfig("backlog");
+      let entry = backlog.items.find((i) => i.albumId === id);
 
-    const [enriched] = await enrich([entry]);
-    return enriched as BacklogEntry;
-  });
-
-  app.post("/backlog/bulk", async (req): Promise<BacklogResponse> => {
-    const { albums } = bulkAddBacklogRequestSchema.parse(req.body);
-    const ids = [
-      ...new Set(
-        albums
-          .map((a) => parseAlbumId(a))
-          .filter((x): x is string => Boolean(x)),
-      ),
-    ];
-
-    const backlog = await readConfig("backlog");
-    const have = new Set(backlog.items.map((i) => i.albumId));
-    const toAdd = ids.filter((id) => !have.has(id));
-
-    if (toAdd.length) {
-      const raws = await getAlbums(toAdd);
-      for (const id of toAdd) {
-        const raw = raws.get(id);
-        if (!raw) continue;
-        backlog.items.push({
+      if (!entry) {
+        const raw = await getAlbum(id).catch((err: unknown) => {
+          if (err instanceof AppError && err.statusCode === 404) {
+            throw new AppError("album_not_found", "No album with that id.", 404);
+          }
+          throw err;
+        });
+        entry = {
           albumId: id,
           uri: raw.uri,
           addedAt: today(),
           priority: backlog.items.length,
-        });
+        };
+        backlog.items = renumber([...backlog.items, entry]);
+        await writeConfig("backlog", backlog);
       }
-      backlog.items = renumber(backlog.items);
+
+      const [enriched] = await enrich([entry]);
+      return enriched as BacklogEntry;
+    },
+  );
+
+  typed.post(
+    "/backlog/bulk",
+    {
+      schema: {
+        body: bulkAddBacklogRequestSchema,
+        response: { 200: backlogResponseSchema },
+      },
+    },
+    async (req): Promise<BacklogResponse> => {
+      const { albums } = req.body;
+      const ids = [
+        ...new Set(
+          albums
+            .map((a) => parseAlbumId(a))
+            .filter((x): x is string => Boolean(x)),
+        ),
+      ];
+
+      const backlog = await readConfig("backlog");
+      const have = new Set(backlog.items.map((i) => i.albumId));
+      const toAdd = ids.filter((id) => !have.has(id));
+
+      if (toAdd.length) {
+        const raws = await getAlbums(toAdd);
+        for (const id of toAdd) {
+          const raw = raws.get(id);
+          if (!raw) continue;
+          backlog.items.push({
+            albumId: id,
+            uri: raw.uri,
+            addedAt: today(),
+            priority: backlog.items.length,
+          });
+        }
+        backlog.items = renumber(backlog.items);
+        await writeConfig("backlog", backlog);
+      }
+
+      return { items: await enrich(backlog.items) };
+    },
+  );
+
+  typed.delete(
+    "/backlog/:albumId",
+    {
+      schema: { params: albumIdParamSchema, response: { 200: okSchema } },
+    },
+    async (req) => {
+      const { albumId } = req.params;
+      const backlog = await readConfig("backlog");
+      backlog.items = renumber(
+        backlog.items.filter((i) => i.albumId !== albumId),
+      );
       await writeConfig("backlog", backlog);
-    }
+      return { ok: true as const };
+    },
+  );
 
-    return { items: await enrich(backlog.items) };
-  });
-
-  app.delete("/backlog/:albumId", async (req) => {
-    const { albumId } = req.params as { albumId: string };
-    const backlog = await readConfig("backlog");
-    backlog.items = renumber(
-      backlog.items.filter((i) => i.albumId !== albumId),
-    );
-    await writeConfig("backlog", backlog);
-    return { ok: true as const };
-  });
-
-  app.get(
+  typed.get(
     "/playlist/:id/albums",
+    {
+      schema: {
+        params: idParamSchema,
+        response: { 200: playlistAlbumsResponseSchema },
+      },
+    },
     async (req): Promise<PlaylistAlbumsResponse> => {
-      const { id: rawId } = req.params as { id: string };
+      const { id: rawId } = req.params;
       const id = parsePlaylistId(rawId);
       if (!id) {
         throw new AppError(
@@ -160,23 +203,32 @@ export async function backlogRoutes(app: FastifyInstance): Promise<void> {
     },
   );
 
-  app.put("/backlog", async (req) => {
-    const { albumIds } = reorderBacklogRequestSchema.parse(req.body);
-    const backlog = await readConfig("backlog");
-    const byId = new Map(backlog.items.map((i) => [i.albumId, i]));
+  typed.put(
+    "/backlog",
+    {
+      schema: {
+        body: reorderBacklogRequestSchema,
+        response: { 200: okSchema },
+      },
+    },
+    async (req) => {
+      const { albumIds } = req.body;
+      const backlog = await readConfig("backlog");
+      const byId = new Map(backlog.items.map((i) => [i.albumId, i]));
 
-    const reordered: BacklogItem[] = [];
-    for (const id of albumIds) {
-      const item = byId.get(id);
-      if (item) {
-        reordered.push(item);
-        byId.delete(id);
+      const reordered: BacklogItem[] = [];
+      for (const id of albumIds) {
+        const item = byId.get(id);
+        if (item) {
+          reordered.push(item);
+          byId.delete(id);
+        }
       }
-    }
-    reordered.push(...byId.values()); // keep anything the client didn't mention
+      reordered.push(...byId.values()); // keep anything the client didn't mention
 
-    backlog.items = renumber(reordered);
-    await writeConfig("backlog", backlog);
-    return { ok: true as const };
-  });
+      backlog.items = renumber(reordered);
+      await writeConfig("backlog", backlog);
+      return { ok: true as const };
+    },
+  );
 }

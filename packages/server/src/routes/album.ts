@@ -1,10 +1,15 @@
 import type { FastifyInstance } from "fastify";
-import type {
-  AlbumContext,
-  AlbumDetail,
-  AlbumLyricsResponse,
-  AlbumTrack,
+import {
+  albumContextSchema,
+  albumDetailSchema,
+  albumLyricsResponseSchema,
+  idParamSchema,
+  type AlbumContext,
+  type AlbumDetail,
+  type AlbumLyricsResponse,
+  type AlbumTrack,
 } from "@gatefold/shared";
+import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { getAlbumContext } from "../context/index.js";
 import { getLyrics } from "../lyrics/lrclib.js";
 import {
@@ -71,40 +76,59 @@ async function buildDetail(
 }
 
 export async function albumRoutes(app: FastifyInstance): Promise<void> {
-  app.get("/album/:id", async (req): Promise<AlbumDetail> => {
-    const { id } = req.params as { id: string };
-    const raw = await getAlbum(id);
-    const tracks = await getAlbumTracks(raw);
-    return buildDetail(raw, tracks);
-  });
+  const typed = app.withTypeProvider<ZodTypeProvider>();
 
-  app.get("/album/:id/context", async (req): Promise<AlbumContext> => {
-    const { id } = req.params as { id: string };
-    const raw = await getAlbum(id);
-    return getAlbumContext({
-      artist: raw.artists?.[0]?.name ?? "",
-      album: raw.name,
-      year: raw.release_date?.slice(0, 4) ?? null,
-    });
-  });
+  typed.get(
+    "/album/:id",
+    { schema: { params: idParamSchema, response: { 200: albumDetailSchema } } },
+    async (req): Promise<AlbumDetail> => {
+      const { id } = req.params;
+      const raw = await getAlbum(id);
+      const tracks = await getAlbumTracks(raw);
+      return buildDetail(raw, tracks);
+    },
+  );
 
-  app.get("/album/:id/lyrics", async (req): Promise<AlbumLyricsResponse> => {
-    const { id } = req.params as { id: string };
-    const raw = await getAlbum(id);
-    const tracks = await getAlbumTracks(raw);
-    const albumArtist = raw.artists?.[0]?.name ?? "";
-
-    const entries = await mapLimit(tracks, 5, async (t) => {
-      const lyrics = await getLyrics({
-        trackId: t.id,
-        artist: t.artists?.[0]?.name ?? albumArtist,
-        track: t.name,
+  typed.get(
+    "/album/:id/context",
+    { schema: { params: idParamSchema, response: { 200: albumContextSchema } } },
+    async (req): Promise<AlbumContext> => {
+      const { id } = req.params;
+      const raw = await getAlbum(id);
+      return getAlbumContext({
+        artist: raw.artists?.[0]?.name ?? "",
         album: raw.name,
-        durationMs: t.duration_ms,
+        year: raw.release_date?.slice(0, 4) ?? null,
       });
-      return [t.id, lyrics] as const;
-    });
+    },
+  );
 
-    return { lyrics: Object.fromEntries(entries) };
-  });
+  typed.get(
+    "/album/:id/lyrics",
+    {
+      schema: {
+        params: idParamSchema,
+        response: { 200: albumLyricsResponseSchema },
+      },
+    },
+    async (req): Promise<AlbumLyricsResponse> => {
+      const { id } = req.params;
+      const raw = await getAlbum(id);
+      const tracks = await getAlbumTracks(raw);
+      const albumArtist = raw.artists?.[0]?.name ?? "";
+
+      const entries = await mapLimit(tracks, 5, async (t) => {
+        const lyrics = await getLyrics({
+          trackId: t.id,
+          artist: t.artists?.[0]?.name ?? albumArtist,
+          track: t.name,
+          album: raw.name,
+          durationMs: t.duration_ms,
+        });
+        return [t.id, lyrics] as const;
+      });
+
+      return { lyrics: Object.fromEntries(entries) };
+    },
+  );
 }

@@ -1,10 +1,20 @@
 import { existsSync } from "node:fs";
 import cookie from "@fastify/cookie";
+import swagger from "@fastify/swagger";
+import swaggerUi from "@fastify/swagger-ui";
 import Fastify, { type FastifyError, type FastifyInstance } from "fastify";
+import {
+  hasZodFastifySchemaValidationErrors,
+  jsonSchemaTransform,
+  serializerCompiler,
+  validatorCompiler,
+  type ZodTypeProvider,
+} from "fastify-type-provider-zod";
 import { env } from "./env.js";
 import { WEB_DIST } from "./paths.js";
 import { registerRoutes } from "./routes/index.js";
 import { getAppConfig } from "./store/appConfig.js";
+import { readCurrentVersion } from "./version.js";
 
 export async function buildApp(): Promise<FastifyInstance> {
   const app = Fastify({
@@ -33,7 +43,25 @@ export async function buildApp(): Promise<FastifyInstance> {
     },
   );
 
+  app.setValidatorCompiler(validatorCompiler);
+  app.setSerializerCompiler(serializerCompiler);
+
   app.setErrorHandler((err: FastifyError, req, reply) => {
+    // A request that fails its route's Zod schema (bad body/params/query) —
+    // give the caller the actual field-level issues instead of a generic
+    // 500. This is the fix for the bug this whole migration was for: it
+    // used to be a bare `schema.parse()` inside the handler, which threw an
+    // uncaught ZodError with no `statusCode`, falling through to 500 below.
+    if (hasZodFastifySchemaValidationErrors(err)) {
+      const details = err.validation
+        .map((v) => `${v.instancePath || "(body)"} ${v.message}`)
+        .join("; ");
+      reply.status(400).send({
+        error: { code: "validation_error", message: details },
+      });
+      return;
+    }
+
     const status = err.statusCode ?? 500;
     if (status >= 500) req.log.error(err);
     reply.status(status).send({
@@ -43,6 +71,33 @@ export async function buildApp(): Promise<FastifyInstance> {
 
   const { cookieSecret } = await getAppConfig();
   await app.register(cookie, { secret: cookieSecret });
+
+  await app.register(swagger, {
+    openapi: {
+      info: {
+        title: "Gatefold API",
+        description:
+          "The API behind Gatefold's own UI — also usable directly by " +
+          "scripts/agents (e.g. to add albums to the backlog). Every " +
+          "route under /api needs the X-Api-Key header except /api/health; " +
+          "get the key from Settings → Security in the running app, or " +
+          "GET /auth/session after UI login if UI auth is enabled.",
+        version: await readCurrentVersion(),
+      },
+      components: {
+        securitySchemes: {
+          apiKey: {
+            type: "apiKey",
+            name: "X-Api-Key",
+            in: "header",
+          },
+        },
+      },
+      security: [{ apiKey: [] }],
+    },
+    transform: jsonSchemaTransform,
+  });
+  await app.register(swaggerUi, { routePrefix: "/docs" });
 
   await registerRoutes(app);
 

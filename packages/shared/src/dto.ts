@@ -428,3 +428,37 @@ export const albumContextSchema = z.object({
   discogsConfigured: z.boolean(),
 });
 export type AlbumContext = z.infer<typeof albumContextSchema>;
+
+// --- Route params / querystrings (for OpenAPI docs + request validation) ---
+// Kept separate from the response/body DTOs above since these describe
+// *how a route is addressed*, not the shape of data it deals in.
+
+export const idParamSchema = z.object({ id: z.string().min(1) });
+export const albumIdParamSchema = z.object({ albumId: z.string().min(1) });
+/** `/api/config/:name` — deliberately loose (just "a string"); the route
+ *  validates it against the real `ConfigName` union itself and returns a
+ *  friendly 404, rather than a generic Fastify validation error. */
+export const configNameParamSchema = z.object({ name: z.string().min(1) });
+
+export const searchQuerySchema = z.object({ q: z.string().optional() });
+export const trackStatesQuerySchema = z.object({ ids: z.string().optional() });
+export const callbackQuerySchema = z.object({
+  code: z.string().optional(),
+  state: z.string().optional(),
+  error: z.string().optional(),
+});
+
+/** Body for the playback controls that only ever look at `deviceId`
+ *  (pause/next/previous) — narrower than `playRequestSchema`, whose other
+ *  fields (`contextUri`, `shuffle`, ...) only mean something to `/play`. */
+export const deviceIdRequestSchema = z.object({ deviceId: z.string().optional() });
+
+export const disconnectResponseSchema = z.object({ connected: z.literal(false) });
+export const reviewTemplateResponseSchema = z.object({ template: z.string() });
+export const authDebugRequestSchema = z.object({
+  action: z.enum(["expire", "corrupt"]),
+});
+export const authDebugResponseSchema = z.object({
+  ok: z.literal(true),
+  action: z.string(),
+});

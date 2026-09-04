@@ -1,5 +1,6 @@
 import type { FastifyInstance } from "fastify";
-import { configSchemas, type ConfigName } from "@gatefold/shared";
+import { configNameParamSchema, configSchemas, type ConfigName } from "@gatefold/shared";
+import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { AppError } from "../errors.js";
 import { readConfig, writeConfig } from "../store/config.js";
 
@@ -13,10 +14,26 @@ function nameParam(params: unknown): ConfigName {
   return name;
 }
 
+/** `:name` picks one of 4 differently-shaped config files at runtime — not a
+ *  good fit for a single static Fastify response/body schema (a Zod union
+ *  here would risk a body/response actually shaped like one config silently
+ *  parsing — and losing fields — under the wrong config's schema, since
+ *  every field in every one of these schemas has a `.default()`). Params
+ *  get typed for docs; body/response validation stays exactly as it was:
+ *  `writeConfig`/`readConfig` already validate against the *specific*
+ *  schema for whichever name was requested. */
 export async function configRoutes(app: FastifyInstance): Promise<void> {
-  app.get("/config/:name", async (req) => readConfig(nameParam(req.params)));
+  const typed = app.withTypeProvider<ZodTypeProvider>();
 
-  app.put("/config/:name", async (req) =>
-    writeConfig(nameParam(req.params), req.body ?? {}),
+  typed.get(
+    "/config/:name",
+    { schema: { params: configNameParamSchema } },
+    async (req) => readConfig(nameParam(req.params)),
+  );
+
+  typed.put(
+    "/config/:name",
+    { schema: { params: configNameParamSchema } },
+    async (req) => writeConfig(nameParam(req.params), req.body ?? {}),
   );
 }

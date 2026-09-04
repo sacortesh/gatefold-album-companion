@@ -1,27 +1,20 @@
-import { readFile } from "node:fs/promises";
-import path from "node:path";
 import type { FastifyInstance } from "fastify";
-import type { HealthResponse } from "@gatefold/shared";
-import { ROOT } from "../paths.js";
-
-async function readVersion(): Promise<string> {
-  try {
-    const pkg = JSON.parse(
-      await readFile(path.join(ROOT, "package.json"), "utf8"),
-    ) as { version?: string };
-    return pkg.version ?? "0.0.0";
-  } catch {
-    return "0.0.0";
-  }
-}
+import { healthResponseSchema } from "@gatefold/shared";
+import type { ZodTypeProvider } from "fastify-type-provider-zod";
+import { readCurrentVersion } from "../version.js";
 
 export async function healthRoutes(app: FastifyInstance): Promise<void> {
-  const version = await readVersion();
+  const version = await readCurrentVersion();
+  const typed = app.withTypeProvider<ZodTypeProvider>();
 
-  app.get("/health", async (): Promise<HealthResponse> => ({
-    ok: true,
-    service: "gatefold",
-    version,
-    time: new Date().toISOString(),
-  }));
+  typed.get(
+    "/health",
+    { schema: { response: { 200: healthResponseSchema }, security: [] } },
+    async () => ({
+      ok: true as const,
+      service: "gatefold" as const,
+      version,
+      time: new Date().toISOString(),
+    }),
+  );
 }

@@ -1,6 +1,17 @@
 import type { FastifyInstance } from "fastify";
-import type { AuthStatus, SessionStatus } from "@gatefold/shared";
-import { uiLoginRequestSchema } from "@gatefold/shared";
+import {
+  authDebugRequestSchema,
+  authDebugResponseSchema,
+  authStatusSchema,
+  callbackQuerySchema,
+  disconnectResponseSchema,
+  okSchema,
+  sessionStatusSchema,
+  uiLoginRequestSchema,
+  type AuthStatus,
+  type SessionStatus,
+} from "@gatefold/shared";
+import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import {
   buildAuthorizeUrl,
   consumeAuthState,
@@ -80,93 +91,131 @@ async function buildStatus(): Promise<AuthStatus> {
  *  `/api/*` API-key guard — `/auth/session` is precisely how the SPA
  *  obtains that key in the first place. */
 export async function authWebRoutes(app: FastifyInstance): Promise<void> {
-  app.get("/auth/login", async (_req, reply) => {
-    if (!(await spotifyConfigured())) {
-      return reply.redirect(await settingsUrl("auth=unconfigured"));
-    }
-    const { state, challenge } = issueAuthState();
-    return reply.redirect(await buildAuthorizeUrl(state, challenge));
-  });
+  const typed = app.withTypeProvider<ZodTypeProvider>();
 
-  app.get("/callback", async (req, reply) => {
-    const { code, state, error } = req.query as {
-      code?: string;
-      state?: string;
-      error?: string;
-    };
+  typed.get(
+    "/auth/login",
+    { schema: { security: [] } },
+    async (_req, reply) => {
+      if (!(await spotifyConfigured())) {
+        return reply.redirect(await settingsUrl("auth=unconfigured"));
+      }
+      const { state, challenge } = issueAuthState();
+      return reply.redirect(await buildAuthorizeUrl(state, challenge));
+    },
+  );
 
-    if (error) return reply.redirect(await settingsUrl("auth=denied"));
+  typed.get(
+    "/callback",
+    { schema: { querystring: callbackQuerySchema, security: [] } },
+    async (req, reply) => {
+      const { code, state, error } = req.query;
 
-    const verifier = consumeAuthState(state);
-    if (!code || !verifier) {
-      return reply.redirect(await settingsUrl("auth=invalid"));
-    }
+      if (error) return reply.redirect(await settingsUrl("auth=denied"));
 
-    try {
-      await completeLogin(code, verifier);
-      return reply.redirect(await settingsUrl("auth=connected"));
-    } catch (err) {
-      req.log.error(err, "OAuth callback failed");
-      return reply.redirect(await settingsUrl("auth=failed"));
-    }
-  });
+      const verifier = consumeAuthState(state);
+      if (!code || !verifier) {
+        return reply.redirect(await settingsUrl("auth=invalid"));
+      }
 
-  app.get("/auth/session", async (req): Promise<SessionStatus> => {
-    const { uiAuth, apiKey, sessionEpoch } = await getAppConfig();
+      try {
+        await completeLogin(code, verifier);
+        return reply.redirect(await settingsUrl("auth=connected"));
+      } catch (err) {
+        req.log.error(err, "OAuth callback failed");
+        return reply.redirect(await settingsUrl("auth=failed"));
+      }
+    },
+  );
 
-    if (!uiAuth.enabled) return { enabled: false, authenticated: true, apiKey };
+  typed.get(
+    "/auth/session",
+    { schema: { response: { 200: sessionStatusSchema }, security: [] } },
+    async (req): Promise<SessionStatus> => {
+      const { uiAuth, apiKey, sessionEpoch } = await getAppConfig();
 
-    const raw = req.cookies[SESSION_COOKIE];
-    const unsigned = raw ? req.unsignCookie(raw) : null;
-    const authenticated =
-      Boolean(unsigned?.valid) && unsigned?.value === String(sessionEpoch);
+      if (!uiAuth.enabled) return { enabled: false, authenticated: true, apiKey };
 
-    return { enabled: true, authenticated, apiKey: authenticated ? apiKey : null };
-  });
+      const raw = req.cookies[SESSION_COOKIE];
+      const unsigned = raw ? req.unsignCookie(raw) : null;
+      const authenticated =
+        Boolean(unsigned?.valid) && unsigned?.value === String(sessionEpoch);
 
-  app.post("/auth/ui-login", async (req, reply) => {
-    const { username, password } = uiLoginRequestSchema.parse(req.body ?? {});
-    const ok = await verifyUiCredentials(username, password);
-    if (!ok) throw new AppError("invalid_credentials", "Wrong username or password", 401);
+      return { enabled: true, authenticated, apiKey: authenticated ? apiKey : null };
+    },
+  );
 
-    const { sessionEpoch } = await getAppConfig();
-    reply.cookie(SESSION_COOKIE, String(sessionEpoch), {
-      signed: true,
-      httpOnly: true,
-      sameSite: "lax",
-      path: "/",
-      maxAge: SESSION_MAX_AGE_SECONDS,
-    });
-    return { ok: true };
-  });
+  typed.post(
+    "/auth/ui-login",
+    {
+      schema: {
+        body: uiLoginRequestSchema,
+        response: { 200: okSchema },
+        security: [],
+      },
+    },
+    async (req, reply) => {
+      const { username, password } = req.body;
+      const ok = await verifyUiCredentials(username, password);
+      if (!ok) throw new AppError("invalid_credentials", "Wrong username or password", 401);
 
-  app.post("/auth/ui-logout", async (_req, reply) => {
-    await bumpSessionEpoch(); // invalidates this and every other outstanding session
-    reply.clearCookie(SESSION_COOKIE, { path: "/" });
-    return { ok: true };
-  });
+      const { sessionEpoch } = await getAppConfig();
+      reply.cookie(SESSION_COOKIE, String(sessionEpoch), {
+        signed: true,
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        maxAge: SESSION_MAX_AGE_SECONDS,
+      });
+      return { ok: true as const };
+    },
+  );
+
+  typed.post(
+    "/auth/ui-logout",
+    { schema: { response: { 200: okSchema }, security: [] } },
+    async (_req, reply) => {
+      await bumpSessionEpoch(); // invalidates this and every other outstanding session
+      reply.clearCookie(SESSION_COOKIE, { path: "/" });
+      return { ok: true as const };
+    },
+  );
 }
 
 /** API routes (mounted under `/api`): `/api/auth/status`, `DELETE /api/auth`. */
 export async function authApiRoutes(app: FastifyInstance): Promise<void> {
-  app.get("/auth/status", async (): Promise<AuthStatus> => buildStatus());
+  const typed = app.withTypeProvider<ZodTypeProvider>();
 
-  app.delete("/auth", async () => {
-    await disconnect();
-    return { connected: false };
-  });
+  typed.get(
+    "/auth/status",
+    { schema: { response: { 200: authStatusSchema } } },
+    async (): Promise<AuthStatus> => buildStatus(),
+  );
+
+  typed.delete(
+    "/auth",
+    { schema: { response: { 200: disconnectResponseSchema } } },
+    async () => {
+      await disconnect();
+      return { connected: false as const };
+    },
+  );
 
   if (env.NODE_ENV !== "production") {
-    app.post("/auth/debug", async (req) => {
-      const { action } = (req.body ?? {}) as { action?: string };
-      if (action === "expire") _debugExpire();
-      else if (action === "corrupt") _debugCorrupt();
-      else
-        throw new AppError(
-          "bad_request",
-          "action must be 'expire' or 'corrupt'",
-        );
-      return { ok: true, action };
-    });
+    typed.post(
+      "/auth/debug",
+      {
+        schema: {
+          body: authDebugRequestSchema,
+          response: { 200: authDebugResponseSchema },
+        },
+      },
+      async (req) => {
+        const { action } = req.body;
+        if (action === "expire") _debugExpire();
+        else _debugCorrupt();
+        return { ok: true as const, action };
+      },
+    );
   }
 }

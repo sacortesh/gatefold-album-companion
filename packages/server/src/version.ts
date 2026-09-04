@@ -22,7 +22,7 @@ interface LatestRelease {
   url: string;
 }
 
-async function readCurrentVersion(): Promise<string> {
+export async function readCurrentVersion(): Promise<string> {
   try {
     const pkg = JSON.parse(
       await readFile(path.join(ROOT, "package.json"), "utf8"),

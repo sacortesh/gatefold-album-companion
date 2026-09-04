@@ -1,9 +1,11 @@
 import type { FastifyInstance } from "fastify";
 import {
+  appSettingsSchema,
   appSettingsUpdateSchema,
   uiAuthUpdateSchema,
   type AppSettings,
 } from "@gatefold/shared";
+import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import {
   getAppConfig,
   regenerateApiKey,
@@ -35,30 +37,51 @@ function toDto(c: AppConfig): AppSettings {
 }
 
 export async function settingsRoutes(app: FastifyInstance): Promise<void> {
-  app.get("/settings/app", async (): Promise<AppSettings> =>
-    toDto(await getAppConfig()),
+  const typed = app.withTypeProvider<ZodTypeProvider>();
+
+  typed.get(
+    "/settings/app",
+    { schema: { response: { 200: appSettingsSchema } } },
+    async (): Promise<AppSettings> => toDto(await getAppConfig()),
   );
 
-  app.put("/settings/app", async (req): Promise<AppSettings> => {
-    const patch = appSettingsUpdateSchema.parse(req.body ?? {});
-    const clean: Parameters<typeof updateAppConfig>[0] = {};
-    if (patch.spotifyClientId !== undefined)
-      clean.spotifyClientId = patch.spotifyClientId.trim();
-    if (patch.publicUrl !== undefined)
-      clean.publicUrl = patch.publicUrl.trim().replace(/\/+$/, "");
-    if (patch.discogsConsumerKey !== undefined)
-      clean.discogsConsumerKey = patch.discogsConsumerKey.trim();
-    if (patch.discogsConsumerSecret !== undefined)
-      clean.discogsConsumerSecret = patch.discogsConsumerSecret.trim();
-    return toDto(await updateAppConfig(clean));
-  });
-
-  app.post("/settings/api-key/regenerate", async (): Promise<AppSettings> =>
-    toDto(await regenerateApiKey()),
+  typed.put(
+    "/settings/app",
+    {
+      schema: {
+        body: appSettingsUpdateSchema,
+        response: { 200: appSettingsSchema },
+      },
+    },
+    async (req): Promise<AppSettings> => {
+      const patch = req.body;
+      const clean: Parameters<typeof updateAppConfig>[0] = {};
+      if (patch.spotifyClientId !== undefined)
+        clean.spotifyClientId = patch.spotifyClientId.trim();
+      if (patch.publicUrl !== undefined)
+        clean.publicUrl = patch.publicUrl.trim().replace(/\/+$/, "");
+      if (patch.discogsConsumerKey !== undefined)
+        clean.discogsConsumerKey = patch.discogsConsumerKey.trim();
+      if (patch.discogsConsumerSecret !== undefined)
+        clean.discogsConsumerSecret = patch.discogsConsumerSecret.trim();
+      return toDto(await updateAppConfig(clean));
+    },
   );
 
-  app.put("/settings/ui-auth", async (req): Promise<AppSettings> => {
-    const patch = uiAuthUpdateSchema.parse(req.body ?? {});
-    return toDto(await setUiAuth(patch));
-  });
+  typed.post(
+    "/settings/api-key/regenerate",
+    { schema: { response: { 200: appSettingsSchema } } },
+    async (): Promise<AppSettings> => toDto(await regenerateApiKey()),
+  );
+
+  typed.put(
+    "/settings/ui-auth",
+    {
+      schema: {
+        body: uiAuthUpdateSchema,
+        response: { 200: appSettingsSchema },
+      },
+    },
+    async (req): Promise<AppSettings> => toDto(await setUiAuth(req.body)),
+  );
 }

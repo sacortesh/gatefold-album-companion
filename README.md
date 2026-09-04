@@ -22,6 +22,9 @@ self-hosted tool for people who still listen to records front to back.
   notes (with an optional structured template). Reviews are written as plain
   Markdown you own; Keep saves the album to your Library, Delete removes it.
 - **Ambient player** — a slim now-playing bar on every page.
+- **API** — the same API the UI runs on is usable directly (e.g. from a
+  script or another agent) with the API key from Settings → Security.
+  Interactive docs at `/docs` on a running instance.
 
 Docs: [`docs/functional-spec.md`](docs/functional-spec.md) ·
 [`docs/architecture.md`](docs/architecture.md) ·

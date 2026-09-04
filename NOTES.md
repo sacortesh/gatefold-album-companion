@@ -160,6 +160,26 @@ said `sacortesh/album-companion` from before the repo was renamed to
 User-Agent. Phase 9 is now fully closed except one manual step (create
 the release tag / enable GHCR packages — needs the user). Only Phase 7
 (polish, responsive layout, perf, tests) remains open.
+2026-09-04: v0.2.0 and v0.2.1 cut via the new `/release` skill — caught
+two real release-pipeline bugs live (QEMU crashing mid-`npm ci` on
+cross-built arm64 → switched to native `ubuntu-24.04-arm` runners +
+digest-merge; `gh release create` had no git context in the merge job →
+added checkout). v0.2.1 ran clean end-to-end. Also: `store/appConfig.ts`
+no longer silently discards `app.json` on a shape mismatch — backs it up
+to `app.json.broken-<timestamp>` first (verified against a real corrupt
+file). Separately, added OpenAPI docs at `/docs` — full migration to
+`fastify-type-provider-zod` (Zod 3-compatible `^4.0.2`, not the Zod-4-only
+latest) across every route, replacing manual in-handler `schema.parse()`
+calls with real Fastify-level `body`/`params`/`querystring`/`response`
+schemas. Fixed a real bug as a side effect: a bad request body used to
+500 (a raw `ZodError` has no `statusCode`, fell through to the default);
+now it's a clean 400 with the field-level Zod message. `/api/config/:name`
+deliberately kept unmigrated (params only) — it's genuinely polymorphic
+across 4 config shapes, and every one of those schemas has `.default()`
+on every field, so a `z.union` there risked silently mis-parsing one
+config's shape as another and dropping fields. Motivation: the user wants
+an external AI system to eventually add albums to the backlog via this
+API directly — `/docs` is the contract for that.
 
 Stack: npm workspaces monorepo — `packages/{shared,server,web}`. `data/`
 is local-only now (gitignored), not committed. React + Vite + TanStack
