@@ -1099,7 +1099,41 @@ session did manually, more than once, while testing 10.6/10.14/10.17.
       Settings page's own version query refetched right after — expected,
       not a bug).
 
-### 10.19 — Lyrics romanization (Japanese/Korean/Russian) — scoped, not built
+**AC for 10.3–10.16 collectively — satisfied:** every list of albums
+anywhere in the app (Backlog, Recent, Revisit, Reviews, playlist import)
+gets you to `/album/:id` in one obvious click; hitting Play with nothing
+active always resolves to either playing audio or a device-picker, never a
+dead-end error string; genre and background art appear on every album a
+provider has data for; a back-cover/insert gallery appears whenever Discogs
+or the Cover Art Archive actually has extra images for that release; every
+page shows the license and a credit line; Settings fully explains and
+controls what's visible in "About this album" and thanks every data
+provider it actually uses; a playlist import never re-offers an album
+already reviewed or queued for revisit. All of 10.3–10.16 is now checked;
+this was the last outstanding item.
+
+---
+
+## Phase 11 — Languages
+
+Own phase, not folded into Phase 10's catch-all (own decision, 2026-09-04):
+this is a themed cluster — reading a lyric in a script you're learning,
+knowing what language an album's lyrics are in, and eventually reading what
+they mean — not a grab-bag of unrelated conversational asks the way Phase
+10's items were. 11.1–11.3 share one piece of infrastructure (script
+detection over lyrics text); 11.4–11.5 are a bigger step up in scope
+(a real i18n framework, a paid translation API) and depend on each other
+but not on 11.1–11.3.
+
+Explicitly out of scope for this phase (own decision, discussed
+2026-09-04): a tap-a-word dictionary lookup and vocabulary/flashcard
+export (e.g. to Anki). Both are real language-learning features, but both
+turn this from "a lyrics feature" into "a second app bolted onto this
+one" — dictionary data sourcing (JMdict etc.) and a spaced-repetition
+export format are each their own project, not an extension of Gatefold's
+actual purpose (deliberate album *listening*).
+
+### 11.1 — Lyrics romanization (Japanese/Korean/Russian) — scoped, not built
 
 Requested conversationally (2026-09-04): the user is learning Japanese and
 wants romaji shown alongside lyrics that aren't in a Latin-adjacent script —
@@ -1110,8 +1144,7 @@ that's almost certainly why it was never "set up properly," it wants to
 replace the Spotify client, not slot into one.
 
 **This is transliteration (how it sounds), not translation (what it
-means).** Real translation needs a paid MT API and is a much bigger,
-separate feature — explicitly out of scope here, possible future MVP.
+means)** — that's 11.5, below.
 
 Architecture decision: **server-side, cached inside the existing lyrics
 cache entry**, not client-side. Reasoning: it's the same shape as the
@@ -1127,7 +1160,8 @@ keeps a real dependency-weight concern (below) off the browser entirely.
       hiragana/katakana presence (`/\p{Script=Hiragana}|\p{Script=Katakana}/u`),
       not bare `\p{Script=Han}` — kanji-only text is ambiguous with Chinese,
       and this app has no reason to guess at Chinese. Returns `null`
-      (skip entirely) for Latin-script lyrics, which is most tracks.
+      (skip entirely) for Latin-script lyrics, which is most tracks. Shared
+      by 11.3's language tagging — don't duplicate this detector.
 - [ ] `romanize(text, script): Promise<string>` dispatches to one of three
       libraries, decided this session:
       - **Japanese** — `kuroshiro` + `kuroshiro-analyzer-kuromoji`, romaji
@@ -1160,17 +1194,21 @@ keeps a real dependency-weight concern (below) off the browser entirely.
       LRCLIB fetch and stored in the *same* 30-day cache entry — it's fully
       derived from lyrics text already being cached, not independent data
       that needs its own cache namespace.
-- [ ] `LyricsPanel.tsx`: a small toggle ("Show romanization"), rendered
-      only when `lyrics.script` is non-null — the large majority of tracks
-      show no new UI at all. When on, each `SyncedView` line gets a second,
-      smaller `text-ink-muted text-xs` line underneath with the romanized
-      text (original stays primary, romanized is the gloss — not a
-      replace-in-place toggle). `plain` mode renders the romanized blob as
-      a second block below the original. Per the same "confidently wrong"
-      precedent as the LRCLIB-mismatch fallback (Phase 10.12): label it
-      something like "romanized automatically" rather than presenting it as
-      authoritative, since kanji-reading disambiguation can still be wrong
-      even with a real analyzer.
+- [ ] `LyricsPanel.tsx`: a small toggle/cycle control, rendered only when
+      `lyrics.script` is non-null — the large majority of tracks show no
+      new UI at all. Own decision (2026-09-04): this control should cycle
+      between original-only / +romanization / +translation (once 11.5
+      exists) rather than stacking all three gloss lines by default —
+      DESIGN.md's own Miller's-Law crowding concern applies directly to a
+      lyrics panel that could otherwise show 3 lines per lyric. When a
+      gloss is on, each `SyncedView` line gets a second, smaller
+      `text-ink-muted text-xs` line underneath (original stays primary).
+      `plain` mode renders the gloss blob as a second block below the
+      original. Per the same "confidently wrong" precedent as the
+      LRCLIB-mismatch fallback (Phase 10.12): label it something like
+      "romanized automatically" rather than presenting it as authoritative,
+      since kanji-reading disambiguation can still be wrong even with a
+      real analyzer.
 
 Open decisions to make at implementation time, not guessed here:
 `kuroshiro` vs the `miseya` fork (try upstream first, fall back if it
@@ -1178,18 +1216,83 @@ doesn't install/run cleanly); whether the ~15MB kuromoji dictionary ships
 in the Docker image or gets fetched on first use (affects image size,
 documented as a real tradeoff above, not silently picked).
 
-**AC for 10.3–10.16 collectively — satisfied:** every list of albums
-anywhere in the app (Backlog, Recent, Revisit, Reviews, playlist import)
-gets you to `/album/:id` in one obvious click; hitting Play with nothing
-active always resolves to either playing audio or a device-picker, never a
-dead-end error string; genre and background art appear on every album a
-provider has data for; a back-cover/insert gallery appears whenever Discogs
-or the Cover Art Archive actually has extra images for that release; every
-page shows the license and a credit line; Settings fully explains and
-controls what's visible in "About this album" and thanks every data
-provider it actually uses; a playlist import never re-offers an album
-already reviewed or queued for revisit. All of 10.3–10.16 is now checked;
-this was the last outstanding item.
+### 11.2 — Furigana toggle (Japanese) — scoped, not built
+
+Near-free extension of 11.1: `kuroshiro` already supports rendering
+readings *above* kanji (furigana mode) as an alternative to full romaji
+conversion — a different, arguably better learning aid, since you keep
+reading actual Japanese instead of Latin letters, just with pronunciation
+help. Depends entirely on 11.1's Japanese pipeline existing first (same
+`kuroshiro` instance, different output mode, no new dependency). Folds
+into the same gloss-cycle control from 11.1 as a Japanese-only third
+state, rather than a separate toggle.
+
+### 11.3 — Language tagging + filtering — scoped, not built
+
+Reuses 11.1's `detectScript()` (broadened to also recognize Latin, so
+every track gets a definite tag, not just the non-Latin ones) to tag each
+track/album with a detected lyrics language, stored alongside the lyrics
+cache entry. Backlog/Revisit/Reviews get a filter chip (same molecule
+pattern as the existing genre-filter UI) — turns the existing backlog
+into a usable study queue ("show me only Japanese albums") without a
+separate list to maintain. Depends on 11.1 landing first for the shared
+detector; doesn't depend on 11.4/11.5.
+
+### 11.4 — App localization (i18n) — scoped, not built
+
+Requested conversationally (2026-09-04), alongside 11.5: lyrics
+*translation* (meaning, not sound) only makes sense once the app has a
+concept of "what language does this user want to read in" — otherwise
+there's no answer to "translate lyrics into what?" Decided launch scope:
+**English + Spanish** (the user's own reviews are already written in
+Spanish — real signal, not a guess), with the i18n plumbing built so
+additional languages are a translation-file addition, not a new feature.
+
+- [ ] `react-i18next` (+ `i18next`) — the standard React choice: JSON
+      resource files per locale, a `useTranslation()` hook, interpolation/
+      pluralization handled for free.
+- [ ] The real cost isn't the library, it's the extraction pass: every
+      hardcoded string across the app (nav labels, buttons, empty states,
+      error copy — a lot, given this codebase's existing copy density)
+      needs to move into translation keys. This is a mechanical but
+      genuinely large refactor touching most component files — size it
+      as such, don't underestimate it as "add a library."
+- [ ] One new Settings control (a language picker) — the chosen locale is
+      **one shared preference**, persisted server-side alongside other
+      settings (`appConfig`, same store as everything else in Settings),
+      reused by both the UI language (this item) and lyrics-translation
+      target (11.5) — deliberately not two separate pickers.
+- [ ] Initial resource files: `en.json`, `es.json`.
+
+### 11.5 — Lyrics translation — scoped, not built
+
+Real translation (meaning), not 11.1's transliteration (sound) — a
+bigger step up in scope than 11.1–11.3: needs a paid third-party MT API,
+not a local library, so it gets the same Settings-card-plus-API-key
+treatment as Discogs/Last.fm rather than being zero-config.
+
+- [ ] Default to **DeepL** over Google Translate — better translation
+      quality for European languages and a generous free tier (500k
+      chars/month as of this research). Worth revisiting if Japanese/
+      Korean translation quality turns out to matter more once 11.1 ships
+      and non-Latin albums actually show up in testing.
+- [ ] New Settings card, same shape as `DiscogsSetup.tsx`/`LastfmSetup.tsx`
+      (API key field, `envLocked` support, a `TRANSLATE_API_KEY`-style env
+      var).
+- [ ] Translates lyrics text into whatever locale 11.4's language picker
+      is set to — no separate "translate to" picker.
+- [ ] Cached the same way lyrics/context already are: 30 days, keyed by
+      track id + target locale (not just track id, since the same track's
+      translation differs by target language — a genuinely new cache-key
+      shape versus 11.1, which only ever produces one romanization per
+      script).
+- [ ] Folds into 11.1's gloss-cycle control in `LyricsPanel.tsx` as
+      another cycle state, per that item's Miller's-Law reasoning — not a
+      fourth always-visible line.
+
+Depends on 11.4 (needs a locale to translate into) and benefits from
+11.1 existing first (shares the gloss-cycle control), but the DeepL
+integration itself is independent of either.
 
 ---
 
@@ -1198,14 +1301,16 @@ this was the last outstanding item.
 ```
 0 ─▶ 1 ─▶ 2 ─▶ 3 ─▶ 7
           └──▶ 4 ─▶ 5 ─▶ 6 ─▶ 7 ─▶ 8
-                                   └──▶ 9 ─▶ 10
+                                   └──▶ 9 ─▶ 10 ─▶ 11
 ```
 
 Phases 3 and 4 both only need Phase 2; everything funnels into 7. Phase 8
 (Revision 1) builds on the finished MVP1 loop; its four Rev batches are
 independent of each other and can land in any order (Rev-1 first is
 easiest). Phase 9 (self-hosting) needs the config/auth refactor (9.1–9.4)
-before the container work (9.5+) is worthwhile.
+before the container work (9.5+) is worthwhile. Within Phase 11: 11.1 ─▶
+11.2, 11.1 ─▶ 11.3, 11.4 ─▶ 11.5 (11.1 and 11.4 are independent starting
+points).
 
 ## Not in this plan (later MVPs)
 
