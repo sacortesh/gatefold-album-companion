@@ -1126,6 +1126,89 @@ provider it actually uses; a playlist import never re-offers an album
 already reviewed or queued for revisit. All of 10.3–10.16 is now checked;
 this was the last outstanding item.
 
+### 10.19 — Auto-follow lyrics toggle — scoped, not built
+
+Requested conversationally (2026-09-05). Today's mechanism (`AlbumPage.tsx`):
+`picked` (nullable, set only by clicking a track row) and
+`selectedId = picked ?? (nowInAlbum ? nowId : tracks[0]?.id ?? null)` — so
+lyrics already implicitly follow the now-playing track *until* the first
+click on any row, at which point `picked` pins the view to that exact
+track id permanently. There's no way back to live-tracking short of
+re-clicking the current now-playing row, and that pin immediately goes
+stale the moment the album advances to the next track (it's a fixed id,
+not a "keep following" bit).
+
+- [ ] Replace the implicit null-check with an explicit
+      `autoFollow: boolean` state (`useState(true)`). Clicking a track row
+      sets `autoFollow=false` and `picked=trackId`, same as today's click
+      handler, just also flipping the new bit.
+- [ ] `selectedId = autoFollow ? (nowInAlbum ? nowId : tracks[0]?.id ?? null) : (picked ?? tracks[0]?.id ?? null)`.
+- [ ] A small toggle control next to the existing
+      `<h2>Lyrics: {track.name}</h2>` heading (flex row, same
+      header-plus-action pattern as `DevicePicker`'s "Playback device" +
+      "Refresh") that sets `autoFollow=true` (and clears `picked`) when
+      clicked while off. Wording: "Auto-follow" or similar, with a visibly
+      different active/inactive state (reuse `Button`'s existing variants
+      rather than inventing a new toggle atom).
+- [ ] Reset `autoFollow=true` and `picked=null` in a `useEffect` keyed on
+      the route's `id` param. Real gap found while scoping this, not
+      invented by this feature: `AlbumPage` doesn't remount on `/album/:id`
+      → `/album/:id2` navigation (same route element, different param), so
+      today a `picked` track id from a previously-viewed album silently
+      carries over into the next one. Worth fixing as part of this same
+      change since it's the same state.
+
+Not attempting: persisting the `autoFollow` preference itself anywhere
+(Settings, localStorage) — defaulting to `true` every time a new album
+loads matches today's existing behavior and needs no new storage.
+
+### 10.20 — Mark popular tracks (Spotify's `popularity` field is gone; use Last.fm) — scoped, not built
+
+Requested conversationally (2026-09-05), prompted by the user's own
+experience on a sibling project (`project-sensmoi`) discovering Spotify's
+audio-features (danceability/energy/acousticness/etc.) are no longer
+accessible. Verified this session, and it's worse than that for
+`popularity` specifically: Spotify's **February 2026** Web API migration
+removed the `popularity` field from Track, Album, *and* Artist objects
+outright for apps in Development Mode — only apps approved for Extended
+Quota Mode (a commercial-distribution approval Spotify grants, irrelevant
+to a self-hosted personal tool) keep it. Every Gatefold self-hoster
+registers their own personal Spotify app (`docs/self-hosting.md`'s own
+documented design), which is a Development Mode app by construction — so
+this isn't a workaround-able gap or a "wait for Spotify to fix it," it's
+permanently closed for an app shaped like this one.
+
+Replacement: **Last.fm**, already integrated (Phase 10.17, same API key,
+zero new Settings/config surface needed). `track.getInfo(artist, track)`
+returns `playcount`/`listeners` — a real, if different, popularity signal
+(community listening data, not Spotify's own algorithmic score).
+
+- [ ] Server-side, per album: batch `track.getInfo` calls (one per track,
+      ~12/album) only when Last.fm is configured (mirrors 10.17's
+      `lastfmConfigured()` gate). Cached in the album's existing 30-day
+      cache entry — this is enrichment on data already being fetched and
+      cached, not a new cache namespace.
+- [ ] Rank the album's own tracks by `playcount` (or `listeners` — decide
+      at implementation time by comparing which correlates better with
+      perceived "popular song" on a few real albums, don't guess) and mark
+      the top **3** (proposed default — open to revisiting once real data
+      is in front of us; matches `GenreChips`' existing "cap the visual
+      noise" precedent rather than marking a percentage that could tag
+      most of a short EP).
+- [ ] Small badge on the marked tracks' rows in `TrackList`/`TrackRow` —
+      reuse the existing `Badge` atom (a `neutral`-style variant, distinct
+      from the `now-playing` badge already there), not a new component.
+- [ ] Silent when unavailable, same discipline as `SimilarAlbums`/
+      `AlbumGallery`: no badge at all when Last.fm isn't configured, and
+      skip (don't guess-rank) any track Last.fm has no data for rather
+      than treating a missing lookup as "least popular."
+
+Explicitly not attempting: reconstructing the old audio-features
+(danceability/energy/valence/etc.) from any other provider — checked
+during this session's research, no free/self-hostable replacement API for
+those specific derived audio-analysis metrics is known to exist; that's a
+dead end, not a "later phase."
+
 ---
 
 ## Phase 11 — Languages
