@@ -1209,6 +1209,25 @@ during this session's research, no free/self-hostable replacement API for
 those specific derived audio-analysis metrics is known to exist; that's a
 dead end, not a "later phase."
 
+### 10.21 — Hero links: open in Spotify app / search on YouTube Music — done
+
+Requested conversationally (2026-09-07), explicitly as a small unscoped
+addition rather than a planned item.
+
+- [x] "Open in Spotify app" — a plain `<a href={a.uri}>`, the album's own
+      `spotify:album:<id>` URI the app already carries. Same protocol-handoff
+      trick as the existing no-device-modal deep link (10.4-era `DeviceList`
+      work): the OS's registered handler launches the native app, no new
+      dependency or server call.
+- [x] "Search on YouTube Music" — `https://music.youtube.com/search?q=
+      <artist> <album>`, `encodeURIComponent`-escaped, opened in a new tab.
+      Best-effort only: there's no cross-platform album id to link against,
+      so this can occasionally land on the wrong result for an ambiguous
+      artist/album name.
+- [x] Both rendered as `Button variant="ghost" asChild` wrapping the `<a>`,
+      in `AlbumHero`'s existing `actions` slot alongside Play/Finish/backlog
+      — no new UI pattern.
+
 ---
 
 ## Phase 11 — Languages

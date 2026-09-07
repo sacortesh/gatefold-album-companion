@@ -224,6 +224,11 @@ export function AlbumPage() {
   const a = album.data;
   const selectedTrack = tracks.find((t) => t.id === selectedId) ?? null;
   const albumArtistKey = a.artists.join("|");
+  // No cross-platform album id to link against on YouTube Music, so this is
+  // a best-effort search rather than a guaranteed exact match.
+  const youtubeMusicUrl = `https://music.youtube.com/search?q=${encodeURIComponent(
+    `${a.artists[0] ?? ""} ${a.name}`,
+  )}`;
 
   const rawPlayError = playAlbum.error ?? playFrom.error;
   const playMutationError =
@@ -296,6 +301,14 @@ export function AlbumPage() {
                 {backlog.add.isPending ? "Adding…" : "Add to backlog"}
               </Button>
             )}
+            <Button variant="ghost" asChild>
+              <a href={a.uri}>Open in Spotify app</a>
+            </Button>
+            <Button variant="ghost" asChild>
+              <a href={youtubeMusicUrl} target="_blank" rel="noreferrer">
+                Search on YouTube Music
+              </a>
+            </Button>
           </>
         }
       >
