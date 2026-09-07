@@ -1162,7 +1162,7 @@ Not attempting: persisting the `autoFollow` preference itself anywhere
 (Settings, localStorage) — defaulting to `true` every time a new album
 loads matches today's existing behavior and needs no new storage.
 
-### 10.20 — Mark popular tracks (Spotify's `popularity` field is gone; use Last.fm) — scoped, not built
+### 10.20 — Mark popular tracks (Spotify's `popularity` field is gone; use Last.fm) — done
 
 Requested conversationally (2026-09-05), prompted by the user's own
 experience on a sibling project (`project-sensmoi`) discovering Spotify's
@@ -1183,25 +1183,30 @@ zero new Settings/config surface needed). `track.getInfo(artist, track)`
 returns `playcount`/`listeners` — a real, if different, popularity signal
 (community listening data, not Spotify's own algorithmic score).
 
-- [ ] Server-side, per album: batch `track.getInfo` calls (one per track,
-      ~12/album) only when Last.fm is configured (mirrors 10.17's
-      `lastfmConfigured()` gate). Cached in the album's existing 30-day
-      cache entry — this is enrichment on data already being fetched and
-      cached, not a new cache namespace.
-- [ ] Rank the album's own tracks by `playcount` (or `listeners` — decide
-      at implementation time by comparing which correlates better with
-      perceived "popular song" on a few real albums, don't guess) and mark
-      the top **3** (proposed default — open to revisiting once real data
-      is in front of us; matches `GenreChips`' existing "cap the visual
-      noise" precedent rather than marking a percentage that could tag
-      most of a short EP).
-- [ ] Small badge on the marked tracks' rows in `TrackList`/`TrackRow` —
-      reuse the existing `Badge` atom (a `neutral`-style variant, distinct
-      from the `now-playing` badge already there), not a new component.
-- [ ] Silent when unavailable, same discipline as `SimilarAlbums`/
-      `AlbumGallery`: no badge at all when Last.fm isn't configured, and
-      skip (don't guess-rank) any track Last.fm has no data for rather
-      than treating a missing lookup as "least popular."
+- [x] Server-side, per album: `popular-tracks.ts` (new module, mirrors
+      `similar-albums.ts`'s shape) batches `track.getInfo` calls (concurrency
+      5, via a `mapLimit` helper extracted out of `routes/album.ts` into its
+      own `mapLimit.ts` so both call sites share it) only when Last.fm is
+      configured. **Own namespace**, not the album's existing cache entry as
+      originally proposed above — the on-disk `spotify` album cache turned
+      out to be 7 days (`ALBUM_TTL_MS`), not 30, so a new `makeCache(
+      "popular-tracks")` keyed per album id gets the intended 30-day TTL
+      without silently shortening the existing album cache's lifetime.
+- [x] Ranked by `playcount` (not `listeners` — checked both against a real
+      album live; `playcount` tracked "which song do people actually play"
+      more directly). Top **3** marked, per the proposed default. Ids stored
+      in the DTO as a new `isPopular: boolean` on `AlbumTrack` (`shared/src/
+      dto.ts`) rather than a separate response shape — needed inline in the
+      tracklist render, unlike 10.17's similar-albums payload which is a
+      wholly separate section/query.
+- [x] `Badge` in `TrackRow` (`AlbumPage.tsx`) — `variant="neutral"`, "popular"
+      label, same slot as the existing explicit-content badge.
+- [x] Silent when unconfigured or no data: empty `Set` short-circuits before
+      any network call; any track Last.fm has no `playcount` for is filtered
+      out before ranking, never guess-ranked. Verified live against Gojira's
+      *From Mars to Sirius* — flagged "Backbone", "The Heaviest Matter of the
+      Universe", and "Flying Whales", matching real-world expectations for
+      that album; a repeat request served from cache (~800ms → ~20ms).
 
 Explicitly not attempting: reconstructing the old audio-features
 (danceability/energy/valence/etc.) from any other provider — checked

@@ -15,6 +15,8 @@ import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { getAlbumContext } from "../context/index.js";
 import { renderLinkTemplates } from "../links.js";
 import { getLyrics } from "../lyrics/lrclib.js";
+import { mapLimit } from "../mapLimit.js";
+import { getPopularTrackIds } from "../popular-tracks.js";
 import { getSimilarAlbumIds } from "../similar-albums.js";
 import {
   getAlbum,
@@ -27,26 +29,7 @@ import {
 import { readConfig } from "../store/config.js";
 import { readAllReviews } from "../store/reviews.js";
 
-async function mapLimit<T, R>(
-  items: T[],
-  limit: number,
-  fn: (item: T) => Promise<R>,
-): Promise<R[]> {
-  const results = new Array<R>(items.length);
-  let cursor = 0;
-  const worker = async () => {
-    while (cursor < items.length) {
-      const i = cursor++;
-      results[i] = await fn(items[i] as T);
-    }
-  };
-  await Promise.all(
-    Array.from({ length: Math.min(limit, items.length) }, worker),
-  );
-  return results;
-}
-
-const toAlbumTrack = (t: RawAlbumTrack): AlbumTrack => ({
+const toAlbumTrack = (t: RawAlbumTrack, popularIds: Set<string>): AlbumTrack => ({
   id: t.id,
   name: t.name,
   uri: t.uri,
@@ -55,14 +38,19 @@ const toAlbumTrack = (t: RawAlbumTrack): AlbumTrack => ({
   trackNumber: t.track_number ?? null,
   discNumber: t.disc_number ?? null,
   explicit: Boolean(t.explicit),
+  isPopular: popularIds.has(t.id),
 });
 
 async function buildDetail(
   raw: RawAlbum,
   tracks: RawAlbumTrack[],
 ): Promise<AlbumDetail> {
-  const backlog = await readConfig("backlog");
-  const mapped = tracks.map(toAlbumTrack);
+  const artist = raw.artists?.[0]?.name ?? "";
+  const [backlog, popularIds] = await Promise.all([
+    readConfig("backlog"),
+    getPopularTrackIds(raw.id, artist, tracks),
+  ]);
+  const mapped = tracks.map((t) => toAlbumTrack(t, popularIds));
   return {
     id: raw.id,
     name: raw.name,

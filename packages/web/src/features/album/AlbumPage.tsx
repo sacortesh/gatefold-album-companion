@@ -83,6 +83,11 @@ function TrackRow({
               E
             </Badge>
           )}
+          {track.isPopular && (
+            <Badge variant="neutral" className="ml-1.5">
+              popular
+            </Badge>
+          )}
           {variant === "now-playing" && (
             <Badge variant="now-playing" className="ml-2">
               now

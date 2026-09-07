@@ -352,6 +352,10 @@ export const albumTrackSchema = z.object({
   trackNumber: z.number().nullable(),
   discNumber: z.number().nullable(),
   explicit: z.boolean(),
+  /** Among this album's top 3 tracks by Last.fm playcount. Always `false`
+   *  when Last.fm isn't configured — Spotify's own `popularity` field was
+   *  removed for Development Mode apps in Feb 2026. */
+  isPopular: z.boolean(),
 });
 export type AlbumTrack = z.infer<typeof albumTrackSchema>;
 
