@@ -1126,7 +1126,7 @@ provider it actually uses; a playlist import never re-offers an album
 already reviewed or queued for revisit. All of 10.3–10.16 is now checked;
 this was the last outstanding item.
 
-### 10.19 — Auto-follow lyrics toggle — scoped, not built
+### 10.19 — Auto-follow lyrics toggle — done
 
 Requested conversationally (2026-09-05). Today's mechanism (`AlbumPage.tsx`):
 `picked` (nullable, set only by clicking a track row) and
@@ -1138,25 +1138,20 @@ re-clicking the current now-playing row, and that pin immediately goes
 stale the moment the album advances to the next track (it's a fixed id,
 not a "keep following" bit).
 
-- [ ] Replace the implicit null-check with an explicit
+- [x] Replaced the implicit null-check with an explicit
       `autoFollow: boolean` state (`useState(true)`). Clicking a track row
-      sets `autoFollow=false` and `picked=trackId`, same as today's click
-      handler, just also flipping the new bit.
-- [ ] `selectedId = autoFollow ? (nowInAlbum ? nowId : tracks[0]?.id ?? null) : (picked ?? tracks[0]?.id ?? null)`.
-- [ ] A small toggle control next to the existing
-      `<h2>Lyrics: {track.name}</h2>` heading (flex row, same
-      header-plus-action pattern as `DevicePicker`'s "Playback device" +
-      "Refresh") that sets `autoFollow=true` (and clears `picked`) when
-      clicked while off. Wording: "Auto-follow" or similar, with a visibly
-      different active/inactive state (reuse `Button`'s existing variants
-      rather than inventing a new toggle atom).
-- [ ] Reset `autoFollow=true` and `picked=null` in a `useEffect` keyed on
-      the route's `id` param. Real gap found while scoping this, not
-      invented by this feature: `AlbumPage` doesn't remount on `/album/:id`
-      → `/album/:id2` navigation (same route element, different param), so
-      today a `picked` track id from a previously-viewed album silently
-      carries over into the next one. Worth fixing as part of this same
-      change since it's the same state.
+      sets `autoFollow=false` and `picked=trackId`.
+- [x] `selectedId = autoFollow ? (nowInAlbum ? nowId : tracks[0]?.id ?? null) : (picked ?? tracks[0]?.id ?? null)`.
+- [x] Toggle control next to the `<h2>Lyrics: ...</h2>` heading (`Button`,
+      `secondary` when on / `ghost` when off, `size="sm"`), labeled
+      "Auto-follow: on/off". Built as a real two-way toggle rather than only
+      an off→on switch: clicking while on also pins `picked` to whatever's
+      currently displayed before flipping off, so turning it off from the
+      button (not just by clicking a row) doesn't jump the view.
+- [x] Reset `autoFollow=true` and `picked=null` in a `useEffect` keyed on
+      the route's `id` param — fixes the real cross-album `picked` leak
+      found while scoping this (`AlbumPage` doesn't remount on
+      `/album/:id` → `/album/:id2` navigation).
 
 Not attempting: persisting the `autoFollow` preference itself anywhere
 (Settings, localStorage) — defaulting to `true` every time a new album

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Play, RefreshCw, SkipBack, SkipForward } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -119,7 +119,16 @@ function TrackRow({
 export function AlbumPage() {
   const { id = "" } = useParams();
   const [picked, setPicked] = useState<string | null>(null);
+  const [autoFollow, setAutoFollow] = useState(true);
   const [reviewOpen, setReviewOpen] = useState(false);
+
+  // A `picked` track id from a previously-viewed album must not carry over
+  // when navigating /album/:id -> /album/:id2 — same route element, so
+  // AlbumPage doesn't remount and this state would otherwise persist.
+  useEffect(() => {
+    setPicked(null);
+    setAutoFollow(true);
+  }, [id]);
 
   const album = useQuery<Awaited<ReturnType<typeof api.album>>, ApiRequestError>({
     queryKey: ["album", id],
@@ -146,7 +155,11 @@ export function AlbumPage() {
 
   const nowId = state?.track?.id ?? null;
   const nowInAlbum = tracks.some((t) => t.id === nowId);
-  const selectedId = picked ?? (nowInAlbum ? nowId : (tracks[0]?.id ?? null));
+  const selectedId = autoFollow
+    ? nowInAlbum
+      ? nowId
+      : (tracks[0]?.id ?? null)
+    : (picked ?? tracks[0]?.id ?? null);
   const thisAlbumIsPlaying = Boolean(
     album.data && state?.contextUri === album.data.uri,
   );
@@ -357,7 +370,10 @@ export function AlbumPage() {
                   inBanger={st.inBanger}
                   bangerLabel={triage.bangerLabel}
                   pending={triage.pendingTrackId === t.id}
-                  onSelect={() => setPicked(t.id)}
+                  onSelect={() => {
+                    setPicked(t.id);
+                    setAutoFollow(false);
+                  }}
                   onPlay={() => playFrom.mutate(t.uri)}
                   onLike={() => triage.toggleLike(t.id, st.liked)}
                   onBanger={() => triage.fireBanger(t.id, st.inBanger)}
@@ -368,9 +384,26 @@ export function AlbumPage() {
         </div>
 
         <div className="lg:sticky lg:top-6 lg:self-start">
-          <h2 className="mb-3 text-sm font-medium text-ink-muted">
-            {selectedTrack ? `Lyrics: ${selectedTrack.name}` : "Lyrics"}
-          </h2>
+          <div className="mb-3 flex items-baseline justify-between gap-2">
+            <h2 className="text-sm font-medium text-ink-muted">
+              {selectedTrack ? `Lyrics: ${selectedTrack.name}` : "Lyrics"}
+            </h2>
+            <Button
+              variant={autoFollow ? "secondary" : "ghost"}
+              size="sm"
+              onClick={() => {
+                if (autoFollow) {
+                  setPicked(selectedId);
+                  setAutoFollow(false);
+                } else {
+                  setPicked(null);
+                  setAutoFollow(true);
+                }
+              }}
+            >
+              Auto-follow: {autoFollow ? "on" : "off"}
+            </Button>
+          </div>
           <div className="max-h-[70vh] overflow-y-auto pr-2">
             <LyricsPanel
               lyrics={selectedId ? lyrics.data?.lyrics[selectedId] : undefined}
