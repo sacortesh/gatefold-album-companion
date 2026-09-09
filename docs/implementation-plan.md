@@ -1228,6 +1228,49 @@ addition rather than a planned item.
       in `AlbumHero`'s existing `actions` slot alongside Play/Finish/backlog
       — no new UI pattern.
 
+### 10.22 — Warm genres/context on backlog add, not on first album-page visit — done
+
+Requested conversationally (2026-09-08): genre chips (10.6) stayed blank on
+every Backlog row until you'd actually opened that album at least once,
+because `routes/backlog.ts`'s `enrich()` only ever calls `getCachedGenres()`
+— a deliberate cache-only peek (`context/index.ts`) that never fetches. The
+real MusicBrainz/Wikipedia/Discogs lookup only ran from `GET /album/:id/
+context`, i.e. on a page visit.
+
+- [x] `fetchAlbumContext(raw)` — calls the existing `getAlbumContext()` with
+      the album's artist/name/year, already-caught per-provider via `safe()`
+      internally; a `.catch()` here is just a backstop for callers that
+      don't await it.
+- [x] `POST /backlog` (single add): fires `warmContext(raw)` — an unawaited
+      call — right after a genuinely new entry is written, so the add
+      response isn't delayed. Only for a new entry; re-adding an
+      already-backlogged album (a no-op today) doesn't refetch.
+- [x] `POST /backlog/bulk` (playlist import): same lookup, but concurrency-
+      capped at 3 via the shared `mapLimit` helper rather than firing every
+      album's context lookup at once — a playlist import can be dozens of
+      albums, and MusicBrainz in particular expects polite, low-concurrency
+      request rates. The outer `mapLimit` call itself also isn't awaited.
+- [x] Verified live: added Radiohead's *OK Computer* (not previously
+      backlogged), immediate response had `genres: []` as expected (fetch
+      hadn't finished), and `GET /backlog` ~3s later showed `["Rock",
+      "Alternative Rock", "Art Rock", "Experimental"]` with no page reload —
+      confirmed via the `context` cache namespace going from 12 to 13 files
+      on disk. Removed the test album afterward to leave the real backlog
+      untouched.
+
+Explicitly not attempting: eagerly warming popular-track badges (10.20) the
+same way — own decision, discussed and declined (2026-09-08). That's ~12
+Last.fm `track.getInfo` calls per album (vs. one context lookup here), so
+doing it on every add — especially a multi-dozen-album playlist import —
+is a meaningfully larger background-call volume for a badge that's only
+visible once you've actually opened the album. Stays computed on-demand in
+`GET /album/:id`.
+
+Side effect, not the point of this change but real: since `getAlbumContext`
+warms the *whole* context cache entry (summary/credits/notes/images/links),
+not just genres, the "About this album" panel and image gallery (10.14)
+also end up pre-warmed by the time you first open a backlogged album.
+
 ---
 
 ## Phase 11 — Languages

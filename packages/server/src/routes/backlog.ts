@@ -15,13 +15,15 @@ import {
   type PlaylistAlbumsResponse,
 } from "@gatefold/shared";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
-import { getCachedGenres } from "../context/index.js";
+import { getAlbumContext, getCachedGenres } from "../context/index.js";
 import { AppError } from "../errors.js";
+import { mapLimit } from "../mapLimit.js";
 import {
   getAlbum,
   getAlbums,
   parseAlbumId,
   toAlbumSummary,
+  type RawAlbum,
 } from "../spotify/albums.js";
 import {
   getPlaylistAlbums,
@@ -34,6 +36,25 @@ const today = (): string => new Date().toISOString().slice(0, 10);
 
 const renumber = (items: BacklogItem[]): BacklogItem[] =>
   items.map((it, i) => ({ ...it, priority: i }));
+
+/** Starts the MusicBrainz/Wikipedia/Discogs context lookup (genres
+ *  included) for one album. `getAlbumContext` already catches per-provider
+ *  failures internally via `safe()`; the `.catch()` here is just a
+ *  defensive backstop for callers that don't await this. */
+async function fetchAlbumContext(raw: RawAlbum): Promise<void> {
+  await getAlbumContext({
+    artist: raw.artists?.[0]?.name ?? "",
+    album: raw.name,
+    year: raw.release_date?.slice(0, 4) ?? null,
+  }).catch(() => {});
+}
+
+/** Fire-and-forget wrapper for a single album — starts warming the context
+ *  cache as soon as it enters the backlog, instead of waiting for a first
+ *  album-page visit, without delaying the add response. */
+function warmContext(raw: RawAlbum): void {
+  void fetchAlbumContext(raw);
+}
 
 async function enrich(items: BacklogItem[]): Promise<BacklogEntry[]> {
   const ordered = [...items].sort((a, b) => a.priority - b.priority);
@@ -103,6 +124,7 @@ export async function backlogRoutes(app: FastifyInstance): Promise<void> {
         };
         backlog.items = renumber([...backlog.items, entry]);
         await writeConfig("backlog", backlog);
+        warmContext(raw);
       }
 
       const [enriched] = await enrich([entry]);
@@ -146,6 +168,13 @@ export async function backlogRoutes(app: FastifyInstance): Promise<void> {
         }
         backlog.items = renumber(backlog.items);
         await writeConfig("backlog", backlog);
+
+        // Concurrency-capped (not fired all at once) — a whole-playlist
+        // import can be dozens of albums, and MusicBrainz in particular
+        // expects polite, low-concurrency request rates. The outer
+        // mapLimit call itself isn't awaited, so this doesn't delay the
+        // bulk-add response.
+        void mapLimit([...raws.values()], 3, fetchAlbumContext);
       }
 
       return { items: await enrich(backlog.items) };
