@@ -1,11 +1,19 @@
 # Gatefold — Implementation Plan
 
-Status: **proposal** — pairs with `functional-spec.md` v0.6 and
-`architecture.md`
-Date: 2026-08-27
+Status: **in progress** — pairs with `functional-spec.md` v0.6 and
+`architecture.md`. Phases 0–6 and 8 done; Phase 7 (polish) partially done;
+Phase 9 (self-hosting) done except one manual step (cut the release tag);
+Phase 10 (field-trial hardening + Revision 2) done through 10.22; Phase 11
+(languages) scoped, not built. See each phase's own heading for status.
+Date: 2026-08-27 (original proposal) — living document since, most
+recently updated 2026-09-08.
 
-Eight phases. Each one ends in something you can open and use. Build in
-order — every phase depends on the ones before it.
+Eleven phases (0–11; Phase 10 grew into the project's catch-all for
+conversationally-requested work after the original MVP scope closed —
+see its own intro for why). Each phase ends in something you can open and
+use. Phases 0–8 build in strict order; Phase 10/11 items are individually
+scoped and mostly independent of each other (see the dependency graph at
+the end of this document).
 
 Legend: `[ ]` task · **(you)** = a step only the user can do ·
 **AC** = acceptance criteria (phase is done when these pass).
@@ -1143,11 +1151,13 @@ not a "keep following" bit).
       sets `autoFollow=false` and `picked=trackId`.
 - [x] `selectedId = autoFollow ? (nowInAlbum ? nowId : tracks[0]?.id ?? null) : (picked ?? tracks[0]?.id ?? null)`.
 - [x] Toggle control next to the `<h2>Lyrics: ...</h2>` heading (`Button`,
-      `secondary` when on / `ghost` when off, `size="sm"`), labeled
-      "Auto-follow: on/off". Built as a real two-way toggle rather than only
-      an off→on switch: clicking while on also pins `picked` to whatever's
-      currently displayed before flipping off, so turning it off from the
-      button (not just by clicking a row) doesn't jump the view.
+      `size="sm"`), labeled "Auto-follow: on/off". Built as a real two-way
+      toggle rather than only an off→on switch: clicking while on also pins
+      `picked` to whatever's currently displayed before flipping off, so
+      turning it off from the button (not just by clicking a row) doesn't
+      jump the view. Variant flipped after the critique below —
+      `secondary` (louder) when *off*, `ghost` (quieter) when *on* — the
+      diverged-from-default state should draw the eye, not the default one.
 - [x] Reset `autoFollow=true` and `picked=null` in a `useEffect` keyed on
       the route's `id` param — fixes the real cross-album `picked` leak
       found while scoping this (`AlbumPage` doesn't remount on
@@ -1225,8 +1235,32 @@ addition rather than a planned item.
       so this can occasionally land on the wrong result for an ambiguous
       artist/album name.
 - [x] Both rendered as `Button variant="ghost" asChild` wrapping the `<a>`,
-      in `AlbumHero`'s existing `actions` slot alongside Play/Finish/backlog
-      — no new UI pattern.
+      in `AlbumHero`'s existing `actions` slot alongside Play/Finish/backlog.
+      After the critique below, wrapped in their own `w-full` flex row with
+      a `border-t` divider, separating them visually from the three
+      state-changing actions (Play/Finish/backlog) instead of an accidental
+      line-wrap when the row ran out of width.
+
+### 10.19–10.21 critique pass — done (2026-09-07)
+
+Ran an `impeccable critique` (dual-agent: independent design review +
+detector/browser evidence) against the album page immediately after
+10.19–10.21 landed. Found 5 real issues, all fixed same session — see the
+git commit for the full before/after: track rows had no keyboard path at
+all (now `role="button" tabIndex` + Enter/Space); the now-playing row had
+less visual weight than a manually-selected one, undercutting auto-follow's
+whole point (now `bg-primary/10`); the auto-follow header row could overflow
+past the viewport edge with no way to shrink (`h2` gets `min-w-0 truncate`,
+button gets `shrink-0`); the toggle's louder/quieter variants were backwards
+(fixed above); and sub-11px text (copyright line, bottom-dock duration
+readout) got bumped to `text-xs`. Full report archived at
+`.impeccable/critique/2026-09-07T22-51-03Z__packages-web-src-features-album-albumpage-tsx.md`
+(gitignored — local tooling output, not shipped).
+
+A separate, pre-existing overflow source was found while verifying the
+fix (the Similar Albums horizontal carousel isn't properly width-contained
+at narrow viewports) — left alone, out of scope for this pass, not yet
+tracked as its own item.
 
 ### 10.22 — Warm genres/context on backlog add, not on first album-page visit — done
 

@@ -22,3 +22,6 @@ data/cache/
 *.log
 .vscode/
 .idea/
+
+# local design-review tooling output (impeccable critique snapshots)
+.impeccable/
