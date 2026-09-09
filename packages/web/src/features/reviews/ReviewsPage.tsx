@@ -115,7 +115,8 @@ export function ReviewsPage() {
       return (
         r.album.toLowerCase().includes(q) ||
         r.artist.toLowerCase().includes(q) ||
-        r.tags.some((t) => t.toLowerCase().includes(q))
+        r.tags.some((t) => t.toLowerCase().includes(q)) ||
+        r.genres.some((g) => g.toLowerCase().includes(q))
       );
     });
   }, [reviews, search, verdictFilter]);
@@ -154,7 +155,7 @@ export function ReviewsPage() {
         <Input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search album, artist, or tag…"
+          placeholder="Search album, artist, genre, or tag…"
           className="min-w-[200px] flex-1"
         />
         <div className="flex flex-wrap gap-1">

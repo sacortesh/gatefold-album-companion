@@ -107,6 +107,7 @@ export function RevisitPage() {
       return (
         a?.name.toLowerCase().includes(q) ||
         a?.artists.some((artist) => artist.toLowerCase().includes(q)) ||
+        a?.genres.some((genre) => genre.toLowerCase().includes(q)) ||
         entry.review?.notes?.toLowerCase().includes(q)
       );
     });
@@ -142,7 +143,7 @@ export function RevisitPage() {
         <Input
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
-          placeholder="Filter by album, artist, or notes…"
+          placeholder="Filter by album, artist, genre, or notes…"
         />
       )}
       {query.isSuccess && items.length > 0 && filtered.length === 0 && (

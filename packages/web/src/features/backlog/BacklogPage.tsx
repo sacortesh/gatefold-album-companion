@@ -120,7 +120,8 @@ export function BacklogPage() {
       const a = entry.album;
       return (
         a?.name.toLowerCase().includes(q) ||
-        a?.artists.some((artist) => artist.toLowerCase().includes(q))
+        a?.artists.some((artist) => artist.toLowerCase().includes(q)) ||
+        a?.genres.some((genre) => genre.toLowerCase().includes(q))
       );
     });
   }, [items, filter]);
@@ -180,7 +181,7 @@ export function BacklogPage() {
         <Input
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
-          placeholder="Filter your backlog by album or artist…"
+          placeholder="Filter your backlog by album, artist, or genre…"
         />
       )}
       {query.isSuccess &&
