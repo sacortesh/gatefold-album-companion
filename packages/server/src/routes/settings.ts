@@ -2,11 +2,14 @@ import type { FastifyInstance } from "fastify";
 import {
   appSettingsSchema,
   appSettingsUpdateSchema,
+  backfillGenresResponseSchema,
   okSchema,
   uiAuthUpdateSchema,
   type AppSettings,
+  type BackfillGenresResponse,
 } from "@gatefold/shared";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
+import { backfillGenres } from "../backfill.js";
 import { clearAllCaches } from "../cache.js";
 import {
   getAppConfig,
@@ -86,6 +89,15 @@ export async function settingsRoutes(app: FastifyInstance): Promise<void> {
     async () => {
       await clearAllCaches();
       return { ok: true as const };
+    },
+  );
+
+  typed.post(
+    "/settings/context/backfill",
+    { schema: { response: { 200: backfillGenresResponseSchema } } },
+    async (): Promise<BackfillGenresResponse> => {
+      const queued = await backfillGenres();
+      return { ok: true as const, queued };
     },
   );
 

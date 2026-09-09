@@ -1271,6 +1271,40 @@ warms the *whole* context cache entry (summary/credits/notes/images/links),
 not just genres, the "About this album" panel and image gallery (10.14)
 also end up pre-warmed by the time you first open a backlogged album.
 
+### 10.22 addendum — manual "Backfill genres" action — done
+
+10.22 above only ever warms *new* adds — it does nothing for albums
+already sitting in Backlog/Revisit/Reviews from before it existed. Checked
+against the real personal backlog data: 69 of 73 albums had no cached
+genres. Own decision (2026-09-08): rather than run that backfill silently
+as a one-off, or make list-page loads self-heal automatically (rejected —
+`getAlbumContext` doesn't cache an empty result when every provider comes
+back with nothing, so an auto-retry-on-every-load approach would hammer
+MusicBrainz/Discogs indefinitely for any album that genuinely has no
+match), added a manual, user-triggered action instead.
+
+- [x] `backfill.ts` (new module) — `collectContextInputs()` gathers every
+      distinct (artist, album) referenced across Backlog, Revisit, and
+      Reviews, deduped (an album in both Revisit and Reviews isn't fetched
+      twice). Backlog/Revisit only carry a Spotify album id, so those go
+      through one `getAlbums()` batch first (cheap — same 7-day album
+      cache already warm from normal list views); Reviews already store
+      artist/album as plain strings.
+- [x] `backfillGenres()` — awaits the collection step (fast, mostly cache
+      hits) so the response can report a real queued count, then fires the
+      actual per-album `getAlbumContext` calls unawaited, concurrency-
+      capped at 3 via the shared `mapLimit`. Safe to re-run: cached albums
+      no-op, previously-empty ones (e.g. Discogs configured only after the
+      fact) get retried.
+- `POST /settings/context/backfill` → `{ ok, queued }`.
+- [x] Settings → About: a "Backfill genres" button under the existing
+      "Clear cache" block, same shape/copy style. Invalidates the Backlog/
+      Revisit/Reviews queries immediately and again ~8s later so a short
+      run's results show up without a manual page refresh.
+- Deliberately not run against the real backlog as part of this session —
+  the user asked to leave their real 69-album gap alone for now and use
+  the button whenever they're ready.
+
 ---
 
 ## Phase 11 — Languages

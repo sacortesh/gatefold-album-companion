@@ -6,6 +6,7 @@ import type {
   AppSettings,
   AppSettingsUpdate,
   AuthStatus,
+  BackfillGenresResponse,
   Backlog,
   BacklogEntry,
   BacklogResponse,
@@ -139,6 +140,11 @@ export const api = {
   regenerateApiKey: () =>
     request<AppSettings>("/settings/api-key/regenerate", { method: "POST" }),
   clearCache: () => post("/settings/cache/clear"),
+  backfillGenres: () =>
+    request<BackfillGenresResponse>("/settings/context/backfill", {
+      method: "POST",
+      body: JSON.stringify({}),
+    }),
   updateUiAuth: (body: UiAuthUpdate) =>
     request<AppSettings>("/settings/ui-auth", {
       method: "PUT",

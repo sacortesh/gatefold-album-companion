@@ -192,6 +192,17 @@ export type TransferRequest = z.infer<typeof transferRequestSchema>;
 export const okSchema = z.object({ ok: z.literal(true) });
 export type Ok = z.infer<typeof okSchema>;
 
+/** `POST /settings/context/backfill` — kicks off a background genre/context
+ *  warm-up for every Backlog/Revisit/Reviews album missing it (Phase
+ *  10.22 only warms *new* adds going forward). `queued` is the number of
+ *  distinct albums enqueued, not a completion count — the work itself runs
+ *  unawaited after this response. */
+export const backfillGenresResponseSchema = z.object({
+  ok: z.literal(true),
+  queued: z.number(),
+});
+export type BackfillGenresResponse = z.infer<typeof backfillGenresResponseSchema>;
+
 // --- Phase 3: Like + Banger -----------------------------------------
 
 /** Lightweight track reference used by the recently-listened list. */

@@ -26,6 +26,26 @@ export function AboutSettings() {
     },
   });
 
+  const [queuedCount, setQueuedCount] = useState<number | null>(null);
+  const backfillGenres = useMutation({
+    mutationFn: api.backfillGenres,
+    onSuccess: ({ queued }) => {
+      // The backfill itself keeps running in the background after this
+      // response — refetch now (harmless if most rows are still empty)
+      // and again after a beat so a short run's results actually show up
+      // without the user having to manually refresh.
+      void qc.invalidateQueries({ queryKey: ["backlog"] });
+      void qc.invalidateQueries({ queryKey: ["revisit"] });
+      void qc.invalidateQueries({ queryKey: ["reviews"] });
+      setTimeout(() => {
+        void qc.invalidateQueries({ queryKey: ["backlog"] });
+        void qc.invalidateQueries({ queryKey: ["revisit"] });
+        void qc.invalidateQueries({ queryKey: ["reviews"] });
+      }, 8000);
+      setQueuedCount(queued);
+    },
+  });
+
   const v = version.data;
   if (!v) return null;
 
@@ -86,6 +106,37 @@ export function AboutSettings() {
         {clearCache.isError && (
           <p className="text-sm text-danger">
             {(clearCache.error as Error).message}
+          </p>
+        )}
+      </div>
+
+      <div className="space-y-1 border-t border-border pt-3">
+        <p className="text-xs text-ink-muted">
+          Fetches genres and other album context (MusicBrainz/Wikipedia/
+          Discogs) for every Backlog, Revisit, and Reviews album that
+          doesn't have it cached yet — new albums pick this up
+          automatically as they're added; this is the one-time catch-up
+          for anything added before that existed, or if some albums came
+          back empty because Discogs wasn't configured at the time.
+        </p>
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => backfillGenres.mutate()}
+          disabled={backfillGenres.isPending}
+        >
+          {backfillGenres.isPending ? "Queuing…" : "Backfill genres"}
+        </Button>
+        {queuedCount !== null && !backfillGenres.isPending && (
+          <p className="text-sm text-ink-muted">
+            Queued {queuedCount} album{queuedCount === 1 ? "" : "s"} —
+            running in the background, refresh a list in a bit to see
+            results.
+          </p>
+        )}
+        {backfillGenres.isError && (
+          <p className="text-sm text-danger">
+            {(backfillGenres.error as Error).message}
           </p>
         )}
       </div>
