@@ -52,9 +52,22 @@ function TrackRow({
 }) {
   return (
     <li
+      role="button"
+      tabIndex={0}
       onClick={onSelect}
-      className={`group flex cursor-pointer items-center gap-3 rounded-md px-2 py-1.5 ${
-        variant === "selected" ? "bg-surface" : "hover:bg-surface/60"
+      onKeyDown={(e) => {
+        if (e.target !== e.currentTarget) return;
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onSelect();
+        }
+      }}
+      className={`group flex cursor-pointer items-center gap-3 rounded-md px-2 py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+        variant === "selected"
+          ? "bg-surface"
+          : variant === "now-playing"
+            ? "bg-primary/10"
+            : "hover:bg-surface/60"
       }`}
     >
       <button
@@ -84,7 +97,7 @@ function TrackRow({
             </Badge>
           )}
           {track.isPopular && (
-            <Badge variant="neutral" className="ml-1.5">
+            <Badge variant="neutral" className="ml-1.5 px-1 py-0 text-[9px]">
               popular
             </Badge>
           )}
@@ -301,14 +314,21 @@ export function AlbumPage() {
                 {backlog.add.isPending ? "Adding…" : "Add to backlog"}
               </Button>
             )}
-            <Button variant="ghost" asChild>
-              <a href={a.uri}>Open in Spotify app</a>
-            </Button>
-            <Button variant="ghost" asChild>
-              <a href={youtubeMusicUrl} target="_blank" rel="noreferrer">
-                Search on YouTube Music
-              </a>
-            </Button>
+            <div className="flex w-full flex-wrap items-center gap-2 border-t border-border/50 pt-2">
+              <Button variant="ghost" asChild>
+                <a href={a.uri}>Open in Spotify app</a>
+              </Button>
+              <Button variant="ghost" asChild>
+                <a
+                  href={youtubeMusicUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  title="Best-effort search — not a guaranteed exact match"
+                >
+                  Search on YouTube Music
+                </a>
+              </Button>
+            </div>
           </>
         }
       >
@@ -398,12 +418,13 @@ export function AlbumPage() {
 
         <div className="lg:sticky lg:top-6 lg:self-start">
           <div className="mb-3 flex items-baseline justify-between gap-2">
-            <h2 className="text-sm font-medium text-ink-muted">
+            <h2 className="min-w-0 truncate text-sm font-medium text-ink-muted">
               {selectedTrack ? `Lyrics: ${selectedTrack.name}` : "Lyrics"}
             </h2>
             <Button
-              variant={autoFollow ? "secondary" : "ghost"}
+              variant={autoFollow ? "ghost" : "secondary"}
               size="sm"
+              className="shrink-0"
               onClick={() => {
                 if (autoFollow) {
                   setPicked(selectedId);
@@ -430,7 +451,7 @@ export function AlbumPage() {
             />
           </div>
           {a.copyrights.length > 0 && (
-            <p className="mt-6 text-[11px] leading-relaxed text-ink-muted">
+            <p className="mt-6 text-xs leading-relaxed text-ink-muted">
               {a.copyrights.join(" · ")}
             </p>
           )}

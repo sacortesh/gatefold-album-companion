@@ -69,7 +69,7 @@ export function NowPlayingCard() {
           </p>
           <div className="mt-1 flex items-center gap-2">
             <ProgressBar pct={pct} className="h-0.5" />
-            <span className="shrink-0 text-[10px] tabular-nums text-ink-muted">
+            <span className="shrink-0 text-xs tabular-nums text-ink-muted">
               {formatDuration(displayMs)} / {formatDuration(track.durationMs)}
             </span>
           </div>
