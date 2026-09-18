@@ -11,6 +11,7 @@ import { DiscogsSetup } from "./DiscogsSetup";
 import { LastfmSetup } from "./LastfmSetup";
 import { LinksSettings } from "./LinksSettings";
 import { SecuritySettings } from "./SecuritySettings";
+import { SuggestionsSettings } from "./SuggestionsSettings";
 import { SpotifySetup } from "./SpotifySetup";
 
 const AUTH_MESSAGES: Record<string, { tone: "ok" | "err"; text: string }> = {
@@ -141,6 +142,8 @@ export function SettingsPage() {
       <LastfmSetup />
 
       <LinksSettings />
+
+      <SuggestionsSettings />
 
       <SecuritySettings />
 

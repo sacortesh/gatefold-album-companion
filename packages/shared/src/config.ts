@@ -116,6 +116,40 @@ export const linksSchema = z.object({
 });
 export type LinksConfig = z.infer<typeof linksSchema>;
 
+/**
+ * `data/config/suggestions.json` — the Phase 12.3 backlog suggester's
+ * time-of-day/day-of-week weighting map. Reads the server's own local
+ * clock (own decision, 2026-09-17): every other setting in this
+ * single-user, self-hosted app is unscoped to timezone, and a timezone
+ * field only matters for the edge case of self-hosting on a box outside
+ * your own timezone — not worth the extra Settings field/config
+ * complexity for v1. Off (`enabled: false`, no rules) by default —
+ * inert until configured, not guessed.
+ */
+export const suggestionRuleSchema = z.object({
+  id: z.string().min(1),
+  label: z.string().min(1),
+  /** 0 = Sunday .. 6 = Saturday, multi-select. */
+  days: z.array(z.number().int().min(0).max(6)).min(1),
+  /** Inclusive. */
+  startHour: z.number().int().min(0).max(23),
+  /** Exclusive; `endHour < startHour` wraps past midnight. */
+  endHour: z.number().int().min(0).max(23),
+  /** Relative, not required to sum to 1 — normalized when used. */
+  weights: z.object({
+    backlog: z.number().min(0),
+    keep: z.number().min(0),
+    revisit: z.number().min(0),
+  }),
+});
+export type SuggestionRule = z.infer<typeof suggestionRuleSchema>;
+
+export const suggestionsConfigSchema = z.object({
+  enabled: z.boolean().default(false),
+  rules: z.array(suggestionRuleSchema).default([]),
+});
+export type SuggestionsConfig = z.infer<typeof suggestionsConfigSchema>;
+
 /** Maps a config file name to its schema — used by the generic /api/config route. */
 export const configSchemas = {
   settings: settingsSchema,
@@ -123,5 +157,6 @@ export const configSchemas = {
   backlog: backlogSchema,
   revisit: revisitSchema,
   links: linksSchema,
+  suggestions: suggestionsConfigSchema,
 } as const;
 export type ConfigName = keyof typeof configSchemas;

@@ -1,17 +1,10 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import type { Verdict } from "@gatefold/shared";
 import { api } from "../../api/client";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
+import { statusLabel } from "../../lib/verdictLabels";
 import { useBacklog } from "./useBacklog";
-
-const VERDICT_LABEL: Record<Verdict, string> = {
-  keep: "kept",
-  revisit: "marked revisit",
-  pass: "passed",
-  delete: "deleted",
-};
 
 export function PlaylistImport() {
   const { importAlbums } = useBacklog();
@@ -125,13 +118,7 @@ export function PlaylistImport() {
                 const label =
                   status === "new"
                     ? `${trackCount} track${trackCount === 1 ? "" : "s"}`
-                    : status === "in_backlog"
-                      ? "in backlog"
-                      : status === "in_revisit"
-                        ? "in revisit"
-                        : verdict
-                        ? VERDICT_LABEL[verdict]
-                        : "reviewed";
+                    : statusLabel(status, verdict);
                 return (
                   <li key={album.id}>
                     <label

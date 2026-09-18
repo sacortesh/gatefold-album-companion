@@ -30,6 +30,8 @@ export function useSubmitVerdict(albumId: string) {
         ["revisit"],
         ["review", albumId],
         ["album", albumId],
+        ["suggestions"],
+        ["album-similar"],
       ]) {
         void qc.invalidateQueries({ queryKey: key });
       }

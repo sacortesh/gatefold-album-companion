@@ -13,6 +13,7 @@ import {
 } from "@gatefold/shared";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { getAlbumContext } from "../context/index.js";
+import { loadKnownAlbums } from "../known-albums.js";
 import { renderLinkTemplates } from "../links.js";
 import { getLyrics } from "../lyrics/lrclib.js";
 import { mapLimit } from "../mapLimit.js";
@@ -27,7 +28,11 @@ import {
   type RawAlbumTrack,
 } from "../spotify/albums.js";
 import { readConfig } from "../store/config.js";
-import { readAllReviews } from "../store/reviews.js";
+
+/** Cards shown in the Similar Albums strip (Miller's Law) — the candidate
+ *  pool is now bigger than this (Phase 12.2's multi-album-per-artist
+ *  fetch), so this caps display, not fetch. */
+const SIMILAR_DISPLAY_CAP = 10;
 
 const toAlbumTrack = (t: RawAlbumTrack, popularIds: Set<string>): AlbumTrack => ({
   id: t.id,
@@ -132,24 +137,28 @@ export async function albumRoutes(app: FastifyInstance): Promise<void> {
       const ids = (await getSimilarAlbumIds(artist)).filter((i) => i !== id);
       if (ids.length === 0) return { albums: [] };
 
-      // Backlog/Revisit/Reviews change constantly — filtered fresh here,
+      // Backlog/Revisit/Reviews change constantly — resolved fresh here,
       // never baked into getSimilarAlbumIds's 30-day cache.
-      const [rawAlbums, backlog, revisit, reviews] = await Promise.all([
+      const [rawAlbums, known] = await Promise.all([
         getAlbums(ids),
-        readConfig("backlog"),
-        readConfig("revisit"),
-        readAllReviews(),
-      ]);
-      const known = new Set([
-        ...backlog.items.map((i) => i.albumId),
-        ...revisit.items.map((i) => i.albumId),
-        ...reviews.map((r) => r.albumId),
+        loadKnownAlbums(),
       ]);
 
-      const albums = ids
+      const candidates = ids
         .map((i) => rawAlbums.get(i))
-        .filter((a): a is RawAlbum => a !== undefined && !known.has(a.id))
-        .map(toAlbumSummary);
+        .filter((a): a is RawAlbum => a !== undefined)
+        .map((a) => ({
+          album: toAlbumSummary(a),
+          status: known.status(a.id),
+          verdict: known.verdict(a.id),
+        }));
+
+      // "new" first so fresh recommendations aren't buried under ones
+      // already actioned; still shown, not dropped (Phase 12.2).
+      const albums = [
+        ...candidates.filter((c) => c.status === "new"),
+        ...candidates.filter((c) => c.status !== "new"),
+      ].slice(0, SIMILAR_DISPLAY_CAP);
 
       return { albums };
     },

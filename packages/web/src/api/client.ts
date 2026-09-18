@@ -29,6 +29,8 @@ import type {
   SessionStatus,
   Settings,
   SimilarAlbumsResponse,
+  SuggestionsConfig,
+  SuggestionsResponse,
   TrackStatesResponse,
   UiAuthUpdate,
   VerdictRequest,
@@ -117,6 +119,7 @@ interface ConfigMap {
   backlog: Backlog;
   revisit: Revisit;
   links: LinksConfig;
+  suggestions: SuggestionsConfig;
 }
 
 export const api = {
@@ -208,6 +211,7 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ albums }),
     }),
+  suggestions: () => request<SuggestionsResponse>("/backlog/suggestions"),
   removeFromBacklog: (albumId: string) =>
     request<{ ok: true }>(`/backlog/${albumId}`, { method: "DELETE" }),
   playlistAlbums: (playlist: string) =>

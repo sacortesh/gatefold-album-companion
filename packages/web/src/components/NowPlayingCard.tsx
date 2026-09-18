@@ -1,6 +1,7 @@
-import { ExternalLink, Pause, Play, SkipForward } from "lucide-react";
+import { ExternalLink, Mic2, Pause, Play, SkipForward } from "lucide-react";
 import { Link } from "react-router-dom";
 import { formatDuration } from "../lib/format";
+import { useKaraoke } from "../features/lyrics/KaraokeProvider";
 import { useRecent } from "../features/recent/useRecent";
 import { useHotkeys } from "../features/triage/useTriageHotkeys";
 import { usePlayback } from "../features/now-playing/usePlayback";
@@ -19,6 +20,7 @@ import { TriageButton } from "./TriageButton";
 export function NowPlayingCard() {
   const { state, displayMs, notConnected, controls } = usePlayback();
   const recent = useRecent();
+  const { canOpen: canKaraoke, openKaraoke } = useKaraoke();
 
   const track = state?.track ?? null;
 
@@ -88,6 +90,16 @@ export function NowPlayingCard() {
           pending={pending}
           onToggle={() => recent.fireBanger(track.id, inBanger)}
         />
+        <Button
+          variant="secondary"
+          size="icon"
+          onClick={openKaraoke}
+          disabled={!canKaraoke}
+          aria-label="Karaoke mode"
+          title="Karaoke mode (K)"
+        >
+          <Mic2 className="size-4" />
+        </Button>
         <Button
           variant="primary"
           size="icon"

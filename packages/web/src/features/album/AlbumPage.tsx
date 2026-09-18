@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Play, RefreshCw, SkipBack, SkipForward } from "lucide-react";
+import { Mic2, Play, RefreshCw, SkipBack, SkipForward } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type { AlbumTrack } from "@gatefold/shared";
@@ -9,6 +9,7 @@ import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
 import { TriageButton } from "../../components/TriageButton";
 import { useBacklog } from "../backlog/useBacklog";
+import { useKaraoke } from "../lyrics/KaraokeProvider";
 import { usePlayback } from "../now-playing/usePlayback";
 import { useDevicePickerPrompt } from "../playback/DevicePickerPrompt";
 import { VerdictDialog } from "../review/VerdictDialog";
@@ -156,6 +157,7 @@ export function AlbumPage() {
   });
 
   const { state, displayMs, controls } = usePlayback();
+  const { canOpen: canKaraoke, openKaraoke } = useKaraoke();
   const backlog = useBacklog();
   const review = useAlbumReview(id);
   const { requestDevice } = useDevicePickerPrompt();
@@ -421,22 +423,33 @@ export function AlbumPage() {
             <h2 className="min-w-0 truncate text-sm font-medium text-ink-muted">
               {selectedTrack ? `Lyrics: ${selectedTrack.name}` : "Lyrics"}
             </h2>
-            <Button
-              variant={autoFollow ? "ghost" : "secondary"}
-              size="sm"
-              className="shrink-0"
-              onClick={() => {
-                if (autoFollow) {
-                  setPicked(selectedId);
-                  setAutoFollow(false);
-                } else {
-                  setPicked(null);
-                  setAutoFollow(true);
-                }
-              }}
-            >
-              Auto-follow: {autoFollow ? "on" : "off"}
-            </Button>
+            <div className="flex shrink-0 items-center gap-2">
+              {canKaraoke && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={openKaraoke}
+                  title="Karaoke mode (K)"
+                >
+                  <Mic2 className="size-4" />
+                </Button>
+              )}
+              <Button
+                variant={autoFollow ? "ghost" : "secondary"}
+                size="sm"
+                onClick={() => {
+                  if (autoFollow) {
+                    setPicked(selectedId);
+                    setAutoFollow(false);
+                  } else {
+                    setPicked(null);
+                    setAutoFollow(true);
+                  }
+                }}
+              >
+                Auto-follow: {autoFollow ? "on" : "off"}
+              </Button>
+            </div>
           </div>
           <div className="max-h-[70vh] overflow-y-auto pr-2">
             <LyricsPanel

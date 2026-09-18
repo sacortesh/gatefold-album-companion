@@ -29,6 +29,10 @@ export function useBacklog() {
       // AlbumPage reads `inBacklog` off the album detail response, not the
       // backlog query — refresh it so the button reflects the add.
       void qc.invalidateQueries({ queryKey: ["album", entry.albumId] });
+      void qc.invalidateQueries({ queryKey: ["suggestions"] });
+      // The Similar Albums strip (any album's) can recommend the one just
+      // added — its status needs to flip out of "new" too.
+      void qc.invalidateQueries({ queryKey: ["album-similar"] });
     },
   });
 
@@ -46,6 +50,8 @@ export function useBacklog() {
     onSettled: (_d, _e, albumId) => {
       invalidate();
       void qc.invalidateQueries({ queryKey: ["album", albumId] });
+      void qc.invalidateQueries({ queryKey: ["suggestions"] });
+      void qc.invalidateQueries({ queryKey: ["album-similar"] });
     },
   });
 
@@ -71,6 +77,8 @@ export function useBacklog() {
     onSuccess: (res) => {
       qc.setQueryData(BACKLOG_KEY, res);
       invalidate();
+      void qc.invalidateQueries({ queryKey: ["suggestions"] });
+      void qc.invalidateQueries({ queryKey: ["album-similar"] });
       for (const item of res.items) {
         void qc.invalidateQueries({ queryKey: ["album", item.albumId] });
       }

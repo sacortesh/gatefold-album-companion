@@ -1,6 +1,8 @@
 import { Link, NavLink, Outlet } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../api/client";
+import { KaraokeProvider } from "../features/lyrics/KaraokeProvider";
+import { usePlayback } from "../features/now-playing/usePlayback";
 import { DevicePickerPromptProvider } from "../features/playback/DevicePickerPrompt";
 import { GatefoldMark } from "./GatefoldMark";
 import { NowPlayingCard } from "./NowPlayingCard";
@@ -76,51 +78,59 @@ function HealthDot() {
 }
 
 export function Layout() {
+  // Mirrors NowPlayingCard's own visibility check — the bottom bar reserves
+  // this much space only when it's actually going to render one; otherwise
+  // the reserved padding is just dead space above the footer.
+  const { state, notConnected } = usePlayback();
+  const showsPlayerBar = !notConnected && Boolean(state?.track);
+
   return (
-    <DevicePickerPromptProvider>
-      <div className="mx-auto flex min-h-screen max-w-5xl flex-col px-6">
-        <UpdateBanner />
-        {/* Single row at desktop (taste-checklist: nav ≤80px, one line) —
-            below that, the nav claims its own full-width row (`basis-full`)
-            instead of competing with the logo for whatever's left, so it
-            can wrap 2+ items per line instead of collapsing to one per
-            row on a real phone width. */}
-        <header className="flex flex-wrap items-center gap-x-6 gap-y-2 border-b border-border py-3">
-          <Link
-            to="/"
-            className="flex items-center gap-1.5 font-distressed text-base tracking-tight text-ink"
-          >
-            <GatefoldMark /> Gatefold
-          </Link>
-          <nav className="flex basis-full flex-wrap gap-1 sm:basis-auto sm:flex-1">
-            {navItems.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.end}
-                className={({ isActive }) =>
-                  `rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-                    isActive
-                      ? "bg-surface-2 text-ink"
-                      : "text-ink-muted hover:text-ink"
-                  }`
-                }
-              >
-                {item.label}
-              </NavLink>
-            ))}
-          </nav>
-          <HealthDot />
-        </header>
+    <KaraokeProvider>
+      <DevicePickerPromptProvider>
+        <div className="mx-auto flex min-h-screen max-w-5xl flex-col px-6">
+          <UpdateBanner />
+          {/* Single row at desktop (taste-checklist: nav ≤80px, one line) —
+              below that, the nav claims its own full-width row (`basis-full`)
+              instead of competing with the logo for whatever's left, so it
+              can wrap 2+ items per line instead of collapsing to one per
+              row on a real phone width. */}
+          <header className="flex flex-wrap items-center gap-x-6 gap-y-2 border-b border-border py-3">
+            <Link
+              to="/"
+              className="flex items-center gap-1.5 font-distressed text-base tracking-tight text-ink"
+            >
+              <GatefoldMark /> Gatefold
+            </Link>
+            <nav className="flex basis-full flex-wrap gap-1 sm:basis-auto sm:flex-1">
+              {navItems.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  end={item.end}
+                  className={({ isActive }) =>
+                    `rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                      isActive
+                        ? "bg-surface-2 text-ink"
+                        : "text-ink-muted hover:text-ink"
+                    }`
+                  }
+                >
+                  {item.label}
+                </NavLink>
+              ))}
+            </nav>
+            <HealthDot />
+          </header>
 
-        <main className="flex-1 py-8 pb-28">
-          <Outlet />
-        </main>
+          <main className={`flex-1 py-8 ${showsPlayerBar ? "pb-28" : ""}`}>
+            <Outlet />
+          </main>
 
-        <Footer />
+          <Footer />
 
-        <NowPlayingCard />
-      </div>
-    </DevicePickerPromptProvider>
+          <NowPlayingCard />
+        </div>
+      </DevicePickerPromptProvider>
+    </KaraokeProvider>
   );
 }

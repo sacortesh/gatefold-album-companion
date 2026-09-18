@@ -18,10 +18,12 @@ having read the diff.
 
 - Check [`docs/implementation-plan.md`](docs/implementation-plan.md) first —
   it tracks what's done, in progress, and speced-but-not-built (currently
-  Phase 7 and Phase 10 are the open tracks). If what you want to build is
-  already speced there, follow that spec rather than re-deriving the design;
-  if it conflicts with something already in flight, say so in your issue/PR
-  so work doesn't collide.
+  Phase 7, Phase 11, and Phase 12 are the open tracks; Phase 10 is done bar
+  three minor leftovers noted in its own 10.1 section). The doc's own
+  "Contents" section near the top links straight to each open phase. If
+  what you want to build is already speced there, follow that spec rather
+  than re-deriving the design; if it conflicts with something already in
+  flight, say so in your issue/PR so work doesn't collide.
 - For anything bigger than a small fix — a new endpoint, a new config shape,
   a new external integration — open an issue describing the approach before
   writing code. Bug fixes and small, obviously-correct improvements can just

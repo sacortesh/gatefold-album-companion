@@ -7,9 +7,18 @@ const BASE = "https://ws.audioscrobbler.com/2.0/";
 /** Similar artists to pull top-album candidates from — well within Miller's
  *  Law for a horizontal strip, and caps the worst-case cold-lookup fan-out. */
 const SIMILAR_ARTIST_LIMIT = 8;
+/** Top albums pulled per similar artist (Phase 12.2) — was 1, which left
+ *  the known-album filter nothing to fall back to once an artist's single
+ *  candidate was already in Backlog/Revisit/Reviews. */
+const TOP_ALBUMS_PER_ARTIST = 4;
 
 const cache = makeCache("similar-albums");
 const TTL_MS = 30 * 24 * 3600_000;
+/** Cache key version — bump whenever the stored shape changes (v1 stored
+ *  one id per artist; v2 stores up to TOP_ALBUMS_PER_ARTIST). Old entries
+ *  are just orphaned, not migrated — self-hosters have "Clear cache"
+ *  (10.18) if a manual nudge is ever wanted. */
+const CACHE_VERSION = "v2";
 
 interface SimilarArtistsResponse {
   similarartists?: { artist?: Array<{ name: string }> };
@@ -36,20 +45,22 @@ async function fetchSimilarArtists(
   return (data.similarartists?.artist ?? []).map((a) => a.name);
 }
 
-async function fetchTopAlbum(
+async function fetchTopAlbums(
   artist: string,
   apiKey: string,
-): Promise<{ artist: string; album: string } | null> {
+): Promise<Array<{ artist: string; album: string }>> {
   const url = `${BASE}?${new URLSearchParams({
     method: "artist.gettopalbums",
     artist,
     api_key: apiKey,
     format: "json",
-    limit: "1",
+    limit: String(TOP_ALBUMS_PER_ARTIST),
   })}`;
   const data = await getJson<TopAlbumsResponse>(url);
-  const top = data.topalbums?.album?.[0];
-  return top ? { artist: top.artist.name, album: top.name } : null;
+  return (data.topalbums?.album ?? []).map((a) => ({
+    artist: a.artist.name,
+    album: a.name,
+  }));
 }
 
 /** Resolve a Last.fm (artist, album) pair to a real Spotify album id — Last.fm's
@@ -75,7 +86,7 @@ export async function getSimilarAlbumIds(artist: string): Promise<string[]> {
   const { lastfmApiKey } = await getAppConfig();
   if (!lastfmApiKey) return [];
 
-  const key = `similar:${artist}`.toLowerCase();
+  const key = `similar:${CACHE_VERSION}:${artist}`.toLowerCase();
   const cached = await cache.get<string[]>(key, TTL_MS);
   if (cached) return cached;
 
@@ -84,19 +95,25 @@ export async function getSimilarAlbumIds(artist: string): Promise<string[]> {
   );
   if (!similar) return [];
 
-  const resolved = await Promise.all(
+  const perArtist = await Promise.all(
     similar.map(async (name) => {
-      const top = await safe("lastfm-topalbums", () =>
-        fetchTopAlbum(name, lastfmApiKey),
+      const tops = await safe("lastfm-topalbums", () =>
+        fetchTopAlbums(name, lastfmApiKey),
       );
-      if (!top) return null;
-      return safe("spotify-album-search", () =>
-        resolveOnSpotify(top.artist, top.album),
+      if (!tops) return [];
+      return Promise.all(
+        tops.map((top) =>
+          safe("spotify-album-search", () =>
+            resolveOnSpotify(top.artist, top.album),
+          ),
+        ),
       );
     }),
   );
 
-  const ids = [...new Set(resolved.filter((id): id is string => Boolean(id)))];
+  const ids = [
+    ...new Set(perArtist.flat().filter((id): id is string => Boolean(id))),
+  ];
   await cache.set(key, ids);
   return ids;
 }

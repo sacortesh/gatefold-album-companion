@@ -344,13 +344,51 @@ export type PlaylistAlbumsResponse = z.infer<
   typeof playlistAlbumsResponseSchema
 >;
 
-/** `GET /api/album/:id/similar` — Last.fm similar-artist → top-album,
- *  resolved to real Spotify albums, filtered against Backlog/Revisit/
- *  Reviews. Empty when Last.fm isn't configured, not an error. */
+/** One candidate out of the similar-albums/suggestions pipelines, tagged
+ *  with whether you've already acted on it (Phase 12.2) — shown, not
+ *  dropped, so a recommendation you already grabbed reads as confirmation
+ *  rather than vanishing. */
+export const similarAlbumSchema = z.object({
+  album: albumSummarySchema,
+  status: playlistAlbumStatusSchema,
+  /** Set only when `status` is `"reviewed"`. */
+  verdict: verdictSchema.nullable(),
+});
+export type SimilarAlbum = z.infer<typeof similarAlbumSchema>;
+
+/** `GET /api/album/:id/similar` — Last.fm similar-artist → top albums,
+ *  resolved to real Spotify albums, tagged against Backlog/Revisit/
+ *  Reviews rather than filtered out. Empty when Last.fm isn't configured,
+ *  not an error. */
 export const similarAlbumsResponseSchema = z.object({
-  albums: z.array(albumSummarySchema),
+  albums: z.array(similarAlbumSchema),
 });
 export type SimilarAlbumsResponse = z.infer<typeof similarAlbumsResponseSchema>;
+
+/** Where a "what to play next" pick (below) came from — unlike `/similar`
+ *  above, these are always albums you already have somewhere, never a
+ *  new discovery. */
+export const suggestionSourceSchema = z.enum(["backlog", "keep", "revisit"]);
+export type SuggestionSource = z.infer<typeof suggestionSourceSchema>;
+
+export const suggestedAlbumSchema = z.object({
+  album: albumSummarySchema,
+  source: suggestionSourceSchema,
+});
+export type SuggestedAlbum = z.infer<typeof suggestedAlbumSchema>;
+
+/** `GET /api/backlog/suggestions` (Phase 12.3) — "what to play next,"
+ *  picked from albums already sitting in Backlog / Keep / Revisit and
+ *  weighted by whatever time-of-day/day-of-week rule currently applies.
+ *  Deliberately not new-album discovery (that's `/similar` above) — the
+ *  point is to help work through what you already have, not grow the
+ *  pile further. `activeRule` names the rule that shaped the weighting,
+ *  or `null` under the neutral (disabled/no-match) default. */
+export const suggestionsResponseSchema = z.object({
+  albums: z.array(suggestedAlbumSchema),
+  activeRule: z.string().nullable(),
+});
+export type SuggestionsResponse = z.infer<typeof suggestionsResponseSchema>;
 
 // --- Phase 5: album view + lyrics ---------------------------------
 

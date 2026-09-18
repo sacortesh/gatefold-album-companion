@@ -8,6 +8,7 @@ import { GenreChips } from "../../components/GenreChips";
 import { Input } from "../../components/ui/input";
 import { AlbumSearch } from "./AlbumSearch";
 import { PlaylistImport } from "./PlaylistImport";
+import { SuggestedForYou } from "./SuggestedForYou";
 import { useBacklog } from "./useBacklog";
 
 function Card({
@@ -157,6 +158,8 @@ export function BacklogPage() {
         addError={add.isError ? (add.error as Error).message : null}
         existingIds={new Set(items.map((i) => i.albumId))}
       />
+
+      <SuggestedForYou />
 
       <PlaylistImport />
 
