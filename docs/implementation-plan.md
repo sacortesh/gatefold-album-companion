@@ -4,19 +4,43 @@ Status: **in progress** — pairs with `functional-spec.md` v0.6 and
 `architecture.md`. Phases 0–6 and 8 done; Phase 7 (polish) partially done;
 Phase 9 (self-hosting) done except one manual step (cut the release tag);
 Phase 10 (field-trial hardening + Revision 2) done through 10.22; Phase 11
-(languages) scoped, not built. See each phase's own heading for status.
+(languages) scoped, not built; Phase 12 (discovery + karaoke, from the
+2026-09-14 Notion brain dump) code done, awaiting a manual browser pass
+(karaoke overlay, a configured suggestion rule). See each phase's own
+heading for status.
 Date: 2026-08-27 (original proposal) — living document since, most
-recently updated 2026-09-08.
+recently updated 2026-09-17.
 
-Eleven phases (0–11; Phase 10 grew into the project's catch-all for
+Twelve phases (0–12; Phase 10 grew into the project's catch-all for
 conversationally-requested work after the original MVP scope closed —
 see its own intro for why). Each phase ends in something you can open and
-use. Phases 0–8 build in strict order; Phase 10/11 items are individually
-scoped and mostly independent of each other (see the dependency graph at
-the end of this document).
+use. Phases 0–8 build in strict order; Phase 10/11/12 items are
+individually scoped and mostly independent of each other (see the
+dependency graph at the end of this document).
 
 Legend: `[ ]` task · **(you)** = a step only the user can do ·
 **AC** = acceptance criteria (phase is done when these pass).
+
+## Contents
+
+Jump straight to what's open — ✅ done · 🟡 open with a small remainder ·
+⏳ scoped but not started:
+
+- ✅ [Phase 0 — Scaffold](#phase-0-scaffold-done-2026-08-27)
+- 🟡 [Phase 1 — Spotify auth](#phase-1-spotify-auth-code-done-awaiting-one-manual-connect) — awaiting one manual connect
+- ✅ [Phase 2 — Now playing + playback control](#phase-2-now-playing-playback-control-done-2026-08-27)
+- ✅ [Phase 3 — Like + Banger](#phase-3-like-banger-done-2026-08-27)
+- ✅ [Phase 4 — Backlog](#phase-4-backlog-done-2026-08-28)
+- ✅ [Phase 5 — Album experience view](#phase-5-album-experience-view-done-2026-08-28)
+- ✅ [Phase 6 — Album verdict + review](#phase-6-album-verdict-review-done-2026-08-28)
+- 🟡 [Phase 7 — Polish & hardening](#phase-7-polish-hardening) — **open track**: correctness/empty states, perf, ship checklist
+- ✅ [Phase 8 — Revision 1](#phase-8-revision-1-from-the-first-real-listening-sessions)
+- 🟡 [Phase 9 — Self-hosting / distribution](#phase-9-self-hosting-distribution) — done except cutting the release tag (you)
+- 🟡 [Phase 10 — Field-trial hardening + Revision 2](#phase-10-field-trial-hardening-revision-2-from-the-first-real-self-host) — done through 10.22; 3 minor leftovers from 10.1 (#1 npm/yarn CVEs, #3 OCI labels/SBOM, #9 LAN docs)
+- ⏳ [Phase 11 — Languages](#phase-11-languages) — **open track**: scoped, not built
+- 🟡 [Phase 12 — Discovery + karaoke](#phase-12-discovery-karaoke-from-the-2026-09-14-notion-brain-dump) — code done; awaiting a manual browser pass (you)
+- [Dependency graph](#dependency-graph)
+- [Not in this plan (later MVPs)](#not-in-this-plan-later-mvps)
 
 ---
 
@@ -1523,12 +1547,256 @@ integration itself is independent of either.
 
 ---
 
+## Phase 12 — Discovery + karaoke (from the 2026-09-14 Notion brain dump)
+
+Source: a Notion "Gatefold app" backlog page, captured 2026-09-14 as an
+unhydrated brain dump (three bullets, no design attached). Scoped here
+2026-09-17. Own phase rather than folded into Phase 10 — Phase 10's AC is
+already satisfied and closed; these are new asks, not leftovers. 12.1 is
+independent; 12.3 builds directly on 12.2's improved pipeline, so 12.2
+should land first.
+
+### 12.1 — Karaoke mode — done (2026-09-17)
+
+Goal: a full-screen, large-text, hands-off synced-lyrics view for singing
+along — readable across a room, not just from the album page's sidebar.
+
+Current state: `LyricsPanel.tsx`'s `SyncedView` renders small synced lines
+in a `lg:sticky lg:top-6` sidebar column next to the tracklist
+(`AlbumPage.tsx:419`) — sized for reading alongside metadata while
+multitasking, not for distance reading. It only color-codes the active
+line; it never scrolls its container, since everything normally fits or
+the user scrolls manually.
+
+- [x] Full-screen overlay via the existing `Dialog`/`DialogContent`
+      primitive (`components/ui/dialog.tsx`), `className` overridden with
+      explicit `left-0 top-0`/`translate-x-0 translate-y-0`/`w-screen`/
+      `h-screen`/`max-w-none`/`max-h-none` (matched one-for-one against
+      the base classes so `tailwind-merge` actually drops them, rather
+      than a blanket `inset-0` which sits in a different merge group and
+      wouldn't have overridden `top-1/2`/`left-1/2`) — not
+      `AlbumGallery.tsx`'s bespoke lightbox, which predates `Dialog`.
+- [x] Large centered active-line view with a real
+      `scrollIntoView({ block: "center", behavior: "smooth" })` on the
+      active line's ref (`KaraokeView` in `KaraokeProvider.tsx`) —
+      genuinely new behavior, the sidebar's `SyncedView` never scrolls.
+- [x] Gated on having a current track with synced lyrics (`canOpen`);
+      shows "No synced lyrics for this track" inside the still-open
+      overlay rather than closing it if the album advances into a track
+      without synced lyrics mid-session, since auto-closing mid-song would
+      be more surprising than a graceful in-place message.
+- [x] Track changes swap lyrics in place automatically — the overlay reads
+      `usePlayback()` directly rather than freezing on props captured at
+      open time, so advancing to the next track just re-renders.
+- [x] Real bug found on first actual use (screenshot from the user, a long
+      lyric sheet rendering half off-screen top and bottom with no way to
+      scroll): `KaraokeView` had been built as `flex h-full flex-col
+      justify-center` — vertically centering the *entire* lyrics list as
+      one block, not scrolling to the active line, so anything taller than
+      the viewport spilled unreachably past both edges. Compounded by a
+      second issue: `h-full` on a flex child sizing against a `flex-col`
+      ancestor is a known CSS ambiguity (percentage heights inside flex
+      layout don't reliably resolve), so `overflow-y-auto` upstream had no
+      definite box to scroll against anyway. Rewritten as `absolute
+      inset-0 overflow-y-auto` (sized against the dialog's own fixed
+      `h-screen`/`w-screen` box directly — no percentage/flex ambiguity),
+      with `py-[50vh]` top/bottom padding so even the first/last line has
+      room to scroll to vertical center (the standard teleprompter/karaoke
+      trick), letting the existing `scrollIntoView` call do the actual
+      line-following. `DialogContent`'s own `flex flex-col` was dropped
+      (no longer needed — every child is now self-sizing via `absolute
+      inset-0`), and the two static fallback messages ("Nothing playing",
+      "No synced lyrics") got the same treatment for consistency.
+
+Explicitly out of scope for v1: mic input / pitch scoring (this is
+"readable lyrics at a distance," not a scored game); a dedicated
+cross-album "karaoke playlist" mode — v1 is one track at a time, tied to
+whatever's actually playing.
+
+Reachable from the sticky bottom player bar (`NowPlayingCard.tsx`), not
+just the album page — decided 2026-09-17. Since karaoke only ever applies
+to whatever's currently playing, the trigger needed no per-track props:
+built as a self-contained overlay driven entirely by `usePlayback()`, the
+same "mount once, expose an opener" shape as 10.8's
+`DevicePickerPromptProvider`:
+- [x] `KaraokeProvider` (`features/lyrics/KaraokeProvider.tsx` — first
+      non-album-page consumer of lyrics, own feature folder rather than
+      living under `features/album/`), mounted once in `Layout.tsx`
+      alongside `DevicePickerPromptProvider`, exposing `{ canOpen,
+      openKaraoke }` via context.
+- [x] The overlay reads `usePlayback()` for the current track/album/
+      position, fetches `GET /album/:id/lyrics` for that album under the
+      same `["album-lyrics", id]` query key `AlbumPage` uses (shares its
+      React Query cache entry — a cache hit whenever the album's already
+      been opened once), and looks up the current track id itself.
+- [x] Two trigger buttons, both calling `openKaraoke()` from context: a
+      `Mic2` icon button in `NowPlayingCard.tsx`'s bottom bar (disabled
+      via `canOpen` when nothing synced is playing) and one in
+      `AlbumPage.tsx` next to Auto-follow (only rendered when `canOpen`),
+      now wired through the provider instead of local dialog state.
+- [x] `K` hotkey wired inside `KaraokeProvider` itself (via the existing
+      `useHotkeys` in `features/triage/useTriageHotkeys.ts`, same
+      mechanism `P`/`L`/`B` use) — fires from anywhere a track with synced
+      lyrics is playing, not scoped to one page, mirroring `P`'s reach.
+
+Verified: `npm run typecheck` and `npm run build` clean across all three
+packages after landing 12.1–12.3 together.
+
+### 12.2 — Richer "Similar Albums" recommendations — done (2026-09-17)
+
+Goal: today's strip (Phase 10.17) is too thin to be a real discovery
+surface — one candidate per similar artist, and anything you've already
+acted on vanishes instead of confirming the recommendation was good.
+
+Current state (`similar-albums.ts` + `routes/album.ts:119–156`):
+- `SIMILAR_ARTIST_LIMIT = 8` similar artists via Last.fm
+  `artist.getsimilar`; `fetchTopAlbum`'s `limit: "1"` pulls exactly **one**
+  top album per artist — at most 8 raw candidates before any filtering.
+- `routes/album.ts:143–151` builds a `known` set from Backlog + Revisit +
+  Reviews and **excludes** any candidate already in it — an album you
+  already queued or reviewed just disappears, rather than showing "you
+  already grabbed this one."
+
+- [x] `fetchTopAlbums` (renamed from `fetchTopAlbum`) now pulls
+      `TOP_ALBUMS_PER_ARTIST = 4` per similar artist instead of 1.
+- [x] New shared `similarAlbumSchema` (`{ album, status, verdict }`,
+      reusing 10.13's `playlistAlbumStatusSchema` rather than a second
+      enum) — extracted the known-albums lookup into a new
+      `server/src/known-albums.ts#loadKnownAlbums()` shared by
+      `/album/:id/similar` and the playlist-import route (refactored onto
+      it, replacing its inline duplicate). `SimilarAlbums.tsx` dims
+      non-`"new"` cards with a trailing reason (new shared
+      `web/src/lib/verdictLabels.ts#statusLabel`, also now used by
+      `PlaylistImport.tsx`) instead of the server dropping them.
+- [x] `SIMILAR_DISPLAY_CAP = 10` in `routes/album.ts`, `"new"`-first sort
+      before slicing.
+- [x] Cache key bumped to `similar:v2:${artist}` (`CACHE_VERSION`) — old
+      v1 entries just age out unread, no migration written.
+- [x] Real-use feedback, same day: a `"new"` card was a dead-end link with
+      no way to act on it. `SimilarAlbums.tsx` restructured (the whole
+      card was one `<Link>`; now the image and text are separate `<Link>`s
+      so a real `<Button>` can sit alongside without nesting an
+      interactive control inside another) — each `"new"` card gets an
+      "Add to backlog" button wired to `useBacklog().importAlbums`, same
+      single-element-array reuse of `POST /api/backlog/bulk` as 12.3.
+- [x] Real bug found right after shipping the button above: clicking it
+      added the album but the card kept showing "Add to backlog" —
+      nothing invalidated `["album-similar", ...]` on add, so the strip
+      never learned the album's status had changed. `useBacklog()`'s
+      `add`/`remove`/`importAlbums` (and `useSubmitVerdict`, which also
+      moves an album out of Backlog) now all invalidate `["album-similar"]`
+      by prefix alongside the keys they already touched.
+
+Verified live against the real account: `/album/:id/similar` on a
+backlogged album returned 10 fresh candidates (Meshuggah's *ObZen*,
+*Nothing*, *Koloss*, etc., all `"new"`) — previously capped at ≤8 total
+with only one candidate per artist to survive the known-album filter.
+
+### 12.3 — "Play next": a configurable time-of-day/day-of-week picker across Backlog/Keep/Revisit — done (2026-09-17, revised same day)
+
+Goal ("agregar sugeridor automático" in the brain dump — vaguest of the
+three, elaborated 2026-09-17): surface recommendations *without* first
+opening an album you already own, and bias *which* source of albums gets
+picked by when you're listening. User's framing: at some hours/days,
+pulling from the **Backlog** (stuff you queued but haven't heard —
+adventurous / discovery mode) is more fun than pulling from
+**Keep**/**Revisit** (albums you already know you love — safe / comfort
+mode), and that split is different per person's schedule, so it has to be
+configured, not guessed or auto-learned.
+
+**Revised after a real-use pass the same day the first version shipped.**
+The first build (see git history / prior revision of this section)
+misread "prioritizing albums from the backlog" as *seeding Last.fm
+discovery from backlog/keep/revisit artists* — i.e. it recommended
+**new** albums you didn't have, the same job `/album/:id/similar` (12.2)
+already does per-album. User feedback: *"this is not really what I
+wanted... what I want is to recommend albums for your next playing
+session from either the backlog, keep or revisit lists, not really new
+albums. Or else the backlog will never die."* The actual ask is a picker
+over albums you **already have**, not a second discovery surface — the
+point of biasing toward Backlog at certain hours is to surface *unplayed
+queued albums*, not grow the queue further.
+
+- [x] `server/src/suggestions.ts` rewritten around three **local** pools
+      instead of Last.fm seed artists — `collectPools()` reads the full
+      album-id list straight off `readConfig("backlog")`,
+      `readConfig("revisit")`, and `readAllReviews()` filtered to
+      `verdict === "keep"` (no recency cap this time — capping to "recent"
+      would work directly against "help the backlog die," since it's the
+      old, neglected entries that most need surfacing).
+      `allocatePickCounts` (renamed from `allocateSeedCounts`, same
+      largest-remainder math) splits a 6-pick budget across the three
+      pools by the resolved weights; `shuffle` + slice per pool, deduped
+      globally. Each pick resolves via one `getAlbums` batch (already
+      cached) to `{ album: AlbumSummary, source: "backlog"|"keep"|
+      "revisit" }` — no Last.fm/`getSimilarAlbumIds`/`known-albums.ts`
+      involvement at all anymore, since every candidate is by definition
+      already known. No caching needed either (dropped the 3-hour
+      `makeCache` from the first version): everything is a local config
+      read plus one already-cached `getAlbums` call, so a fresh shuffle
+      per request is both cheap and desirable — variety, not a staleness
+      risk to guard against.
+- [x] `resolveActiveRule`/`ruleMatches` (day/hour window matching,
+      wrap-past-midnight handling) carried over unchanged from the first
+      version — that part of the design was correct, only the "what pool
+      feeds a Last.fm lookup" vs. "what pool do we pick a real album from"
+      distinction was wrong.
+- [x] Shared DTO reshaped: new `suggestionSourceSchema` (`"backlog" |
+      "keep" | "revisit"`) and `suggestedAlbumSchema` (`{ album, source }`)
+      in `shared/src/dto.ts`; `suggestionsResponseSchema` now returns
+      `SuggestedAlbum[]`, not bare `AlbumSummary[]`.
+- [x] `SuggestedForYou.tsx` renamed in spirit to "Play next" (heading
+      text; file/component name unchanged) — each card shows a
+      `SOURCE_LABEL` line ("In your backlog" / "A keeper" / "Marked to
+      revisit") and a **Play** button (`useBacklog().playAlbum`, the same
+      mutation `BacklogPage.tsx`'s cards use — including its existing
+      `no_device` → device-picker-prompt handling for free) instead of
+      the first version's "Add to backlog" (nonsensical here: everything
+      shown is already somewhere).
+      `SuggestionsSettings.tsx` (the rule editor) is unaffected by the
+      pivot — the schedule/weights UI was always about *which pool*, not
+      *what happens with a pick*, so nothing there needed to change.
+- [x] Suggestion-affecting mutations invalidate `["suggestions"]` so a
+      pick disappears/reappears immediately as the underlying lists
+      change: `useBacklog()`'s `add`/`remove`/`importAlbums`, and
+      `useSubmitVerdict` (a verdict moves an album out of Backlog and
+      into Keep/Revisit/neither — the single biggest pool-mutating
+      action, added to its invalidation list alongside the reviews/
+      revisit/backlog keys it already touched).
+
+Verified live against the real account, both versions: **first version**
+(discovery, since replaced) returned 8 real *new* Ihlo/Leprous picks under
+neutral weights. **Revised version**: `GET /api/backlog/suggestions`
+returned 4 real *owned* albums — Insomnium's *Above the Weeping World*
+and Death's *The Sound of Perseverance* (`source: "backlog"`), Avantasia's
+*The Metal Opera, Pt. I* (`source: "keep"`), Alcest's *Les Chants de
+l'Aurore* (`source: "revisit"`) — fewer than the 6-pick budget because
+Keep/Revisit only had 1 eligible album each at the time (no backfill from
+other pools, as documented above; expected, not a bug).
+
+**AC:** `npm run typecheck` and `npm run build` clean across all three
+packages ✅. Live-verified against the real account: 12.2's `/similar`
+route returns a fuller, status-tagged candidate list with a working
+one-click "Add to backlog" on new candidates ✅; 12.3's
+`/backlog/suggestions` returns real owned albums from Backlog/Keep/
+Revisit, correctly tagged by source, under the neutral default ✅.
+**Not yet done** (needs the user, browser-only): clicking the karaoke
+trigger and confirming the full-screen overlay renders/scrolls correctly
+(12.1); configuring an actual suggestion rule in Settings and confirming
+the weighting visibly shifts which pool "Play next" draws from (12.3); a
+narrow-viewport pass on the new Settings rule editor and the "Similar
+albums" / "Play next" horizontal strips (no dedicated mobile check done
+this session).
+
+---
+
 ## Dependency graph
 
 ```
 0 ─▶ 1 ─▶ 2 ─▶ 3 ─▶ 7
           └──▶ 4 ─▶ 5 ─▶ 6 ─▶ 7 ─▶ 8
                                    └──▶ 9 ─▶ 10 ─▶ 11
+                                        └──▶ 12
 ```
 
 Phases 3 and 4 both only need Phase 2; everything funnels into 7. Phase 8
@@ -1537,7 +1805,8 @@ independent of each other and can land in any order (Rev-1 first is
 easiest). Phase 9 (self-hosting) needs the config/auth refactor (9.1–9.4)
 before the container work (9.5+) is worthwhile. Within Phase 11: 11.1 ─▶
 11.2, 11.1 ─▶ 11.3, 11.4 ─▶ 11.5 (11.1 and 11.4 are independent starting
-points).
+points). Within Phase 12: 12.1 is standalone; 12.2 ─▶ 12.3 (12.3 reuses
+12.2's richer candidate pipeline).
 
 ## Not in this plan (later MVPs)
 
