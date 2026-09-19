@@ -276,6 +276,11 @@ export const albumSummarySchema = z.object({
    *  this album — never triggers a fresh lookup just to populate a list row.
    *  Empty when nothing's cached yet. */
   genres: z.array(z.string()),
+  /** Distinct lyrics scripts detected across this album's tracks (Phase
+   *  11.3), from the lyrics cache — populated once the album's lyrics have
+   *  actually been fetched (opening its page, or playing a track from it),
+   *  empty until then. Same cache-only-peek discipline as `genres`. */
+  languages: z.array(z.enum(["latin", "cyrillic", "hangul", "japanese"])),
 });
 export type AlbumSummary = z.infer<typeof albumSummarySchema>;
 
@@ -433,11 +438,40 @@ export const lyricLineSchema = z.object({
 });
 export type LyricLine = z.infer<typeof lyricLineSchema>;
 
+/** One run of furigana-annotated text: `reading` is the kana above `text`
+ *  when present, or `null` for a plain (non-kanji) run. Kept structured
+ *  rather than the raw `<ruby>` HTML kuroshiro produces — that HTML passes
+ *  lyric text through unescaped, so rendering it via `dangerouslySetInnerHTML`
+ *  would be a stored-XSS hole if a lyric ever contained a literal `<`.
+ *  Segments render as real React elements instead, always escaped. */
+export const furiganaSegmentSchema = z.object({
+  text: z.string(),
+  reading: z.string().nullable(),
+});
+export type FuriganaSegment = z.infer<typeof furiganaSegmentSchema>;
+
 export const trackLyricsSchema = z.object({
   source: z.literal("lrclib").nullable(),
   synced: z.array(lyricLineSchema).nullable(),
   plain: z.string().nullable(),
   instrumental: z.boolean(),
+  /** Detected script of the lyrics text; `null` only when there's no lyrics
+   *  text to analyze at all. `"latin"` (most tracks) gets tagged but no
+   *  romanization/furigana — those only apply to the other three scripts.
+   *  Phase 11.1 (cyrillic/hangul/japanese); broadened to include `"latin"`
+   *  in 11.3 so every track with lyrics gets a definite language tag. */
+  script: z.enum(["latin", "cyrillic", "hangul", "japanese"]).nullable(),
+  /** Index-aligned 1:1 with `synced` — same timing, romanized text. */
+  romanizedSynced: z.array(z.string()).nullable(),
+  romanizedPlain: z.string().nullable(),
+  /** Romanized track title, same script as the lyrics — for headings that
+   *  display the track name (e.g. the karaoke overlay) alongside a gloss. */
+  romanizedTitle: z.string().nullable(),
+  /** Japanese only (Phase 11.2). Index-aligned 1:1 with `synced` — each
+   *  element is that line's segments. */
+  furiganaSynced: z.array(z.array(furiganaSegmentSchema)).nullable(),
+  /** Japanese only. One segment array per `\n`-split line of `plain`. */
+  furiganaPlain: z.array(z.array(furiganaSegmentSchema)).nullable(),
 });
 export type TrackLyrics = z.infer<typeof trackLyricsSchema>;
 

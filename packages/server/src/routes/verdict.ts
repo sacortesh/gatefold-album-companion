@@ -14,6 +14,7 @@ import {
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { getCachedGenres } from "../context/index.js";
 import { AppError } from "../errors.js";
+import { getCachedLanguages } from "../lyrics/albumLanguage.js";
 import { getAlbum, getAlbums, toAlbumSummary } from "../spotify/albums.js";
 import {
   isAlbumSaved,
@@ -119,10 +120,13 @@ export async function verdictRoutes(app: FastifyInstance): Promise<void> {
       const reviews = await readAllReviews();
       return {
         reviews: await Promise.all(
-          reviews.map(async (r) => ({
-            ...r,
-            genres: await getCachedGenres(r.artist, r.album),
-          })),
+          reviews.map(async (r) => {
+            const [genres, languages] = await Promise.all([
+              getCachedGenres(r.artist, r.album),
+              getCachedLanguages(r.albumId),
+            ]);
+            return { ...r, genres, languages };
+          }),
         ),
       };
     },
@@ -164,15 +168,14 @@ export async function verdictRoutes(app: FastifyInstance): Promise<void> {
           items.map(async (i) => {
             const raw = albums.get(i.albumId);
             const summary = raw ? toAlbumSummary(raw) : null;
-            const album = summary
-              ? {
-                  ...summary,
-                  genres: await getCachedGenres(
-                    summary.artists[0] ?? "",
-                    summary.name,
-                  ),
-                }
-              : null;
+            let album = null;
+            if (summary) {
+              const [genres, languages] = await Promise.all([
+                getCachedGenres(summary.artists[0] ?? "", summary.name),
+                getCachedLanguages(i.albumId),
+              ]);
+              album = { ...summary, genres, languages };
+            }
             return {
               albumId: i.albumId,
               addedAt: i.addedAt,

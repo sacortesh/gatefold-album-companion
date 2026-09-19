@@ -20,6 +20,7 @@ import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { getAlbumContext, getCachedGenres } from "../context/index.js";
 import { AppError } from "../errors.js";
 import { loadKnownAlbums } from "../known-albums.js";
+import { getCachedLanguages } from "../lyrics/albumLanguage.js";
 import { mapLimit } from "../mapLimit.js";
 import {
   getAlbum,
@@ -69,11 +70,11 @@ async function enrich(items: BacklogItem[]): Promise<BacklogEntry[]> {
       const raw = albums.get(i.albumId);
       if (!raw) return { ...i, album: null };
       const summary = toAlbumSummary(raw);
-      const genres = await getCachedGenres(
-        summary.artists[0] ?? "",
-        summary.name,
-      );
-      return { ...i, album: { ...summary, genres } };
+      const [genres, languages] = await Promise.all([
+        getCachedGenres(summary.artists[0] ?? "", summary.name),
+        getCachedLanguages(i.albumId),
+      ]);
+      return { ...i, album: { ...summary, genres, languages } };
     }),
   );
 }

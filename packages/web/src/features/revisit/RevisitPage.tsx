@@ -6,6 +6,7 @@ import { api, ApiRequestError } from "../../api/client";
 import { Button } from "../../components/ui/button";
 import { GenreChips } from "../../components/GenreChips";
 import { Input } from "../../components/ui/input";
+import { languageLabels } from "../../lib/languageLabels";
 import { useDevicePickerPrompt } from "../playback/DevicePickerPrompt";
 
 function Row({ entry }: { entry: RevisitEntry }) {
@@ -108,6 +109,9 @@ export function RevisitPage() {
         a?.name.toLowerCase().includes(q) ||
         a?.artists.some((artist) => artist.toLowerCase().includes(q)) ||
         a?.genres.some((genre) => genre.toLowerCase().includes(q)) ||
+        languageLabels(a?.languages ?? []).some((l) =>
+          l.toLowerCase().includes(q),
+        ) ||
         entry.review?.notes?.toLowerCase().includes(q)
       );
     });
@@ -143,7 +147,7 @@ export function RevisitPage() {
         <Input
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
-          placeholder="Filter by album, artist, genre, or notes…"
+          placeholder="Filter by album, artist, genre, language, or notes…"
         />
       )}
       {query.isSuccess && items.length > 0 && filtered.length === 0 && (

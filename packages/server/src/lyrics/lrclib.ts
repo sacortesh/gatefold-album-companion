@@ -1,5 +1,6 @@
 import type { LyricLine, TrackLyrics } from "@gatefold/shared";
 import { makeCache } from "../cache.js";
+import { detectScript, furigana, romanize } from "./romanize.js";
 
 const cache = makeCache("lyrics");
 const LYRICS_TTL_MS = 30 * 24 * 3600_000; // 30 days; also caches misses
@@ -11,6 +12,12 @@ const EMPTY: TrackLyrics = {
   synced: null,
   plain: null,
   instrumental: false,
+  script: null,
+  romanizedSynced: null,
+  romanizedPlain: null,
+  romanizedTitle: null,
+  furiganaSynced: null,
+  furiganaPlain: null,
 };
 
 interface LrcResponse {
@@ -39,7 +46,18 @@ function parseLrc(lrc: string): LyricLine[] {
 
 function shape(res: LrcResponse): TrackLyrics {
   if (res.instrumental) {
-    return { source: "lrclib", synced: null, plain: null, instrumental: true };
+    return {
+      source: "lrclib",
+      synced: null,
+      plain: null,
+      instrumental: true,
+      script: null,
+      romanizedSynced: null,
+      romanizedPlain: null,
+      romanizedTitle: null,
+      furiganaSynced: null,
+      furiganaPlain: null,
+    };
   }
   const synced = res.syncedLyrics ? parseLrc(res.syncedLyrics) : null;
   const plain = res.plainLyrics?.trim() || null;
@@ -49,7 +67,50 @@ function shape(res: LrcResponse): TrackLyrics {
     synced: synced?.length ? synced : null,
     plain,
     instrumental: false,
+    script: null,
+    romanizedSynced: null,
+    romanizedPlain: null,
+    romanizedTitle: null,
+    furiganaSynced: null,
+    furiganaPlain: null,
   };
+}
+
+/** Mutates `result` in place with the detected script, romanization, and
+ *  (Japanese only) furigana — computed once here and stored in the same
+ *  30-day cache entry as the lyrics text it's derived from, no independent
+ *  cache namespace. `title` is romanized under the same detected script so
+ *  headings that show the track name can gloss it alongside the lyrics. */
+async function attachGlosses(result: TrackLyrics, title: string): Promise<void> {
+  const text = result.synced?.map((l) => l.text).join("\n") ?? result.plain;
+  if (!text) return;
+  const script = detectScript(text);
+  if (!script) return;
+  result.script = script;
+  // Latin lyrics still get tagged (Phase 11.3, for language filtering) but
+  // need no romanization or furigana — those are meaningless for a script
+  // that's already Latin.
+  if (script === "latin") return;
+  if (result.synced) {
+    result.romanizedSynced = await Promise.all(
+      result.synced.map((l) => romanize(l.text, script)),
+    );
+  } else if (result.plain) {
+    result.romanizedPlain = await romanize(result.plain, script);
+  }
+  result.romanizedTitle = await romanize(title, script);
+
+  if (script === "japanese") {
+    if (result.synced) {
+      result.furiganaSynced = await Promise.all(
+        result.synced.map((l) => furigana(l.text)),
+      );
+    } else if (result.plain) {
+      result.furiganaPlain = await Promise.all(
+        result.plain.split("\n").map((line) => furigana(line)),
+      );
+    }
+  }
 }
 
 async function fetchJson<T>(url: string): Promise<T | null> {
@@ -108,6 +169,14 @@ export async function getLyrics(q: LyricsQuery): Promise<TrackLyrics> {
   } catch {
     // network / LRCLIB error — treat as "no lyrics", don't cache the failure long
     return EMPTY;
+  }
+
+  try {
+    await attachGlosses(result, q.track);
+  } catch (err) {
+    // Glosses are a bonus on top of real lyrics — don't let a dependency
+    // failure (e.g. kuroshiro init) throw away a good LRCLIB match.
+    console.error("gloss computation failed:", err);
   }
 
   await cache.set(q.trackId, result);

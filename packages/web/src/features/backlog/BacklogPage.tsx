@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import type { BacklogEntry } from "@gatefold/shared";
 import { ApiRequestError } from "../../api/client";
 import { formatDuration } from "../../lib/format";
+import { languageLabels } from "../../lib/languageLabels";
 import { Button } from "../../components/ui/button";
 import { GenreChips } from "../../components/GenreChips";
 import { Input } from "../../components/ui/input";
@@ -122,7 +123,10 @@ export function BacklogPage() {
       return (
         a?.name.toLowerCase().includes(q) ||
         a?.artists.some((artist) => artist.toLowerCase().includes(q)) ||
-        a?.genres.some((genre) => genre.toLowerCase().includes(q))
+        a?.genres.some((genre) => genre.toLowerCase().includes(q)) ||
+        languageLabels(a?.languages ?? []).some((l) =>
+          l.toLowerCase().includes(q),
+        )
       );
     });
   }, [items, filter]);
@@ -184,7 +188,7 @@ export function BacklogPage() {
         <Input
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
-          placeholder="Filter your backlog by album, artist, or genre…"
+          placeholder="Filter your backlog by album, artist, genre, or language…"
         />
       )}
       {query.isSuccess &&

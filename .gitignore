@@ -25,3 +25,4 @@ data/cache/
 
 # local design-review tooling output (impeccable critique snapshots)
 .impeccable/
+brag-output/

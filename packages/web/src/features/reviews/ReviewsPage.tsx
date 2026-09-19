@@ -6,6 +6,7 @@ import { api, ApiRequestError } from "../../api/client";
 import { Button } from "../../components/ui/button";
 import { GenreChips } from "../../components/GenreChips";
 import { Input } from "../../components/ui/input";
+import { languageLabels } from "../../lib/languageLabels";
 import { useDevicePickerPrompt } from "../playback/DevicePickerPrompt";
 
 const VERDICT_STYLE: Record<Verdict, string> = {
@@ -116,7 +117,8 @@ export function ReviewsPage() {
         r.album.toLowerCase().includes(q) ||
         r.artist.toLowerCase().includes(q) ||
         r.tags.some((t) => t.toLowerCase().includes(q)) ||
-        r.genres.some((g) => g.toLowerCase().includes(q))
+        r.genres.some((g) => g.toLowerCase().includes(q)) ||
+        languageLabels(r.languages).some((l) => l.toLowerCase().includes(q))
       );
     });
   }, [reviews, search, verdictFilter]);
@@ -155,7 +157,7 @@ export function ReviewsPage() {
         <Input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search album, artist, genre, or tag…"
+          placeholder="Search album, artist, genre, language, or tag…"
           className="min-w-[200px] flex-1"
         />
         <div className="flex flex-wrap gap-1">

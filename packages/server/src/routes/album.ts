@@ -15,7 +15,9 @@ import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { getAlbumContext } from "../context/index.js";
 import { loadKnownAlbums } from "../known-albums.js";
 import { renderLinkTemplates } from "../links.js";
+import { setCachedLanguages } from "../lyrics/albumLanguage.js";
 import { getLyrics } from "../lyrics/lrclib.js";
+import type { Script } from "../lyrics/romanize.js";
 import { mapLimit } from "../mapLimit.js";
 import { getPopularTrackIds } from "../popular-tracks.js";
 import { getSimilarAlbumIds } from "../similar-albums.js";
@@ -188,6 +190,18 @@ export async function albumRoutes(app: FastifyInstance): Promise<void> {
         });
         return [t.id, lyrics] as const;
       });
+
+      // Cache-only lookups for the Backlog/Revisit/Reviews language filter
+      // (Phase 11.3) read this instead of re-fetching every track's lyrics
+      // just to render a list row.
+      const scripts = [
+        ...new Set(
+          entries
+            .map(([, lyrics]) => lyrics.script)
+            .filter((s): s is Script => s !== null),
+        ),
+      ];
+      await setCachedLanguages(id, scripts);
 
       return { lyrics: Object.fromEntries(entries) };
     },

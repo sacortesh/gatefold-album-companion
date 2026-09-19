@@ -1384,7 +1384,7 @@ one" — dictionary data sourcing (JMdict etc.) and a spaced-repetition
 export format are each their own project, not an extension of Gatefold's
 actual purpose (deliberate album *listening*).
 
-### 11.1 — Lyrics romanization (Japanese/Korean/Russian) — scoped, not built
+### 11.1 — Lyrics romanization (Japanese/Korean/Russian) — done (2026-09-18)
 
 Requested conversationally (2026-09-04): the user is learning Japanese and
 wants romaji shown alongside lyrics that aren't in a Latin-adjacent script —
@@ -1402,7 +1402,7 @@ cache entry**, not client-side. Reasoning: it's the same shape as the
 existing `lyrics/lrclib.ts` pattern (fetch once, cache 30 days), and it
 keeps a real dependency-weight concern (below) off the browser entirely.
 
-- [ ] New `packages/server/src/lyrics/romanize.ts`:
+- [x] New `packages/server/src/lyrics/romanize.ts`:
       `detectScript(text: string): "cyrillic" | "hangul" | "japanese" | null`
       using Unicode property-escape regexes on the *whole* lyrics text once
       (not per line — real songs don't mix scripts mid-track, and per-line
@@ -1413,7 +1413,7 @@ keeps a real dependency-weight concern (below) off the browser entirely.
       and this app has no reason to guess at Chinese. Returns `null`
       (skip entirely) for Latin-script lyrics, which is most tracks. Shared
       by 11.3's language tagging — don't duplicate this detector.
-- [ ] `romanize(text, script): Promise<string>` dispatches to one of three
+- [x] `romanize(text, script): Promise<string>` dispatches to one of three
       libraries, decided this session:
       - **Japanese** — `kuroshiro` + `kuroshiro-analyzer-kuromoji`, romaji
         (Hepburn) mode. This is the one hard case: kanji readings are
@@ -1436,38 +1436,72 @@ keeps a real dependency-weight concern (below) off the browser entirely.
         ~11 years stale.
       No new Settings/API-key UI needed for any of the three — all three
       run fully local, no network call, unlike Last.fm/Discogs.
-- [ ] Extend `TrackLyrics` (`shared/src/dto.ts`) with `script` (the
-      detected value above, `null` for Latin) and either
-      `romanizedSynced: string[] | null` (index-aligned 1:1 with `synced`
-      lines — timing is identical, so only the text needs duplicating) or
-      `romanizedPlain: string | null`, whichever of `synced`/`plain` the
-      track actually has. Computed once in `getLyrics()` right after the
-      LRCLIB fetch and stored in the *same* 30-day cache entry — it's fully
-      derived from lyrics text already being cached, not independent data
-      that needs its own cache namespace.
-- [ ] `LyricsPanel.tsx`: a small toggle/cycle control, rendered only when
-      `lyrics.script` is non-null — the large majority of tracks show no
-      new UI at all. Own decision (2026-09-04): this control should cycle
-      between original-only / +romanization / +translation (once 11.5
-      exists) rather than stacking all three gloss lines by default —
-      DESIGN.md's own Miller's-Law crowding concern applies directly to a
-      lyrics panel that could otherwise show 3 lines per lyric. When a
-      gloss is on, each `SyncedView` line gets a second, smaller
-      `text-ink-muted text-xs` line underneath (original stays primary).
-      `plain` mode renders the gloss blob as a second block below the
-      original. Per the same "confidently wrong" precedent as the
-      LRCLIB-mismatch fallback (Phase 10.12): label it something like
-      "romanized automatically" rather than presenting it as authoritative,
-      since kanji-reading disambiguation can still be wrong even with a
-      real analyzer.
+- [x] Extend `TrackLyrics` (`shared/src/dto.ts`) with `script` (the
+      detected value above, `null` for Latin), `romanizedSynced: string[] |
+      null` (index-aligned 1:1 with `synced`), `romanizedPlain: string |
+      null`, and `romanizedTitle: string | null` (the track title romanized
+      under the same detected script, for headings that show the track name
+      alongside a gloss — added once the karaoke overlay needed it too).
+      Computed once in `getLyrics()` right after the LRCLIB fetch and stored
+      in the *same* 30-day cache entry — it's fully derived from lyrics text
+      already being cached, not independent data that needs its own cache
+      namespace.
+- [x] `LyricsPanel.tsx`: a small toggle control (`Romanization: on/off`),
+      rendered only when `lyrics.script` is non-null — the large majority of
+      tracks show no new UI at all. Two states for now (original /
+      +romanization); +translation (11.5) will extend the same control
+      rather than stacking gloss lines — DESIGN.md's own Miller's-Law
+      crowding concern applies directly to a lyrics panel that could
+      otherwise show 3 lines per lyric. When on, both `SyncedView` and the
+      `plain`-lyrics view (`PlainView`) interleave line-by-line — each
+      original line immediately followed by its own smaller
+      `text-ink-muted text-xs` romanized line — rather than one full
+      romanized blob after the original text; confirmed live as the
+      intended reading pattern ("layering it line by line with the active
+      line"), not guessed. Per the same "confidently wrong" precedent as the
+      LRCLIB-mismatch fallback (Phase 10.12): labeled "romanized
+      automatically" rather than presented as authoritative, since
+      kanji-reading disambiguation can still be wrong even with a real
+      analyzer.
+- [x] **Bonus, requested live during this session**: the same toggle, title
+      gloss, and per-line pairing extended into the karaoke overlay
+      (`KaraokeProvider.tsx`, Phase 12.1) — it previously only read
+      `synced` with no romanization at all. Also while there:
+      karaoke can now open for tracks with *plain* (untimed) lyrics too,
+      not just synced ones — rendered as a static, manually-scrollable sheet
+      (`live=false`, no highlight/auto-scroll) reusing the same
+      `KaraokeView` by faking one `{ timeMs: i, text }` per line. A
+      `KaraokeStatusBar` (track info, progress, Like/Banger, play/pause/
+      skip) was added inside the overlay rather than reusing
+      `NowPlayingCard` directly — that component registers its own `P`-key
+      `useHotkeys` listener and stays mounted under the dialog, so reusing
+      it would double-fire play/pause on every press. Like/Banger were
+      initially left out of this minimal bar, then added back once the
+      user noticed the gap — rebuilt from the same `useRecent` hook and
+      `TriageButton` molecule `NowPlayingCard` uses, since neither
+      registers a hotkey itself and so carries none of the double-fire
+      risk that ruled out reusing the whole card.
 
-Open decisions to make at implementation time, not guessed here:
-`kuroshiro` vs the `miseya` fork (try upstream first, fall back if it
-doesn't install/run cleanly); whether the ~15MB kuromoji dictionary ships
-in the Docker image or gets fetched on first use (affects image size,
-documented as a real tradeoff above, not silently picked).
+Resolved open decisions (guessed at scoping time, confirmed at
+implementation time): upstream `kuroshiro` + `kuroshiro-analyzer-kuromoji`
+installed and ran cleanly on Node 24 via lazy `await import(...)` — no need
+for the `miseya` fork. The ~15MB kuromoji dictionary ships as a normal
+`node_modules` dependency in the Docker image (no custom fetch-on-first-use
+infra) — trivial size for a self-hosted single-user app, and the lazy
+import already keeps it out of server boot/memory for users who never hit
+a Japanese track. `@romanize/korean`'s CJS build doesn't survive Node's
+ESM named-export interop (its exports are defined via property getters,
+which `cjs-module-lexer` can't see statically) — worked around with
+`createRequire` in `romanize.ts` rather than a static import.
 
-### 11.2 — Furigana toggle (Japanese) — scoped, not built
+Verified live: all three scripts end-to-end against real LRCLIB data,
+including the highest-risk Japanese/kuroshiro path (YOASOBI's "夜に駆ける"
+and "群青" from *THE BOOK*, real kanji/hiragana lyrics correctly
+romanized) — both in a standalone script hitting the real LRCLIB API and
+in the actual running app (dev server + browser), toggle on/off, per-line
+pairing, and the karaoke extension all confirmed by hand.
+
+### 11.2 — Furigana toggle (Japanese) — done (2026-09-19)
 
 Near-free extension of 11.1: `kuroshiro` already supports rendering
 readings *above* kanji (furigana mode) as an alternative to full romaji
@@ -1478,16 +1512,97 @@ help. Depends entirely on 11.1's Japanese pipeline existing first (same
 into the same gloss-cycle control from 11.1 as a Japanese-only third
 state, rather than a separate toggle.
 
-### 11.3 — Language tagging + filtering — scoped, not built
+- [x] **Real security finding, not guessed at scoping time**: kuroshiro's
+      furigana mode returns raw HTML (`<ruby>感<rp>(</rp><rt>かん</rt>
+      <rp>)</rp></ruby>...`), and a spike against real lyric text confirmed
+      it passes non-kanji runs through **completely unescaped**. Rendering
+      that via `dangerouslySetInnerHTML` would be a stored-XSS hole the
+      moment any lyric contained a literal `<`. Instead,
+      `packages/server/src/lyrics/romanize.ts`'s new `furigana()` parses
+      the HTML into structured `FuriganaSegment[]` (`{ text, reading }`,
+      new type in `shared/src/dto.ts`), and a new
+      `packages/web/src/components/FuriganaText.tsx` renders real
+      `<ruby>/<rt>` React elements from those segments — text always goes
+      through React's normal escaping, the raw HTML string never touches
+      the DOM.
+- [x] `TrackLyrics` extended with `furiganaSynced`/`furiganaPlain` (same
+      per-line shape convention as `romanizedSynced`/`romanizedPlain`),
+      computed alongside romanization in `lrclib.ts` (renamed
+      `attachRomanization` → `attachGlosses` to reflect the broader job).
+- [x] The gloss toggle in both `LyricsPanel.tsx` and `KaraokeProvider.tsx`
+      (Phase 12.1's karaoke overlay, which 11.1 had already extended to
+      share this control) now cycles original → romanized → furigana →
+      **furigana+romanized** → original for Japanese tracks specifically,
+      staying 2-state (original/romanized) for Korean/Russian —
+      `glossOptionsFor(script)`, exported from `LyricsPanel.tsx` and reused
+      by `KaraokeProvider.tsx`, decides which states are reachable per
+      track. The combined 4th state was requested live, after the plain
+      3-state design shipped — furigana alone assumes the reader can sound
+      out hiragana/katakana, which isn't true for every learner, so
+      furigana+romanized shows both the kana reading above the kanji *and*
+      the Latin romanization below the line simultaneously. This is the one
+      deliberate exception to the "don't stack gloss lines" Miller's-Law
+      note from 11.1's original scoping — accepted as worth the extra line
+      for this specific combination, not a reversal of that principle.
+      Furigana modes replace the line in place (kanji + reading inline)
+      rather than adding a second line underneath for the reading itself,
+      since that's how furigana is actually read; romanized mode (alone or
+      combined) still adds its own smaller line below. Relabeled the toggle
+      from "Romanization: on/off" to
+      "Gloss: off/romanized/furigana" to fit the third state.
+      Verified live: real furigana rendered correctly over YOASOBI's "群青"
+      in both the album page's `LyricsPanel` and the karaoke overlay, no
+      console errors.
+
+### 11.3 — Language tagging + filtering — done (2026-09-19)
 
 Reuses 11.1's `detectScript()` (broadened to also recognize Latin, so
 every track gets a definite tag, not just the non-Latin ones) to tag each
 track/album with a detected lyrics language, stored alongside the lyrics
-cache entry. Backlog/Revisit/Reviews get a filter chip (same molecule
-pattern as the existing genre-filter UI) — turns the existing backlog
-into a usable study queue ("show me only Japanese albums") without a
-separate list to maintain. Depends on 11.1 landing first for the shared
-detector; doesn't depend on 11.4/11.5.
+cache entry. Depends on 11.1 landing first for the shared detector; doesn't
+depend on 11.4/11.5.
+
+- [x] **Real discovery, not guessed at scoping time**: there is no existing
+      "filter chip" molecule to reuse. A codebase check found the
+      genre-filter UI this item was written against is actually the plain
+      free-text `Input` already on each page, substring-matching
+      name/artist/genre (and notes/tags where applicable) — `GenreChips` is
+      a read-only display badge, not a filter control. Asked the user
+      directly rather than inventing a new chip pattern to match the plan
+      doc's wording: chose extending the existing text filter (zero new
+      components, fully consistent) over a new clickable chip row.
+- [x] `detectScript()` → `Script` broadened to `"latin" | "cyrillic" |
+      "hangul" | "japanese"`, returning `null` only when there's no lyrics
+      text at all. `attachGlosses` still tags `"latin"` on `TrackLyrics
+      .script` but skips romanization/furigana for it (meaningless for an
+      already-Latin script).
+- [x] Per-album language tag: new `packages/server/src/lyrics/
+      albumLanguage.ts`, a cache-only-peek module (`getCachedLanguages`/
+      `setCachedLanguages`) mirroring `getCachedGenres`'s discipline —
+      never triggers a fresh lyrics fetch for a list row. Written by the
+      `/album/:id/lyrics` route (`album.ts`) once it has fetched every
+      track's lyrics, as the distinct non-null scripts found across the
+      album. Populates lazily as albums are actually opened/played, same
+      "fills in as you listen" pattern genres already use — no bulk
+      backfill in this pass.
+- [x] `AlbumSummary` (`shared/src/dto.ts`) and `ReviewListItem`
+      (`shared/src/review.ts`) extended with `languages: Script[]`, merged
+      in by `backlog.ts`'s `enrich()` and `verdict.ts`'s `/reviews` and
+      `/revisit` handlers, same call-site shape as `genres`.
+      `toAlbumSummary()` and the playlist-import album-summary literal both
+      default it to `[]`, matching `genres`'s existing default.
+- [x] Backlog/Revisit/Reviews: new `packages/web/src/lib/languageLabels.ts`
+      maps a script to a human, searchable label ("Japanese", "Korean",
+      "Russian") — `"latin"` deliberately excluded, since it's most tracks
+      and isn't a useful "show me only X" study-queue filter target the way
+      the other three are. Each page's existing free-text filter predicate
+      now also checks `languageLabels(...)`, and each placeholder string
+      mentions "language" alongside genre/tag/notes.
+
+Verified live: visiting YOASOBI's *THE BOOK* populated its album-language
+cache entry with `["japanese"]`; typing "japanese" into the Backlog filter
+then narrowed the full list down to exactly that one album, with no
+console errors and the rest of the list unaffected.
 
 ### 11.4 — App localization (i18n) — scoped, not built
 

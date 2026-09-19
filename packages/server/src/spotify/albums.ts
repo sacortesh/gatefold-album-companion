@@ -61,6 +61,7 @@ export function toAlbumSummary(raw: RawAlbum): AlbumSummary {
     totalTracks: raw.total_tracks,
     durationMs: durationOf(raw),
     genres: [],
+    languages: [],
   };
 }
 
