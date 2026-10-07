@@ -26,3 +26,7 @@ data/cache/
 # local design-review tooling output (impeccable critique snapshots)
 .impeccable/
 brag-output/
+
+# personal homelab debugging skill — holds Sergio's server IP, SSH alias,
+# and container inventory; project-scoped on purpose, must never be pushed
+.claude/skills/debug-personal-prod/

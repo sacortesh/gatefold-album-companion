@@ -31,19 +31,21 @@ const koreanRomanize = require("@romanize/korean") as {
   romanize(hangul: string): string;
 };
 
-// kuroshiro + its kuromoji IPADIC dictionary (~17MB) are only imported
-// inside this lazy singleton, on first Japanese track — server boot and
-// memory stay unaffected for the large majority of users who never hit one.
+// kuroshiro hits the same cjs-module-lexer gap as above — `import()` only
+// breaks under the compiled build's native ESM loader, not under tsx.
+const Kuroshiro = require("kuroshiro").default as new () => import("kuroshiro").default;
+
+// kuroshiro-analyzer-kuromoji + its ~17MB dictionary stay dynamically
+// imported here (resolves fine under both loaders) so server boot and
+// memory stay unaffected until the first Japanese track.
 let kuroshiroInit: Promise<import("kuroshiro").default> | null = null;
 
 async function getKuroshiro() {
   if (!kuroshiroInit) {
     kuroshiroInit = (async () => {
-      const [{ default: Kuroshiro }, { default: KuromojiAnalyzer }] =
-        await Promise.all([
-          import("kuroshiro"),
-          import("kuroshiro-analyzer-kuromoji"),
-        ]);
+      const { default: KuromojiAnalyzer } = await import(
+        "kuroshiro-analyzer-kuromoji"
+      );
       const instance = new Kuroshiro();
       await instance.init(new KuromojiAnalyzer());
       return instance;
